@@ -4,20 +4,49 @@ import { useState } from "react"
 import type { ScoringResult } from "@/lib/scoring-engine"
 import { DecisionBadge } from "./decision-badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { AlertTriangle, Info } from "lucide-react"
+import { AlertCircle, Terminal, HelpCircle, FileText, ChevronDown, Download, ArrowUpRight } from "lucide-react"
+import { downloadAssessmentReport } from "@/lib/report-generator"
+import type { Domain } from "@/lib/scoring-engine"
+import { useUnderwriting } from "@/context/underwriting-context"
 
 interface DecisionPanelProps {
   result: ScoringResult
+  domains: Domain[]
+  completionPercentage: number
+  onNavigateToDomain: (domainId: string) => void
 }
 
-export function DecisionPanel({ result }: DecisionPanelProps) {
-  const [expandedReasons, setExpandedReasons] = useState<boolean>(false)
+export function DecisionPanel({ result, domains, completionPercentage, onNavigateToDomain }: DecisionPanelProps) {
+  const { isAdmin } = useUnderwriting()
+  const [expandedReasons, setExpandedReasons] = useState<boolean>(true)
+  const isProvisional = completionPercentage < 100
+
+  // Calculate Top 3 Risk Drivers
+  const riskDrivers = [
+    // 1. Failed Killers (Highest Priority)
+    ...result.failedKillers.map(k => ({
+      type: "critical",
+      domainId: domains.find(d => d.name === k.domain)?.id || "",
+      text: `Critical Control Failure: ${k.text}`,
+      score: 0
+    })),
+    // 2. Lowest Scoring Domains (Weighted)
+    ...result.domainScores
+      .filter(d => d.earnedScore < d.maxScore * 0.7) // Only show if < 70%
+      .sort((a, b) => (a.earnedScore / a.maxScore) - (b.earnedScore / b.maxScore))
+      .map(d => ({
+        type: "warning",
+        domainId: domains.find(domain => domain.name === d.domain)?.id || "",
+        text: `Low Performance: ${d.domain} (${Math.round((d.earnedScore / d.maxScore) * 100)}%)`,
+        score: d.earnedScore
+      }))
+  ].slice(0, 3)
 
   const getReasons = (): string[] => {
     const reasons: string[] = []
 
     if (result.autoDeclined) {
-      reasons.push("Multiple critical killer controls have failed - automatic decline triggered")
+      reasons.push("Simulation terminated due to multiple critical inhibitor failures.")
       return reasons
     }
 
@@ -26,20 +55,18 @@ export function DecisionPanel({ result }: DecisionPanelProps) {
     }
 
     if (result.totalScore < 60) {
-      reasons.push("Overall cyber posture is below minimum standards for coverage")
-    } else if (result.totalScore < 75) {
-      reasons.push("Additional security measures required before full approval")
+      reasons.push("Aggregation threshold failure: Controls fell below the 'minimum standard' of 60 points.")
     }
 
     const weakDomains = result.domainScores.filter((d) => d.score < 50)
     if (weakDomains.length > 0) {
-      reasons.push(`Critical gaps in: ${weakDomains.map((d) => d.domain).join(", ")}`)
+      reasons.push(`Unacceptable volatility in: ${weakDomains.map((d) => d.domain).join(", ")}`)
     }
 
     if (result.riskTier === "B") {
-      reasons.push("Risk tier B warrants +20% premium loading due to control gaps")
+      reasons.push("Tier B detected: Structural loading enforced (+20%) due to suboptimal posture.")
     } else if (result.riskTier === "C") {
-      reasons.push("Risk tier C warrants +50% premium loading due to significant control gaps")
+      reasons.push("Tier C detected: Maximum loading enforced (+50%) due to high risk volatility.")
     }
 
     return reasons.slice(0, 4)
@@ -48,88 +75,146 @@ export function DecisionPanel({ result }: DecisionPanelProps) {
   const reasons = getReasons()
 
   return (
-    <motion.div
-      className={`h-full flex flex-col p-8 overflow-y-auto`}
-      animate={{
-        backgroundColor: result.autoDeclined ? "#fef2f2" : "#ffffff",
-      }}
-    >
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">Underwriting Decision</h2>
+    <div className="h-full flex flex-col bg-white text-si-navy font-inter">
+      {/* Premium Header */}
+      <div className="p-8 border-b border-slate-100 bg-gradient-to-b from-white to-slate-50">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 bg-si-blue-primary text-white rounded-xl shadow-lg shadow-si-blue-primary/20">
+            <Terminal className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-black text-si-navy tracking-tight uppercase font-outfit">Decision Protocol</h2>
+          </div>
+          {isProvisional && (
+            <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-200 animate-pulse">
+              Provisional
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.2em]">Deterministic Underwriting Output</p>
+      </div>
 
-      <DecisionBadge result={result} />
+      <div className="flex-1 overflow-y-auto p-8 space-y-12 scroll-smooth scrollbar-hide">
+        {/* Big Decision Badge */}
+        <DecisionBadge result={result} />
 
-      <AnimatePresence>
-        {reasons.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-6"
+        {/* Narrative Factors */}
+        <div className="space-y-8">
+          <button
+            onClick={() => setExpandedReasons(!expandedReasons)}
+            className="flex items-center justify-between w-full px-2 group/btn"
           >
-            <button
-              onClick={() => setExpandedReasons(!expandedReasons)}
-              className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
-            >
-              <Info size={16} />
-              <span>Decision Factors</span>
-              <motion.div animate={{ rotate: expandedReasons ? 180 : 0 }}>▼</motion.div>
-            </button>
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-si-blue-primary" />
+              <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] text-slate-400">Underwriting Rationale</span>
+            </div>
+            <motion.div animate={{ rotate: expandedReasons ? 180 : 0 }}>
+              <ChevronDown className="w-4 h-4 text-slate-300 group-hover/btn:text-si-blue-primary transition-colors" />
+            </motion.div>
+          </button>
 
-            <AnimatePresence>
-              {expandedReasons && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-3 space-y-2"
-                >
-                  {reasons.map((reason, idx) => (
+          <AnimatePresence>
+            {expandedReasons && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
+              >
+                {reasons.length > 0 ? (
+                  reasons.map((reason, idx) => (
                     <motion.div
                       key={idx}
-                      initial={{ opacity: 0, x: -8 }}
+                      initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.1 }}
-                      className="flex gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200"
+                      className="flex gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200 group/reason si-interactive"
                     >
-                      <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-slate-700">{reason}</p>
+                      <AlertCircle size={18} className="text-si-blue-primary mt-0.5 flex-shrink-0 opacity-80 group-hover/reason:opacity-100 transition-opacity" />
+                      <p className="text-[11px] text-slate-700 font-bold leading-relaxed tracking-tight">{reason}</p>
                     </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Killer Controls Status */}
-      {result.failedKillers.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 p-4 rounded-lg bg-red-50 border-2 border-red-300"
-        >
-          <p className="font-bold text-red-900 text-sm mb-2">Failed Critical Controls:</p>
-          <ul className="space-y-1">
-            {result.failedKillers.map((killer) => (
-              <li key={killer.id} className="text-xs text-red-700 flex items-start gap-2">
-                <span className="font-bold text-red-600 mt-1">•</span>
-                <div>
-                  <p className="font-semibold">{killer.id}</p>
-                  <p className="text-red-600">{killer.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-
-      <div className="mt-auto pt-6 border-t border-slate-200">
-        <div className="text-xs text-slate-500 text-center">
-          <p>Deterministic underwriting engine</p>
-          <p className="mt-1">All decisions are fully explainable and based on 95 weighted control questions</p>
+                  ))
+                ) : (
+                  <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+                    <p className="text-[11px] text-emerald-700 font-black uppercase tracking-widest">No Adverse Volatility Detected</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Top Risk Drivers (Interactive) */}
+        {riskDrivers.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Top Risk Drivers</h4>
+            <div className="space-y-2">
+              {riskDrivers.map((driver, idx) => (
+                <motion.button
+                  key={idx}
+                  onClick={() => onNavigateToDomain(driver.domainId)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all duration-300 group ${driver.type === "critical"
+                    ? "bg-red-50 border-red-100 hover:border-red-300"
+                    : "bg-amber-50 border-amber-100 hover:border-amber-300"
+                    }`}
+                  whileHover={{ x: 4 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${driver.type === "critical" ? "text-si-red" : "text-amber-600"
+                      }`}>
+                      {driver.type === "critical" ? (isAdmin ? "KILLER CONTROL" : "CRITICAL FAILURE") : "ATTENTION NEEDED"}
+                    </span>
+                    <ArrowUpRight className={`w-3 h-3 ${driver.type === "critical" ? "text-si-red" : "text-amber-600"
+                      } opacity-0 group-hover:opacity-100 transition-opacity`} />
+                  </div>
+                  <p className="text-xs font-bold text-si-navy mt-1 line-clamp-2">
+                    {driver.text}
+                  </p>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Methodology Info */}
+        <div className="p-6 rounded-2xl bg-si-navy shadow-xl shadow-si-navy/20 border border-slate-200 relative overflow-hidden">
+          <div className="relative z-10 flex items-start gap-4">
+            <HelpCircle className="w-6 h-6 text-si-blue-primary flex-shrink-0" />
+            <div>
+              <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-1.5 font-outfit">CYRUS ENGINE v2.0</h4>
+              <p className="text-[10px] text-white/70 font-bold leading-relaxed uppercase tracking-tighter">
+                Explainable AI Layer processing 96 discrete risk metrics across 19 critical infrastructure domains.
+              </p>
+            </div>
+          </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-si-blue-primary/10 blur-3xl -mr-16 -mt-16 pointer-events-none" />
+        </div>
+
+        {/* Download Report Button */}
+        <motion.button
+          onClick={() => downloadAssessmentReport(result, domains)}
+          disabled={isProvisional}
+          className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] shadow-xl flex items-center justify-center gap-3 border border-white/20 group/dl transition-all ${isProvisional
+            ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none border-slate-200"
+            : "bg-si-blue-primary text-white shadow-si-blue-primary/30 hover:shadow-2xl hover:shadow-si-blue-primary/50 si-interactive"
+            }`}
+          whileHover={isProvisional ? {} : { scale: 1.02 }}
+          whileTap={isProvisional ? {} : { scale: 0.98 }}
+        >
+          <Download className={`w-5 h-5 ${isProvisional ? "text-slate-400" : "group-hover:animate-bounce text-white"}`} />
+          <span className="font-outfit">{isProvisional ? "Complete All Questions to Export" : "Export Institutional Audit"}</span>
+        </motion.button>
       </div>
-    </motion.div>
+
+      {/* Corporate Footer Branded */}
+      <div className="p-8 border-t border-slate-100 text-center bg-slate-50">
+        <p className="text-[11px] font-black text-si-navy uppercase tracking-[0.4em] mb-2 leading-none">
+          Share India Insurance Brokers
+        </p>
+        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+          IRDAI Licensed Direct Insurance Broker (Composite)
+        </p>
+      </div>
+    </div>
   )
 }

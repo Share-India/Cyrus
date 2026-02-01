@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import type { ScoringResult } from "@/lib/scoring-engine"
-import { CheckCircle, AlertCircle, XCircle } from "lucide-react"
+import { ShieldCheck, ShieldAlert, ShieldX, Activity } from "lucide-react"
 
 interface DecisionBadgeProps {
   result: ScoringResult
@@ -12,54 +12,60 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
   const getDecisionConfig = (tier: string, autoDeclined: boolean) => {
     if (autoDeclined) {
       return {
-        color: "bg-red-50 border-red-300",
+        gradient: "from-rose-500 to-red-700",
+        shadow: "shadow-red-200",
         textColor: "text-red-700",
-        icon: XCircle,
+        icon: ShieldX,
         label: "AUTO-DECLINED",
-        description: "Critical controls failed - coverage unavailable",
+        description: "CRITICAL FAILURE DETECTED",
       }
     }
 
     switch (tier) {
       case "A":
         return {
-          color: "bg-emerald-50 border-emerald-300",
+          gradient: "from-emerald-400 to-emerald-600",
+          shadow: "shadow-emerald-200",
           textColor: "text-emerald-700",
-          icon: CheckCircle,
+          icon: ShieldCheck,
           label: "APPROVED - TIER A",
-          description: "Excellent controls - Base rate",
+          description: "OPTIMAL RISK PROFILE",
         }
       case "B":
         return {
-          color: "bg-amber-50 border-amber-300",
+          gradient: "from-amber-400 to-amber-600",
+          shadow: "shadow-amber-200",
           textColor: "text-amber-700",
-          icon: AlertCircle,
+          icon: ShieldCheck,
           label: "APPROVED - TIER B",
-          description: "Good controls - +20% premium loading",
+          description: "STANDARD RISK PROFILE",
         }
       case "C":
         return {
-          color: "bg-orange-50 border-orange-300",
+          gradient: "from-orange-400 to-orange-600",
+          shadow: "shadow-orange-200",
           textColor: "text-orange-700",
-          icon: AlertCircle,
+          icon: ShieldAlert,
           label: "APPROVED - TIER C",
-          description: "Fair controls - +50% premium loading",
+          description: "SUBSTANDARD RISK PROFILE",
         }
       case "D":
         return {
-          color: "bg-red-50 border-red-300",
+          gradient: "from-rose-500 to-red-700",
+          shadow: "shadow-red-200",
           textColor: "text-red-700",
-          icon: XCircle,
-          label: "DECLINED",
-          description: "Poor controls - Coverage declined",
+          icon: ShieldX,
+          label: "POLICY DECLINED",
+          description: "INADEQUATE RISK CONTROLS",
         }
       default:
         return {
-          color: "bg-slate-50 border-slate-200",
+          gradient: "from-slate-400 to-slate-600",
+          shadow: "shadow-slate-200",
           textColor: "text-slate-700",
-          icon: AlertCircle,
-          label: "PENDING",
-          description: "Assessment in progress",
+          icon: Activity,
+          label: "ANALYZING...",
+          description: "SIMULATION IN PROGRESS",
         }
     }
   }
@@ -69,38 +75,36 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
 
   return (
     <motion.div
-      className={`p-6 rounded-lg border-2 ${config.color} cursor-pointer`}
-      animate={{
-        boxShadow: result.autoDeclined ? "0 0 20px rgba(220, 38, 38, 0.2)" : "none",
-      }}
+      className={`p-[1px] rounded-3xl bg-gradient-to-br ${config.gradient} shadow-2xl shadow-black/60 relative`}
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 10 }}
     >
-      <motion.div className="flex items-center gap-3 mb-3" animate={{ scale: result.autoDeclined ? 1.05 : 1 }}>
-        <IconComponent className={`w-8 h-8 ${config.textColor}`} />
-        <div>
-          <div className={`text-lg font-bold ${config.textColor}`}>{config.label}</div>
-          <div className={`text-xs ${config.textColor} opacity-75`}>{config.description}</div>
+      <div className="bg-si-navy-deep rounded-[calc(1.5rem-1px)] p-8 relative overflow-hidden border border-white/5">
+        <div className="flex items-center gap-6 mb-8 relative z-10">
+          <div className={`p-4 rounded-2xl bg-gradient-to-br ${config.gradient} shadow-2xl shadow-black/80`}>
+            <IconComponent className="w-10 h-10 text-white" />
+          </div>
+          <div>
+            <div className={`text-2xl font-black italic tracking-tighter uppercase font-outfit ${config.textColor}`}>{config.label}</div>
+            <div className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">{config.description}</div>
+          </div>
         </div>
-      </motion.div>
 
-      <motion.div
-        className="mt-4 pt-4 border-t border-current border-opacity-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="text-sm font-semibold text-slate-700 mb-2">Premium Loading</div>
-        <motion.div
-          className={`text-3xl font-bold ${config.textColor}`}
-          animate={{
-            scale: result.autoDeclined ? 1.1 : 1,
-          }}
-        >
-          {result.premiumLoading}
-        </motion.div>
-        <p className="text-xs text-slate-500 mt-1">Risk tier assignment</p>
-      </motion.div>
+        <div className="flex items-center justify-between pt-8 border-t border-white/5 relative z-10">
+          <div>
+            <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Institutional Premium Load</span>
+            <span className={`text-5xl font-black font-outfit ${config.textColor}`}>{result.premiumLoading}</span>
+          </div>
+          <div className="text-right">
+            <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Final Risk Tier</span>
+            <span className={`text-3xl font-black italic font-outfit ${config.textColor}`}>{result.riskTier}</span>
+          </div>
+        </div>
+
+        {/* Decorative background element */}
+        <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${config.gradient} opacity-[0.08] blur-3xl -mr-24 -mt-24`} />
+      </div>
     </motion.div>
   )
 }

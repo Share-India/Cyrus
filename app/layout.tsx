@@ -1,35 +1,29 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Inter, Outfit } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" })
 
 export const metadata: Metadata = {
-  title: "CYRUS | Cyber Underwriting Risk Simulator",
+  title: "Share India | CYRUS Risk Protocol",
   description:
-    "Interactive deterministic cyber insurance underwriting engine. Real-time risk assessment and decision simulation.",
-  generator: "v0.app",
+    "Cyber Underwriting Risk Simulator by Share India Insurance Brokers. IRDAI Licensed Direct Insurance Broker.",
+  generator: "Share India",
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
+        url: "/share-india-new.png",
       },
     ],
-    apple: "/apple-icon.png",
   },
 }
+
+import { UnderwritingProvider } from "@/context/underwriting-context"
+import { PageLoader } from "@/components/ui/page-loader"
+import { Suspense } from "react"
 
 export default function RootLayout({
   children,
@@ -38,8 +32,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
-        {children}
+      <body className={`${inter.variable} ${outfit.variable} font-inter antialiased`}>
+        <Suspense fallback={null}>
+          <PageLoader />
+        </Suspense>
+        <UnderwritingProvider>
+          {children}
+          {/* Floating Monogram */}
+          <div className="fixed bottom-6 right-6 z-50 opacity-40 hover:opacity-100 hover:scale-95 transition-all duration-300 ease-out cursor-pointer">
+            <img src="/share-india-monogram.png" alt="Share India" className="w-14 h-14 md:w-16 md:h-16 drop-shadow-md" />
+          </div>
+        </UnderwritingProvider>
         <Analytics />
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import type { ScoringResult } from "@/lib/scoring-engine"
-import { TrendingUp } from "lucide-react"
+import { Shield, ChevronRight, Info } from "lucide-react"
 
 interface RiskTierCardProps {
   result: ScoringResult
@@ -13,131 +13,149 @@ export function RiskTierCard({ result }: RiskTierCardProps) {
     switch (tier) {
       case "A":
         return {
-          bgColor: "bg-emerald-50 hover:bg-emerald-100",
-          borderColor: "border-emerald-300 hover:border-emerald-400",
+          gradient: "from-emerald-400 to-emerald-600",
+          shadow: "shadow-emerald-200",
           textColor: "text-emerald-700",
-          badgeColor: "bg-emerald-100 text-emerald-700",
-          scoreColor: "text-emerald-600",
-          description: "Excellent Controls",
-          tooltip: "Score 90-100: Strong cyber posture with comprehensive controls",
+          description: "Superior Resilience",
+          status: "EXCELLENT",
+          policyCard: {
+            bg: "bg-emerald-50",
+            border: "border-emerald-200",
+            title: "text-emerald-600",
+            value: "text-emerald-700"
+          }
         }
       case "B":
         return {
-          bgColor: "bg-amber-50 hover:bg-amber-100",
-          borderColor: "border-amber-300 hover:border-amber-400",
+          gradient: "from-amber-400 to-amber-600", // Fixed: Was Blue
+          shadow: "shadow-amber-200",
           textColor: "text-amber-700",
-          badgeColor: "bg-amber-100 text-amber-700",
-          scoreColor: "text-amber-600",
-          description: "Good Controls",
-          tooltip: "Score 75-89: Good controls with minor gaps requiring attention",
+          description: "Solid Framework",
+          status: "GOOD", // Changed from STABLE to GOOD (Amber)
+          policyCard: {
+            bg: "bg-amber-50",
+            border: "border-amber-200",
+            title: "text-amber-600",
+            value: "text-amber-700"
+          }
         }
       case "C":
         return {
-          bgColor: "bg-orange-50 hover:bg-orange-100",
-          borderColor: "border-orange-300 hover:border-orange-400",
+          gradient: "from-orange-400 to-orange-600", // Distinct Orange
+          shadow: "shadow-orange-200",
           textColor: "text-orange-700",
-          badgeColor: "bg-orange-100 text-orange-700",
-          scoreColor: "text-orange-600",
-          description: "Fair Controls",
-          tooltip: "Score 60-74: Moderate risk with significant control gaps",
+          description: "Active Gaps",
+          status: "ELEVATED",
+          policyCard: {
+            bg: "bg-orange-50",
+            border: "border-orange-200",
+            title: "text-orange-600",
+            value: "text-orange-700"
+          }
         }
       case "D":
         return {
-          bgColor: "bg-red-50 hover:bg-red-100",
-          borderColor: "border-red-300 hover:border-red-400",
+          gradient: "from-rose-500 to-red-700",
+          shadow: "shadow-red-200",
           textColor: "text-red-700",
-          badgeColor: "bg-red-100 text-red-700",
-          scoreColor: "text-red-600",
-          description: "Poor Controls",
-          tooltip: "Score <60: Significant gaps - coverage declined",
+          description: "Critical Deficit",
+          status: "POOR",
+          policyCard: {
+            bg: "bg-red-50",
+            border: "border-red-200",
+            title: "text-red-600",
+            value: "text-red-700"
+          }
         }
       default:
         return {
-          bgColor: "bg-slate-50",
-          borderColor: "border-slate-200",
+          gradient: "from-slate-400 to-slate-600",
+          shadow: "shadow-slate-200",
           textColor: "text-slate-700",
-          badgeColor: "bg-slate-100 text-slate-700",
-          scoreColor: "text-slate-600",
-          description: "Pending",
-          tooltip: "Assessment in progress",
+          description: "Processing...",
+          status: "PENDING",
+          policyCard: {
+            bg: "bg-slate-50",
+            border: "border-slate-200",
+            title: "text-slate-500",
+            value: "text-slate-700"
+          }
         }
     }
   }
 
   const config = getTierConfig(result.riskTier)
 
+  // Font size calculation for Policy Load to prevent cutoff
+  const getLoadFontSize = (text: string) => {
+    if (text.length > 20) return "text-base tracking-tight"
+    if (text.length > 12) return "text-lg tracking-tight"
+    if (text.length > 8) return "text-2xl tracking-tight"  // Reduced from 3xl/xl mixture
+    return "text-3xl tracking-tight" // For short text like "Declined"
+  }
+
   return (
     <motion.div
-      className={`p-6 rounded-lg border-2 transition-all duration-200 cursor-pointer group ${config.bgColor} ${config.borderColor}`}
-      whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }}
-      whileTap={{ scale: 0.98 }}
-      title={config.tooltip}
+      className="relative overflow-hidden p-8 rounded-2xl bg-white border border-slate-200 shadow-2xl shadow-slate-200/50 group si-interactive"
+      whileHover={{ y: -5, borderColor: "rgba(45, 169, 255, 0.4)" }}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-xs font-semibold text-slate-600 mb-2">RISK TIER ASSIGNMENT</p>
+      <div className="relative z-10">
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl bg-gradient-to-br ${config.gradient} shadow-lg shadow-black/10`}>
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-outfit">Risk Classification</span>
+          </div>
+          <div className={`px-3 py-1.5 rounded-xl text-[9px] font-black text-white bg-gradient-to-r ${config.gradient} shadow-lg shadow-black/10 tracking-widest uppercase`}>
+            {config.status}
+          </div>
+        </div>
+
+        <div className="flex items-end gap-6 mb-8">
           <motion.div
-            className={`text-5xl font-bold ${config.scoreColor}`}
-            animate={{ scale: [1, 1.02, 1] }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            className={`text-8xl font-black leading-none font-outfit bg-clip-text text-transparent bg-gradient-to-br ${config.gradient}`}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
           >
             {result.riskTier}
           </motion.div>
+          <div className="pb-2 flex flex-col">
+            <span className={`text-xl font-black tracking-tight ${config.textColor}`}>{config.description}</span>
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] leading-none mt-1.5">Tier Assignment</span>
+          </div>
         </div>
-        <motion.div
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${config.badgeColor}`}
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          {result.totalScore.toFixed(1)}/100
-        </motion.div>
+
+        <div className="grid grid-cols-2 gap-5">
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Score Matrix</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-black text-si-navy font-outfit">{result.totalScore.toFixed(1)}</span>
+              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">/ 100</span>
+            </div>
+          </div>
+
+          {/* Dynamically Styled Policy Load Card */}
+          <div className={`p-4 rounded-2xl border ${config.policyCard.bg} ${config.policyCard.border}`}>
+            <span className={`block text-[9px] font-black uppercase tracking-[0.2em] mb-2 ${config.policyCard.title}`}>Policy Load</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`font-black font-outfit ${config.policyCard.value} ${getLoadFontSize(result.premiumLoading)}`}>
+                {result.premiumLoading}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 flex items-center justify-between text-slate-400 pt-6 border-t border-slate-100">
+          <div className="flex items-center gap-2 cursor-help group-hover:text-si-blue-primary transition-colors">
+            <Info className="w-4 h-4" />
+            <span className="text-[9px] font-black uppercase tracking-widest">Protocol Methodology</span>
+          </div>
+          <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform group-hover:text-si-blue-primary" />
+        </div>
       </div>
 
-      {/* Tier Description */}
-      <motion.p
-        className={`text-sm font-medium ${config.textColor} mb-3`}
-        animate={{ opacity: [0.8, 1] }}
-        transition={{ delay: 0.1 }}
-      >
-        {config.description}
-      </motion.p>
-
-      {/* Score Range Information */}
-      <motion.div
-        className="mb-4 p-2 rounded-md bg-white bg-opacity-50 border border-current border-opacity-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="text-xs text-slate-600 font-mono">
-          {result.riskTier === "A" && "Range: 90 - 100"}
-          {result.riskTier === "B" && "Range: 75 - 89"}
-          {result.riskTier === "C" && "Range: 60 - 74"}
-          {result.riskTier === "D" && "Range: Below 60"}
-        </div>
-      </motion.div>
-
-      {/* Premium Loading */}
-      <div className="pt-3 border-t border-current border-opacity-10">
-        <p className="text-xs text-slate-600 mb-1 font-medium">PREMIUM LOADING</p>
-        <motion.p
-          className={`text-2xl font-bold ${config.scoreColor}`}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          {result.premiumLoading}
-        </motion.p>
-      </div>
-
-      {/* Hover Indicator */}
-      <motion.div
-        className="mt-4 flex items-center gap-2 text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
-        animate={{ x: [0, 2, 0] }}
-        transition={{ duration: 0.6 }}
-      >
-        <TrendingUp size={14} />
-        <span>Hover for tier info</span>
-      </motion.div>
+      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${config.gradient} opacity-[0.15] blur-3xl -mr-16 -mt-16 group-hover:opacity-25 transition-opacity`} />
     </motion.div>
   )
 }

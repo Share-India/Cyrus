@@ -1,1431 +1,2395 @@
 // SHARE INDIA CYBER INSURANCE - UNIFIED UNDERWRITING MODEL
-// All 95 questions across 19 domains with industry weights and killer logic
+// Matching exact Excel structure with 96 questions and killer logic
 
 export type QuestionType = "binary" | "frequency" | "multiple" | "coverage" | "governance"
 
 export interface UnderwritingQuestion {
-  id: string
-  domain: string
-  text: string
-  type: QuestionType
-  options?: {
-    label: string
-    value: number
-  }[]
-  response: number
-  maxValue?: number
-  isKiller: boolean
-  defaultIsKiller?: boolean // Added for potential future use, though not strictly required by current logic
+      id: string
+      domain: string
+      text: string
+      type: QuestionType
+      options?: {
+            label: string
+            value: number
+      }[]
+      response: number
+      maxValue?: number
+      isKiller: boolean
+      defaultIsKiller?: boolean
 }
 
 export interface Domain {
-  id: string
-  name: string
-  defaultWeight: number
-  activeWeight: number
-  questions: UnderwritingQuestion[]
+      id: string
+      name: string
+      defaultWeight: number
+      activeWeight: number
+      explanation?: string
+      questions: UnderwritingQuestion[]
 }
 
 export interface IndustryProfile {
-  id: string
-  name: string
-  domainWeights: {
-    [domainName: string]: number
-  }
+      id: string
+      name: string
+      domainWeights: {
+            [domainName: string]: number
+      }
 }
 
 export interface ScoringResult {
-  totalScore: number
-  domainScores: Array<{
-    domain: string
-    score: number
-    defaultWeight: number
-    activeWeight: number
-    contribution: number
-    maxScore: number
-    earnedScore: number
-  }>
-  riskTier: "A" | "B" | "C" | "D"
-  premiumLoading: string
-  autoDeclined: boolean
-  failedKillers: Array<{ id: string; text: string }>
-  declineNarrative: string
+      totalScore: number
+      domainScores: Array<{
+            domain: string
+            score: number
+            defaultWeight: number
+            activeWeight: number
+            contribution: number
+            maxScore: number
+            earnedScore: number
+      }>
+      riskTier: "A" | "B" | "C" | "D"
+      premiumLoading: string
+      autoDeclined: boolean
+      failedKillers: Array<{ id: string; text: string; domain: string }>
+      volatilityScore: number
+      normalizedScore: number
+      declineNarrative: string
 }
 
 export const INDUSTRY_PROFILES: IndustryProfile[] = [
-  {
-    id: "cyber_security",
-    name: "Cyber Security",
-    domainWeights: {
-      "Network Security": 7,
-      "Data Backup and Recovery": 7,
-      Certifications: 4,
-      "Background Verification and Awareness": 4,
-      "Regulatory Compliance": 5,
-      "Organizational Policies": 5,
-      "Physical Perimeter Security": 7,
-      "Endpoint Security": 6,
-      "IoT and OT Network": 9,
-      "Asset Management": 6,
-      "Identity and Access Management": 6,
-      "Vulnerability Assessment and Penetration Test": 5,
-      "Ransomware Supplemental": 5,
-      "Dark Web Exposure": 2,
-      "Change / Patch Cadence": 5,
-      "DLP & DSPM": 4,
-      "Active Directory Configuration": 3,
-      "Incident Management & Response": 6,
-      "SOC & SOAR Capabilities": 4,
-    },
-  },
-  {
-    id: "manufacturing",
-    name: "Manufacturing and Engineering",
-    domainWeights: {
-      "Network Security": 7,
-      "Data Backup and Recovery": 8,
-      Certifications: 3,
-      "Background Verification and Awareness": 4,
-      "Regulatory Compliance": 5,
-      "Organizational Policies": 3,
-      "Physical Perimeter Security": 7,
-      "Endpoint Security": 6,
-      "IoT and OT Network": 10,
-      "Asset Management": 5,
-      "Identity and Access Management": 5,
-      "Vulnerability Assessment and Penetration Test": 6,
-      "Ransomware Supplemental": 7,
-      "Dark Web Exposure": 2,
-      "Change / Patch Cadence": 5,
-      "DLP & DSPM": 4,
-      "Active Directory Configuration": 4,
-      "Incident Management & Response": 5,
-      "SOC & SOAR Capabilities": 4,
-    },
-  },
-  {
-    id: "construction",
-    name: "Construction and Infrastructure",
-    domainWeights: {
-      "Network Security": 6,
-      "Data Backup and Recovery": 7,
-      Certifications: 3,
-      "Background Verification and Awareness": 5,
-      "Regulatory Compliance": 6,
-      "Organizational Policies": 4,
-      "Physical Perimeter Security": 9,
-      "Endpoint Security": 5,
-      "IoT and OT Network": 9,
-      "Asset Management": 6,
-      "Identity and Access Management": 5,
-      "Vulnerability Assessment and Penetration Test": 5,
-      "Ransomware Supplemental": 6,
-      "Dark Web Exposure": 2,
-      "Change / Patch Cadence": 4,
-      "DLP & DSPM": 3,
-      "Active Directory Configuration": 4,
-      "Incident Management & Response": 6,
-      "SOC & SOAR Capabilities": 5,
-    },
-  },
-  {
-    id: "it_technology",
-    name: "IT and Technology Services",
-    domainWeights: {
-      "Network Security": 8,
-      "Data Backup and Recovery": 6,
-      Certifications: 4,
-      "Background Verification and Awareness": 5,
-      "Regulatory Compliance": 6,
-      "Organizational Policies": 4,
-      "Physical Perimeter Security": 2,
-      "Endpoint Security": 7,
-      "IoT and OT Network": 2,
-      "Asset Management": 5,
-      "Identity and Access Management": 9,
-      "Vulnerability Assessment and Penetration Test": 7,
-      "Ransomware Supplemental": 6,
-      "Dark Web Exposure": 4,
-      "Change / Patch Cadence": 6,
-      "DLP & DSPM": 8,
-      "Active Directory Configuration": 6,
-      "Incident Management & Response": 5,
-      "SOC & SOAR Capabilities": 0,
-    },
-  },
-  {
-    id: "healthcare",
-    name: "Healthcare and Pharmaceuticals",
-    domainWeights: {
-      "Network Security": 7,
-      "Data Backup and Recovery": 9,
-      Certifications: 4,
-      "Background Verification and Awareness": 5,
-      "Regulatory Compliance": 9,
-      "Organizational Policies": 4,
-      "Physical Perimeter Security": 5,
-      "Endpoint Security": 6,
-      "IoT and OT Network": 5,
-      "Asset Management": 5,
-      "Identity and Access Management": 7,
-      "Vulnerability Assessment and Penetration Test": 5,
-      "Ransomware Supplemental": 8,
-      "Dark Web Exposure": 4,
-      "Change / Patch Cadence": 4,
-      "DLP & DSPM": 7,
-      "Active Directory Configuration": 3,
-      "Incident Management & Response": 2,
-      "SOC & SOAR Capabilities": 1,
-    },
-  },
-  {
-    id: "retail",
-    name: "Retail and E-Commerce",
-    domainWeights: {
-      "Network Security": 7,
-      "Data Backup and Recovery": 6,
-      Certifications: 3,
-      "Background Verification and Awareness": 4,
-      "Regulatory Compliance": 6,
-      "Organizational Policies": 4,
-      "Physical Perimeter Security": 4,
-      "Endpoint Security": 6,
-      "IoT and OT Network": 3,
-      "Asset Management": 5,
-      "Identity and Access Management": 8,
-      "Vulnerability Assessment and Penetration Test": 6,
-      "Ransomware Supplemental": 6,
-      "Dark Web Exposure": 7,
-      "Change / Patch Cadence": 6,
-      "DLP & DSPM": 7,
-      "Active Directory Configuration": 5,
-      "Incident Management & Response": 5,
-      "SOC & SOAR Capabilities": 2,
-    },
-  },
-  {
-    id: "hospitality",
-    name: "Hospitality and Tourism",
-    domainWeights: {
-      "Network Security": 6,
-      "Data Backup and Recovery": 6,
-      Certifications: 3,
-      "Background Verification and Awareness": 6,
-      "Regulatory Compliance": 5,
-      "Organizational Policies": 4,
-      "Physical Perimeter Security": 7,
-      "Endpoint Security": 8,
-      "IoT and OT Network": 4,
-      "Asset Management": 5,
-      "Identity and Access Management": 7,
-      "Vulnerability Assessment and Penetration Test": 5,
-      "Ransomware Supplemental": 6,
-      "Dark Web Exposure": 6,
-      "Change / Patch Cadence": 5,
-      "DLP & DSPM": 6,
-      "Active Directory Configuration": 4,
-      "Incident Management & Response": 4,
-      "SOC & SOAR Capabilities": 3,
-    },
-  },
-  {
-    id: "logistics",
-    name: "Logistics and Transportation",
-    domainWeights: {
-      "Network Security": 6,
-      "Data Backup and Recovery": 7,
-      Certifications: 3,
-      "Background Verification and Awareness": 5,
-      "Regulatory Compliance": 6,
-      "Organizational Policies": 4,
-      "Physical Perimeter Security": 7,
-      "Endpoint Security": 5,
-      "IoT and OT Network": 8,
-      "Asset Management": 7,
-      "Identity and Access Management": 5,
-      "Vulnerability Assessment and Penetration Test": 5,
-      "Ransomware Supplemental": 6,
-      "Dark Web Exposure": 3,
-      "Change / Patch Cadence": 5,
-      "DLP & DSPM": 4,
-      "Active Directory Configuration": 4,
-      "Incident Management & Response": 4,
-      "SOC & SOAR Capabilities": 4,
-    },
-  },
-  {
-    id: "financial",
-    name: "Financial Services and Banking",
-    domainWeights: {
-      "Network Security": 8,
-      "Data Backup and Recovery": 6,
-      Certifications: 4,
-      "Background Verification and Awareness": 6,
-      "Regulatory Compliance": 10,
-      "Organizational Policies": 5,
-      "Physical Perimeter Security": 3,
-      "Endpoint Security": 6,
-      "IoT and OT Network": 1,
-      "Asset Management": 4,
-      "Identity and Access Management": 10,
-      "Vulnerability Assessment and Penetration Test": 7,
-      "Ransomware Supplemental": 6,
-      "Dark Web Exposure": 7,
-      "Change / Patch Cadence": 5,
-      "DLP & DSPM": 8,
-      "Active Directory Configuration": 2,
-      "Incident Management & Response": 1,
-      "SOC & SOAR Capabilities": 1,
-    },
-  },
+      {
+            "id": "cyber_security",
+            "name": "Cyber Security",
+            "domainWeights": {
+                  "Network Security": 7.0,
+                  "Data Backup and Recovery": 7.0,
+                  "Certifications": 4.0,
+                  "Background Verification and Employee Awareness": 4.0,
+                  "Regulatory Compliance": 5.0,
+                  "Organizational Policies and Procedures": 5.0,
+                  "Physical Perimeter Security": 7.0,
+                  "Endpoint Security": 6.0,
+                  "IoT and OT Network": 9.0,
+                  "Asset Management": 6.0,
+                  "Identity and Access Management": 6.0,
+                  "Vulnerability Assessment and Penetration Test": 5.0,
+                  "Ransomware Supplemental": 5.0,
+                  "Dark Web Exposure": 2.0,
+                  "Change/Patch Cadence": 5.0,
+                  "DLP and DSPM": 4.0,
+                  "Active Directory Configuration": 3.0,
+                  "Incident Management and Response": 6.0,
+                  "SOC and SOAR Capabilities": 4.0
+            }
+      },
+      {
+            "id": "manufacturing_and_engineering",
+            "name": "Manufacturing and Engineering",
+            "domainWeights": {
+                  "Network Security": 7.0,
+                  "Data Backup and Recovery": 8.0,
+                  "Certifications": 3.0,
+                  "Background Verification and Employee Awareness": 4.0,
+                  "Regulatory Compliance": 5.0,
+                  "Organizational Policies and Procedures": 3.0,
+                  "Physical Perimeter Security": 7.0,
+                  "Endpoint Security": 6.0,
+                  "IoT and OT Network": 10.0,
+                  "Asset Management": 5.0,
+                  "Identity and Access Management": 5.0,
+                  "Vulnerability Assessment and Penetration Test": 6.0,
+                  "Ransomware Supplemental": 7.0,
+                  "Dark Web Exposure": 2.0,
+                  "Change/Patch Cadence": 5.0,
+                  "DLP and DSPM": 4.0,
+                  "Active Directory Configuration": 4.0,
+                  "Incident Management and Response": 5.0,
+                  "SOC and SOAR Capabilities": 4.0
+            }
+      },
+      {
+            "id": "construction_and_infrastructure",
+            "name": "Construction and Infrastructure",
+            "domainWeights": {
+                  "Network Security": 6.0,
+                  "Data Backup and Recovery": 7.0,
+                  "Certifications": 3.0,
+                  "Background Verification and Employee Awareness": 5.0,
+                  "Regulatory Compliance": 6.0,
+                  "Organizational Policies and Procedures": 4.0,
+                  "Physical Perimeter Security": 9.0,
+                  "Endpoint Security": 5.0,
+                  "IoT and OT Network": 9.0,
+                  "Asset Management": 6.0,
+                  "Identity and Access Management": 5.0,
+                  "Vulnerability Assessment and Penetration Test": 5.0,
+                  "Ransomware Supplemental": 6.0,
+                  "Dark Web Exposure": 2.0,
+                  "Change/Patch Cadence": 4.0,
+                  "DLP and DSPM": 3.0,
+                  "Active Directory Configuration": 4.0,
+                  "Incident Management and Response": 6.0,
+                  "SOC and SOAR Capabilities": 5.0
+            }
+      },
+      {
+            "id": "it_and_tehnology_services",
+            "name": "IT and Tehnology Services",
+            "domainWeights": {
+                  "Network Security": 8.0,
+                  "Data Backup and Recovery": 6.0,
+                  "Certifications": 4.0,
+                  "Background Verification and Employee Awareness": 5.0,
+                  "Regulatory Compliance": 6.0,
+                  "Organizational Policies and Procedures": 4.0,
+                  "Physical Perimeter Security": 2.0,
+                  "Endpoint Security": 7.0,
+                  "IoT and OT Network": 2.0,
+                  "Asset Management": 5.0,
+                  "Identity and Access Management": 9.0,
+                  "Vulnerability Assessment and Penetration Test": 7.0,
+                  "Ransomware Supplemental": 6.0,
+                  "Dark Web Exposure": 4.0,
+                  "Change/Patch Cadence": 6.0,
+                  "DLP and DSPM": 8.0,
+                  "Active Directory Configuration": 6.0,
+                  "Incident Management and Response": 5.0,
+                  "SOC and SOAR Capabilities": 0.0
+            }
+      },
+      {
+            "id": "healthcare_and_pharmaceuticals",
+            "name": "Healthcare and Pharmaceuticals",
+            "domainWeights": {
+                  "Network Security": 7.0,
+                  "Data Backup and Recovery": 9.0,
+                  "Certifications": 4.0,
+                  "Background Verification and Employee Awareness": 5.0,
+                  "Regulatory Compliance": 9.0,
+                  "Organizational Policies and Procedures": 4.0,
+                  "Physical Perimeter Security": 5.0,
+                  "Endpoint Security": 6.0,
+                  "IoT and OT Network": 5.0,
+                  "Asset Management": 5.0,
+                  "Identity and Access Management": 7.0,
+                  "Vulnerability Assessment and Penetration Test": 5.0,
+                  "Ransomware Supplemental": 8.0,
+                  "Dark Web Exposure": 4.0,
+                  "Change/Patch Cadence": 4.0,
+                  "DLP and DSPM": 7.0,
+                  "Active Directory Configuration": 3.0,
+                  "Incident Management and Response": 2.0,
+                  "SOC and SOAR Capabilities": 1.0
+            }
+      },
+      {
+            "id": "retail_and_e-commerce",
+            "name": "Retail and E-Commerce",
+            "domainWeights": {
+                  "Network Security": 7.0,
+                  "Data Backup and Recovery": 6.0,
+                  "Certifications": 3.0,
+                  "Background Verification and Employee Awareness": 4.0,
+                  "Regulatory Compliance": 6.0,
+                  "Organizational Policies and Procedures": 4.0,
+                  "Physical Perimeter Security": 4.0,
+                  "Endpoint Security": 6.0,
+                  "IoT and OT Network": 3.0,
+                  "Asset Management": 5.0,
+                  "Identity and Access Management": 8.0,
+                  "Vulnerability Assessment and Penetration Test": 6.0,
+                  "Ransomware Supplemental": 6.0,
+                  "Dark Web Exposure": 7.0,
+                  "Change/Patch Cadence": 6.0,
+                  "DLP and DSPM": 7.0,
+                  "Active Directory Configuration": 5.0,
+                  "Incident Management and Response": 5.0,
+                  "SOC and SOAR Capabilities": 2.0
+            }
+      },
+      {
+            "id": "hospitality_and_tourism",
+            "name": "Hospitality and Tourism",
+            "domainWeights": {
+                  "Network Security": 6.0,
+                  "Data Backup and Recovery": 6.0,
+                  "Certifications": 3.0,
+                  "Background Verification and Employee Awareness": 6.0,
+                  "Regulatory Compliance": 5.0,
+                  "Organizational Policies and Procedures": 4.0,
+                  "Physical Perimeter Security": 7.0,
+                  "Endpoint Security": 8.0,
+                  "IoT and OT Network": 4.0,
+                  "Asset Management": 5.0,
+                  "Identity and Access Management": 7.0,
+                  "Vulnerability Assessment and Penetration Test": 5.0,
+                  "Ransomware Supplemental": 6.0,
+                  "Dark Web Exposure": 6.0,
+                  "Change/Patch Cadence": 5.0,
+                  "DLP and DSPM": 6.0,
+                  "Active Directory Configuration": 4.0,
+                  "Incident Management and Response": 4.0,
+                  "SOC and SOAR Capabilities": 3.0
+            }
+      },
+      {
+            "id": "logistics_and_transporation",
+            "name": "Logistics and Transporation",
+            "domainWeights": {
+                  "Network Security": 6.0,
+                  "Data Backup and Recovery": 7.0,
+                  "Certifications": 3.0,
+                  "Background Verification and Employee Awareness": 5.0,
+                  "Regulatory Compliance": 6.0,
+                  "Organizational Policies and Procedures": 4.0,
+                  "Physical Perimeter Security": 7.0,
+                  "Endpoint Security": 5.0,
+                  "IoT and OT Network": 8.0,
+                  "Asset Management": 7.0,
+                  "Identity and Access Management": 5.0,
+                  "Vulnerability Assessment and Penetration Test": 5.0,
+                  "Ransomware Supplemental": 6.0,
+                  "Dark Web Exposure": 3.0,
+                  "Change/Patch Cadence": 5.0,
+                  "DLP and DSPM": 4.0,
+                  "Active Directory Configuration": 4.0,
+                  "Incident Management and Response": 6.0,
+                  "SOC and SOAR Capabilities": 4.0
+            }
+      },
+      {
+            "id": "financial_services_and_banking",
+            "name": "Financial Services and Banking",
+            "domainWeights": {
+                  "Network Security": 8.0,
+                  "Data Backup and Recovery": 6.0,
+                  "Certifications": 4.0,
+                  "Background Verification and Employee Awareness": 6.0,
+                  "Regulatory Compliance": 10.0,
+                  "Organizational Policies and Procedures": 5.0,
+                  "Physical Perimeter Security": 3.0,
+                  "Endpoint Security": 6.0,
+                  "IoT and OT Network": 1.0,
+                  "Asset Management": 4.0,
+                  "Identity and Access Management": 10.0,
+                  "Vulnerability Assessment and Penetration Test": 7.0,
+                  "Ransomware Supplemental": 6.0,
+                  "Dark Web Exposure": 7.0,
+                  "Change/Patch Cadence": 5.0,
+                  "DLP and DSPM": 8.0,
+                  "Active Directory Configuration": 2.0,
+                  "Incident Management and Response": 1.0,
+                  "SOC and SOAR Capabilities": 1.0
+            }
+      }
 ]
 
 const ALL_QUESTIONS: UnderwritingQuestion[] = [
-  // Network Security (5 questions)
-  {
-    id: "NS-001",
-    domain: "Network Security",
-    text: "Is there a documented network architecture and design?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-  {
-    id: "NS-002",
-    domain: "Network Security",
-    text: "Are firewalls deployed at all network perimeters?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "NS-003",
-    domain: "Network Security",
-    text: "Is network segmentation implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "NS-004",
-    domain: "Network Security",
-    text: "Are VPNs used for remote access?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "NS-005",
-    domain: "Network Security",
-    text: "Is DNS security (DNSSEC) implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Data Backup & Recovery (5 questions)
-  {
-    id: "DBR-001",
-    domain: "Data Backup and Recovery",
-    text: "Is there a formal, tested backup and recovery plan?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-  {
-    id: "DBR-002",
-    domain: "Data Backup and Recovery",
-    text: "Are backups performed at least weekly?",
-    type: "frequency",
-    response: 0,
-    isKiller: false,
-    options: [
-      { label: "Never", value: 0 },
-      { label: "Annually", value: 0.25 },
-      { label: "Semi-annually", value: 0.5 },
-      { label: "Quarterly", value: 0.75 },
-      { label: "Weekly or more", value: 1 },
-    ],
-  },
-  {
-    id: "DBR-003",
-    domain: "Data Backup and Recovery",
-    text: "Are backups stored offsite?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DBR-004",
-    domain: "Data Backup and Recovery",
-    text: "Is backup restoration tested regularly?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DBR-005",
-    domain: "Data Backup and Recovery",
-    text: "Are backup systems encrypted?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Certifications (5 questions)
-  {
-    id: "CERT-001",
-    domain: "Certifications",
-    text: "Does the organization hold ISO 27001 certification?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CERT-002",
-    domain: "Certifications",
-    text: "Does the organization hold SOC 2 Type II certification?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CERT-003",
-    domain: "Certifications",
-    text: "Does the organization hold industry-specific certifications?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CERT-004",
-    domain: "Certifications",
-    text: "Are certifications maintained with annual audits?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CERT-005",
-    domain: "Certifications",
-    text: "Does the organization hold PCI DSS certification (if applicable)?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Background Verification & Awareness (5 questions)
-  {
-    id: "BVA-001",
-    domain: "Background Verification and Awareness",
-    text: "Are background checks conducted for all employees?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "BVA-002",
-    domain: "Background Verification and Awareness",
-    text: "Is security awareness training provided annually?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "BVA-003",
-    domain: "Background Verification and Awareness",
-    text: "Is phishing simulation testing performed?",
-    type: "frequency",
-    response: 0,
-    isKiller: false,
-    options: [
-      { label: "Never", value: 0 },
-      { label: "Annually", value: 0.25 },
-      { label: "Semi-annually", value: 0.5 },
-      { label: "Quarterly", value: 0.75 },
-      { label: "Monthly or more", value: 1 },
-    ],
-  },
-  {
-    id: "BVA-004",
-    domain: "Background Verification and Awareness",
-    text: "Is data handling training conducted?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "BVA-005",
-    domain: "Background Verification and Awareness",
-    text: "Are vendors/contractors vetted for security compliance?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Regulatory Compliance (5 questions)
-  {
-    id: "RC-001",
-    domain: "Regulatory Compliance",
-    text: "Does the organization have a documented compliance program?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RC-002",
-    domain: "Regulatory Compliance",
-    text: "Are compliance audits conducted annually?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RC-003",
-    domain: "Regulatory Compliance",
-    text: "Is there a data privacy policy aligned with GDPR/local laws?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RC-004",
-    domain: "Regulatory Compliance",
-    text: "Are breach notification procedures documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RC-005",
-    domain: "Regulatory Compliance",
-    text: "Is a Data Protection Officer or equivalent role assigned?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Organizational Policies (5 questions)
-  {
-    id: "OP-001",
-    domain: "Organizational Policies",
-    text: "Is there a documented information security policy?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "OP-002",
-    domain: "Organizational Policies",
-    text: "Is an access control policy documented and enforced?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "OP-003",
-    domain: "Organizational Policies",
-    text: "Is an incident response policy in place?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "OP-004",
-    domain: "Organizational Policies",
-    text: "Is a change management policy documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "OP-005",
-    domain: "Organizational Policies",
-    text: "Are policies reviewed and updated at least annually?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Physical Perimeter Security (5 questions)
-  {
-    id: "PPS-001",
-    domain: "Physical Perimeter Security",
-    text: "Is the data center/server room physically protected?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "PPS-002",
-    domain: "Physical Perimeter Security",
-    text: "Is access to server rooms logged and monitored?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "PPS-003",
-    domain: "Physical Perimeter Security",
-    text: "Are surveillance cameras deployed?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "PPS-004",
-    domain: "Physical Perimeter Security",
-    text: "Is badge/biometric access control implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "PPS-005",
-    domain: "Physical Perimeter Security",
-    text: "Are environmental controls (HVAC, fire suppression) in place?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Endpoint Security (5 questions)
-  {
-    id: "ES-001",
-    domain: "Endpoint Security",
-    text: "Is anti-malware software deployed on all endpoints?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ES-002",
-    domain: "Endpoint Security",
-    text: "Is EDR (Endpoint Detection and Response) deployed?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ES-003",
-    domain: "Endpoint Security",
-    text: "Is full disk encryption enabled on all endpoints?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ES-004",
-    domain: "Endpoint Security",
-    text: "Are antivirus updates automatic and tested?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ES-005",
-    domain: "Endpoint Security",
-    text: "Is USB and removable media restricted or monitored?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // IoT & OT Network (5 questions)
-  {
-    id: "IOT-001",
-    domain: "IoT and OT Network",
-    text: "Is there an inventory of all IoT/OT devices?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IOT-002",
-    domain: "IoT and OT Network",
-    text: "Are IoT/OT devices segmented from IT networks?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IOT-003",
-    domain: "IoT and OT Network",
-    text: "Are IoT/OT firmware updates managed and tested?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IOT-004",
-    domain: "IoT and OT Network",
-    text: "Are default credentials changed on all IoT/OT devices?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IOT-005",
-    domain: "IoT and OT Network",
-    text: "Is monitoring/anomaly detection enabled for IoT/OT networks?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Asset Management (5 questions)
-  {
-    id: "AM-001",
-    domain: "Asset Management",
-    text: "Is a comprehensive asset inventory maintained?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "AM-002",
-    domain: "Asset Management",
-    text: "Are assets classified by sensitivity level?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "AM-003",
-    domain: "Asset Management",
-    text: "Is asset disposal/decommissioning documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "AM-004",
-    domain: "Asset Management",
-    text: "Are asset audits performed at least annually?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "AM-005",
-    domain: "Asset Management",
-    text: "Is hardware lifecycle management documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Identity & Access Management (6 questions)
-  {
-    id: "IAM-001",
-    domain: "Identity and Access Management",
-    text: "Is Multi-Factor Authentication (MFA) enforced for all users?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-  {
-    id: "IAM-002",
-    domain: "Identity and Access Management",
-    text: "Is Role-Based Access Control (RBAC) implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IAM-003",
-    domain: "Identity and Access Management",
-    text: "Are privileged accounts monitored and audited?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IAM-004",
-    domain: "Identity and Access Management",
-    text: "Is password policy enforced (complexity, expiration)?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IAM-005",
-    domain: "Identity and Access Management",
-    text: "Are inactive accounts disabled after 30 days?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IAM-006",
-    domain: "Identity and Access Management",
-    text: "Is Privileged Access Management (PAM) deployed?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Vulnerability Assessment & Penetration Test (5 questions)
-  {
-    id: "VAPT-001",
-    domain: "Vulnerability Assessment and Penetration Test",
-    text: "Are vulnerability scans performed at least quarterly?",
-    type: "frequency",
-    response: 0,
-    isKiller: false,
-    options: [
-      { label: "Never", value: 0 },
-      { label: "Annually", value: 0.25 },
-      { label: "Semi-annually", value: 0.5 },
-      { label: "Quarterly", value: 0.75 },
-      { label: "Monthly or more", value: 1 },
-    ],
-  },
-  {
-    id: "VAPT-002",
-    domain: "Vulnerability Assessment and Penetration Test",
-    text: "Is penetration testing performed annually?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "VAPT-003",
-    domain: "Vulnerability Assessment and Penetration Test",
-    text: "Is a vulnerability management program documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "VAPT-004",
-    domain: "Vulnerability Assessment and Penetration Test",
-    text: "Is a SLA for patching critical vulnerabilities defined?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "VAPT-005",
-    domain: "Vulnerability Assessment and Penetration Test",
-    text: "Are findings tracked and remediated with evidence?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Ransomware Supplemental (5 questions)
-  {
-    id: "RS-001",
-    domain: "Ransomware Supplemental",
-    text: "Is ransomware-specific training conducted?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RS-002",
-    domain: "Ransomware Supplemental",
-    text: "Are backups air-gapped or immutable?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RS-003",
-    domain: "Ransomware Supplemental",
-    text: "Is behavior-based threat detection deployed?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RS-004",
-    domain: "Ransomware Supplemental",
-    text: "Is ransomware response plan documented and tested?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "RS-005",
-    domain: "Ransomware Supplemental",
-    text: "Are suspicious file executions monitored and blocked?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-
-  // Dark Web Exposure (5 questions)
-  {
-    id: "DWE-001",
-    domain: "Dark Web Exposure",
-    text: "Is dark web monitoring for compromised credentials active?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DWE-002",
-    domain: "Dark Web Exposure",
-    text: "Is threat intelligence integrated into security operations?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DWE-003",
-    domain: "Dark Web Exposure",
-    text: "Is a breach/incident response retainer in place?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DWE-004",
-    domain: "Dark Web Exposure",
-    text: "Are social media/brand mentions monitored?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DWE-005",
-    domain: "Dark Web Exposure",
-    text: "Is a crisis communication plan documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Change / Patch Cadence (5 questions)
-  {
-    id: "CPC-001",
-    domain: "Change / Patch Cadence",
-    text: "Is a formal patch management process documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CPC-002",
-    domain: "Change / Patch Cadence",
-    text: "Are critical patches applied within 48 hours?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-  {
-    id: "CPC-003",
-    domain: "Change / Patch Cadence",
-    text: "Is patch testing performed before production deployment?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CPC-004",
-    domain: "Change / Patch Cadence",
-    text: "Is patch deployment tracked and audited?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "CPC-005",
-    domain: "Change / Patch Cadence",
-    text: "Is patch compliance monitored and reported?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // DLP & DSPM (5 questions)
-  {
-    id: "DLP-001",
-    domain: "DLP & DSPM",
-    text: "Is Data Loss Prevention (DLP) software deployed?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DLP-002",
-    domain: "DLP & DSPM",
-    text: "Is database activity monitoring (DAM) in place?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DLP-003",
-    domain: "DLP & DSPM",
-    text: "Are data classification standards defined?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DLP-004",
-    domain: "DLP & DSPM",
-    text: "Is cloud data security posture management (DSPM) implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "DLP-005",
-    domain: "DLP & DSPM",
-    text: "Are sensitive data exports monitored and logged?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Active Directory Configuration (5 questions)
-  {
-    id: "ADC-001",
-    domain: "Active Directory Configuration",
-    text: "Is Active Directory hardening implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ADC-002",
-    domain: "Active Directory Configuration",
-    text: "Are inactive AD accounts disabled?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ADC-003",
-    domain: "Active Directory Configuration",
-    text: "Is AD access monitored and audited?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ADC-004",
-    domain: "Active Directory Configuration",
-    text: "Are nested group memberships audited?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "ADC-005",
-    domain: "Active Directory Configuration",
-    text: "Is AD schema/security group audit logging enabled?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-
-  // Incident Management & Response (5 questions)
-  {
-    id: "IMR-001",
-    domain: "Incident Management & Response",
-    text: "Is an incident response team designated?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IMR-002",
-    domain: "Incident Management & Response",
-    text: "Is incident response testing performed annually?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IMR-003",
-    domain: "Incident Management & Response",
-    text: "Is forensic evidence collection documented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IMR-004",
-    domain: "Incident Management & Response",
-    text: "Is an escalation matrix defined?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "IMR-005",
-    domain: "Incident Management & Response",
-    text: "Are past incidents documented and lessons learned?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-
-  // SOC & SOAR Capabilities (5 questions)
-  {
-    id: "SOC-001",
-    domain: "SOC & SOAR Capabilities",
-    text: "Is a Security Operations Center (SOC) or equivalent in place?",
-    type: "binary",
-    response: 0,
-    isKiller: true,
-    defaultIsKiller: true,
-  },
-  {
-    id: "SOC-002",
-    domain: "SOC & SOAR Capabilities",
-    text: "Is Security Information Event Management (SIEM) deployed?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "SOC-003",
-    domain: "SOC & SOAR Capabilities",
-    text: "Is log aggregation from all systems enabled?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "SOC-004",
-    domain: "SOC & SOAR Capabilities",
-    text: "Is SOAR (Security Orchestration) implemented?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
-  {
-    id: "SOC-005",
-    domain: "SOC & SOAR Capabilities",
-    text: "Are alerts monitored 24x7 or documented SLA?",
-    type: "binary",
-    response: 0,
-    isKiller: false,
-  },
+      {
+            id: "NS-001",
+            domain: "Network Security",
+            text: "Is Firewall implemented?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-002",
+            domain: "Network Security",
+            text: "Is DDoS Protection implemented?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-003",
+            domain: "Network Security",
+            text: "Is WAF (Web Application Firewall) implemented?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-004",
+            domain: "Network Security",
+            text: "Is IDS/IPS implemented?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-005",
+            domain: "Network Security",
+            text: "Is NGFW (Next-Gen Firewall) implemented?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-006",
+            domain: "Network Security",
+            text: "Are network segmentation and VLANs used to limit access?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-007",
+            domain: "Network Security",
+            text: "Are VPNs used for secure remote access?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-008",
+            domain: "Network Security",
+            text: "Is wireless network security implemented with encryption?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-009",
+            domain: "Network Security",
+            text: "Is there a process to review the firewall rules?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Quarterly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Half-yearly",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "NS-010",
+            domain: "Network Security",
+            text: "How often do you perform review of network architecture?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Quarterly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Half-yearly",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-001",
+            domain: "Data Backup and Recovery",
+            text: "Are regular backups performed on critical systems?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-002",
+            domain: "Data Backup and Recovery",
+            text: "Are backups encrypted during storage and transmission?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-003",
+            domain: "Data Backup and Recovery",
+            text: "Are backup procedures tested regularly for recovery?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-004",
+            domain: "Data Backup and Recovery",
+            text: "Is there a defined Recovery Point Objective (RPO) and Recovery Time Objective (RTO)?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-005",
+            domain: "Data Backup and Recovery",
+            text: "Are cloud-based backups in place?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-006",
+            domain: "Data Backup and Recovery",
+            text: "Are backups stored in geographically separate locations?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-007",
+            domain: "Data Backup and Recovery",
+            text: "Is there a disaster recovery plan in place?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-008",
+            domain: "Data Backup and Recovery",
+            text: "Are offline backups stored off-site in place?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DBR-009",
+            domain: "Data Backup and Recovery",
+            text: "Is RTO for critical systems <24 hours?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "CERT-001",
+            domain: "Certifications",
+            text: "Is your organization certified for ISO/IEC 27001?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "CERT-002",
+            domain: "Certifications",
+            text: "Is your organization certified for NIST?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "CERT-003",
+            domain: "Certifications",
+            text: "Is your organization certified for SOC 2?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "CERT-004",
+            domain: "Certifications",
+            text: "Is your organization certified for HIPAA?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "CERT-005",
+            domain: "Certifications",
+            text: "Is your organization certified for PCI DSS?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-001",
+            domain: "Background Verification and Employee Awareness",
+            text: "Do you perform background verification of employees/subcontractors before onboarding?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-002",
+            domain: "Background Verification and Employee Awareness",
+            text: "How often are security awareness trainings conducted?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Half-yearly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-003",
+            domain: "Background Verification and Employee Awareness",
+            text: "Is Password Management and MFA covered in training?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-004",
+            domain: "Background Verification and Employee Awareness",
+            text: "Is Social Media security covered in training?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-005",
+            domain: "Background Verification and Employee Awareness",
+            text: "Is Data Classification covered in training?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-006",
+            domain: "Background Verification and Employee Awareness",
+            text: "Is Phishing, Vishing, SMiShing covered in training?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-007",
+            domain: "Background Verification and Employee Awareness",
+            text: "Does applicant provide security awareness training to employees at least annually?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "BV-008",
+            domain: "Background Verification and Employee Awareness",
+            text: "Does applicant use simulated phishing attacks to test employees?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RC-001",
+            domain: "Regulatory Compliance",
+            text: "Do you comply with applicable regulatory guidelines?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RC-002",
+            domain: "Regulatory Compliance",
+            text: "Are data protection laws (GDPR, DPDP) implemented?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RC-003",
+            domain: "Regulatory Compliance",
+            text: "Is there a documented data retention policy?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RC-004",
+            domain: "Regulatory Compliance",
+            text: "Are regulatory audit reports current?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "OP-001",
+            domain: "Organizational Policies and Procedures",
+            text: "Do you have a Cyber Crisis Management Plan?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "OP-002",
+            domain: "Organizational Policies and Procedures",
+            text: "Do you have an Information Technology Policy?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "OP-003",
+            domain: "Organizational Policies and Procedures",
+            text: "Do you have an Information Security Policy?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "OP-004",
+            domain: "Organizational Policies and Procedures",
+            text: "Do you have an Incident Management Policy?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "OP-005",
+            domain: "Organizational Policies and Procedures",
+            text: "Do you have a Data Protection & Privacy Policy?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "OP-006",
+            domain: "Organizational Policies and Procedures",
+            text: "Do you have a Business Continuity Plan (BCP)?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PPS-001",
+            domain: "Physical Perimeter Security",
+            text: "Are physical security measures in place to protect data centers?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PPS-002",
+            domain: "Physical Perimeter Security",
+            text: "Are access control systems (keycards, biometrics, CCTV) implemented for secure areas?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PPS-003",
+            domain: "Physical Perimeter Security",
+            text: "Is there a policy for securing physical network ports?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PPS-004",
+            domain: "Physical Perimeter Security",
+            text: "Are intrusion detection systems in place for physical premises?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PPS-005",
+            domain: "Physical Perimeter Security",
+            text: "Are periodic physical security audits conducted?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ES-001",
+            domain: "Endpoint Security",
+            text: "Are endpoint devices configured with encryption?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ES-002",
+            domain: "Endpoint Security",
+            text: "How often are patches reviewed for endpoint devices?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Quarterly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Half-yearly",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ES-003",
+            domain: "Endpoint Security",
+            text: "Are mobile devices enrolled in a Mobile Device Management (MDM) solution?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ES-004",
+            domain: "Endpoint Security",
+            text: "Is there a process for securing and wiping lost/stolen devices?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ES-005",
+            domain: "Endpoint Security",
+            text: "Do all workstations have antivirus with heuristic capabilities?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ES-006",
+            domain: "Endpoint Security",
+            text: "Are endpoint security tools with behavioral detection deployed?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IOT-001",
+            domain: "IoT and OT Network",
+            text: "Is there an inventory of all IoT and OT devices connected to the network?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IOT-002",
+            domain: "IoT and OT Network",
+            text: "How often are IoT and OT network security assessments conducted?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Monthly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Quarterly",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IOT-003",
+            domain: "IoT and OT Network",
+            text: "Are there network segmentation strategies to isolate IoT and OT devices?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IOT-004",
+            domain: "IoT and OT Network",
+            text: "Is there monitoring of IoT/OT device communications?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IOT-005",
+            domain: "IoT and OT Network",
+            text: "Are default credentials changed on all IoT devices?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "AM-001",
+            domain: "Asset Management",
+            text: "Do you maintain a comprehensive inventory of all assets?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "AM-002",
+            domain: "Asset Management",
+            text: "Do you maintain Asset Criticality in inventory?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "AM-003",
+            domain: "Asset Management",
+            text: "Do you maintain Asset Owner in inventory?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "AM-004",
+            domain: "Asset Management",
+            text: "Do you maintain Asset Provisioning and EOL dates?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "AM-005",
+            domain: "Asset Management",
+            text: "Do you follow a step-by-step approach for asset provisioning/deprovisioning?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IAM-001",
+            domain: "Identity and Access Management",
+            text: "Is multi-factor authentication implemented for all critical systems?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IAM-002",
+            domain: "Identity and Access Management",
+            text: "How often are access rights reviewed?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Monthly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Quarterly",
+                        "value": 0.9
+                  },
+                  {
+                        "label": "Half-yearly",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Never",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IAM-003",
+            domain: "Identity and Access Management",
+            text: "Are privileged access accounts monitored using PAM solution?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IAM-004",
+            domain: "Identity and Access Management",
+            text: "Is there an account lockout policy for failed login attempts?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IAM-005",
+            domain: "Identity and Access Management",
+            text: "Are access permissions revoked immediately upon employee termination?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "VA-001",
+            domain: "Vulnerability Assessment and Penetration Test",
+            text: "Do you have automated tools for periodic scanning of network components?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "VA-002",
+            domain: "Vulnerability Assessment and Penetration Test",
+            text: "How often do you perform VA-PT assessment through external auditor?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Quarterly",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "VA-003",
+            domain: "Vulnerability Assessment and Penetration Test",
+            text: "Are identified vulnerabilities mitigated in a defined timeframe?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "VA-004",
+            domain: "Vulnerability Assessment and Penetration Test",
+            text: "Is there a risk-based prioritization for vulnerability remediation?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RS-001",
+            domain: "Ransomware Supplemental",
+            text: "Is phishing success ratio less than 15% on last test?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RS-002",
+            domain: "Ransomware Supplemental",
+            text: "Does applicant tag/mark e-mails from outside the organization?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RS-003",
+            domain: "Ransomware Supplemental",
+            text: "Is there a process to report suspicious e-mails to security team?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RS-004",
+            domain: "Ransomware Supplemental",
+            text: "Is there a documented process to respond to phishing campaigns?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "RS-005",
+            domain: "Ransomware Supplemental",
+            text: "Does email filtering block known malicious attachments?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DW-001",
+            domain: "Dark Web Exposure",
+            text: "How frequently are dark web scans conducted?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Daily",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Weekly",
+                        "value": 0.9
+                  },
+                  {
+                        "label": "Monthly",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DW-002",
+            domain: "Dark Web Exposure",
+            text: "Are dark web monitoring alerts reviewed regularly?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DW-003",
+            domain: "Dark Web Exposure",
+            text: "Is there a process to respond to dark web exposure?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PC-001",
+            domain: "Change/Patch Cadence",
+            text: "Is there a documented change/patch management policy?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PC-002",
+            domain: "Change/Patch Cadence",
+            text: "Is target time to deploy critical patches <24 hours?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "PC-003",
+            domain: "Change/Patch Cadence",
+            text: "Is year-to-date critical patch compliance >90%?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DLP-001",
+            domain: "DLP and DSPM",
+            text: "Is there a DLP solution implemented to monitor sensitive data?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "DLP-002",
+            domain: "DLP and DSPM",
+            text: "How often is DLP policy reviewed and updated?",
+            type: "frequency",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Bi-annually",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "Annually",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ADC-001",
+            domain: "Active Directory Configuration",
+            text: "Is Active Directory (AD) auditing enabled?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "ADC-002",
+            domain: "Active Directory Configuration",
+            text: "Are service accounts managed with least privilege?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IR-001",
+            domain: "Incident Management and Response",
+            text: "How is incident management and response process executed?",
+            type: "multiple",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Both",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "IR_only",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "SOC_only",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Neither",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "IR-002",
+            domain: "Incident Management and Response",
+            text: "Are historical incident statistics maintained?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-001",
+            domain: "SOC and SOAR Capabilities",
+            text: "What is SOC monitoring capability?",
+            type: "multiple",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Internal_24x7",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "3rd_party_24x7",
+                        "value": 0.75
+                  },
+                  {
+                        "label": "Partial_24x7",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "No_SOC",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-002",
+            domain: "SOC and SOAR Capabilities",
+            text: "Is there a mechanism for real-time alerting and escalation?",
+            type: "binary",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Yes",
+                        "value": 1.0
+                  },
+                  {
+                        "label": "No",
+                        "value": 0.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-003",
+            domain: "SOC and SOAR Capabilities",
+            text: "Is external reporting responsibility defined?",
+            type: "governance",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Not defined",
+                        "value": 0.0
+                  },
+                  {
+                        "label": "Informal",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Formal",
+                        "value": 1.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-004",
+            domain: "SOC and SOAR Capabilities",
+            text: "Is log monitoring conducted 24\u00d77?",
+            type: "coverage",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "None",
+                        "value": 0.0
+                  },
+                  {
+                        "label": "Partial",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Full",
+                        "value": 1.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-005",
+            domain: "SOC and SOAR Capabilities",
+            text: "Are OT logs integrated where feasible?",
+            type: "coverage",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "None",
+                        "value": 0.0
+                  },
+                  {
+                        "label": "Partial",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Full",
+                        "value": 1.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-006",
+            domain: "SOC and SOAR Capabilities",
+            text: "Are alerts triaged with defined SLAs?",
+            type: "governance",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "Not defined",
+                        "value": 0.0
+                  },
+                  {
+                        "label": "Informal",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Formal",
+                        "value": 1.0
+                  }
+            ],
+      },
+      {
+            id: "SOC-007",
+            domain: "SOC and SOAR Capabilities",
+            text: "Is incident automation or playbooks used?",
+            type: "coverage",
+            response: -1,
+            isKiller: false,
+            options: [
+                  {
+                        "label": "None",
+                        "value": 0.0
+                  },
+                  {
+                        "label": "Partial",
+                        "value": 0.5
+                  },
+                  {
+                        "label": "Full",
+                        "value": 1.0
+                  }
+            ],
+      },
 ]
 
-export function getQuestionWeight(isKiller: boolean): number {
-  return isKiller ? 3 : 1
-}
+export const DOMAINS: Domain[] = [
+      {
+            id: "network_security",
+            name: "Network Security",
+            explanation: "This section assesses your first line of defense against external threats.",
+            defaultWeight: 7.0,
+            activeWeight: 7.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Network Security"),
+      },
+      {
+            id: "data_backup_and_recovery",
+            name: "Data Backup and Recovery",
+            explanation: "This helps us understand recovery capability after an attack.",
+            defaultWeight: 7.0,
+            activeWeight: 7.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Data Backup and Recovery"),
+      },
+      {
+            id: "certifications",
+            name: "Certifications",
+            explanation: "This validates your commitment to industry-standard security practices.",
+            defaultWeight: 4.0,
+            activeWeight: 4.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Certifications"),
+      },
+      {
+            id: "background_verification_and_employee_awareness",
+            name: "Background Verification and Employee Awareness",
+            explanation: "This assesses your personnel security and insider threat mitigation.",
+            defaultWeight: 4.0,
+            activeWeight: 4.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Background Verification and Employee Awareness"),
+      },
+      {
+            id: "regulatory_compliance",
+            name: "Regulatory Compliance",
+            explanation: "This evaluates adherence to legal and regulatory security requirements.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Regulatory Compliance"),
+      },
+      {
+            id: "organizational_policies_and_procedures",
+            name: "Organizational Policies and Procedures",
+            explanation: "This checks for established rules and procedures governing security.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Organizational Policies and Procedures"),
+      },
+      {
+            id: "physical_perimeter_security",
+            name: "Physical Perimeter Security",
+            explanation: "This assesses protection of physical assets and facilities.",
+            defaultWeight: 7.0,
+            activeWeight: 7.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Physical Perimeter Security"),
+      },
+      {
+            id: "endpoint_security",
+            name: "Endpoint Security",
+            explanation: "This evaluates protection of individual devices connecting to your network.",
+            defaultWeight: 6.0,
+            activeWeight: 6.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Endpoint Security"),
+      },
+      {
+            id: "iot_and_ot_network",
+            name: "IoT and OT Network",
+            explanation: "This assesses security of connected devices and operational technology.",
+            defaultWeight: 9.0,
+            activeWeight: 9.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "IoT and OT Network"),
+      },
+      {
+            id: "asset_management",
+            name: "Asset Management",
+            explanation: "This evaluates how you track and manage your IT assets.",
+            defaultWeight: 6.0,
+            activeWeight: 6.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Asset Management"),
+      },
+      {
+            id: "identity_and_access_management",
+            name: "Identity and Access Management",
+            explanation: "This assesses how you control user access to systems and data.",
+            defaultWeight: 6.0,
+            activeWeight: 6.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Identity and Access Management"),
+      },
+      {
+            id: "vulnerability_assessment_and_penetration_test",
+            name: "Vulnerability Assessment and Penetration Test",
+            explanation: "This evaluates your proactive identification of security weaknesses.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Vulnerability Assessment and Penetration Test"),
+      },
+      {
+            id: "ransomware_supplemental",
+            name: "Ransomware Supplemental",
+            explanation: "This section helps assess protection against ransomware.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Ransomware Supplemental"),
+      },
+      {
+            id: "dark_web_exposure",
+            name: "Dark Web Exposure",
+            explanation: "This checks for leaked credentials or data on the dark web.",
+            defaultWeight: 2.0,
+            activeWeight: 2.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Dark Web Exposure"),
+      },
+      {
+            id: "change_patch_cadence",
+            name: "Change/Patch Cadence",
+            explanation: "This evaluates how quickly you update systems to fix vulnerabilities.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Change/Patch Cadence"),
+      },
+      {
+            id: "dlp_and_dspm",
+            name: "DLP and DSPM",
+            explanation: "This assesses measures to prevent sensitive data loss.",
+            defaultWeight: 4.0,
+            activeWeight: 4.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "DLP and DSPM"),
+      },
+      {
+            id: "active_directory_configuration",
+            name: "Active Directory Configuration",
+            explanation: "This evaluates the security of your central user and computer management.",
+            defaultWeight: 3.0,
+            activeWeight: 3.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Active Directory Configuration"),
+      },
+      {
+            id: "incident_management_and_response",
+            name: "Incident Management and Response",
+            explanation: "This assesses your readiness to respond to security incidents.",
+            defaultWeight: 6.0,
+            activeWeight: 6.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Incident Management and Response"),
+      },
+      {
+            id: "soc_and_soar_capabilities",
+            name: "SOC and SOAR Capabilities",
+            explanation: "This evaluates your real-time threat monitoring and automated response capabilities.",
+            defaultWeight: 4.0,
+            activeWeight: 4.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "SOC and SOAR Capabilities"),
+      },
+]
 
-export function getWeightedScore(baseScore: number, isKiller: boolean): number {
-  return baseScore * getQuestionWeight(isKiller)
-}
-
-export function getMaxDomainScore(domain: Domain): number {
-  return domain.questions.reduce((sum, q) => {
-    return sum + getQuestionWeight(q.isKiller)
-  }, 0)
-}
-
-export function getDomainScore(domain: Domain): { score: number; earned: number; max: number } {
-  const earned = domain.questions.reduce((sum, q) => {
-    return sum + getWeightedScore(q.response, q.isKiller)
-  }, 0)
-
-  const max = getMaxDomainScore(domain)
-
-  if (max === 0) return { score: 0, earned: 0, max: 0 }
-
-  return {
-    score: (earned / max) * 100,
-    earned,
-    max,
-  }
-}
-
-export function getOverallScore(domains: Domain[]): number {
-  return domains.reduce((total, domain) => {
-    const { score } = getDomainScore(domain)
-    return total + score * (domain.weight / 100)
-  }, 0)
-}
-
-export function checkAutoDecline(domains: Domain[]): { declined: boolean; failedKillers: string[] } {
-  const failedKillers: string[] = []
-
-  domains.forEach((domain) => {
-    domain.questions.forEach((q) => {
-      if (q.isKiller && q.response === 0) {
-        failedKillers.push(`${q.id}: ${q.text}`)
-      }
-    })
-  })
-
-  return {
-    declined: failedKillers.length >= 2,
-    failedKillers,
-  }
-}
-
-export function getRiskTier(score: number, autoDeclined: boolean): { tier: "A" | "B" | "C" | "D"; premium: string } {
-  if (autoDeclined) {
-    return { tier: "D", premium: "Declined" }
-  }
-
-  let riskTier: "A" | "B" | "C" | "D" = "D"
-  if (score >= 90) riskTier = "A"
-  else if (score >= 75) riskTier = "B"
-  else if (score >= 60) riskTier = "C"
-  else riskTier = "D"
-
-  return { tier: riskTier, premium: getPremiumLoading(riskTier) }
-}
-
-function getPremiumLoading(riskTier: "A" | "B" | "C" | "D"): string {
-  switch (riskTier) {
-    case "A":
-      return "Base Rate"
-    case "B":
-      return "+20%"
-    case "C":
-      return "+50%"
-    case "D":
-      return "Declined"
-    default:
-      return ""
-  }
-}
 
 export function calculateScore(domains: Domain[]): ScoringResult {
-  const domainScores: ScoringResult["domainScores"] = []
-  let totalWeightedScore = 0
-  let totalWeight = 0
-  const failedKillers: Array<{ id: string; text: string }> = []
+      const domainScores: ScoringResult["domainScores"] = []
+      let totalContribution = 0
+      const failedKillers: Array<{ id: string; text: string; domain: string }> = []
 
-  for (const domain of domains) {
-    let domainEarnedScore = 0
-    let domainMaxScore = 0
+      for (const domain of domains) {
+            let domainEarnedWeightedScore = 0
+            let domainMaxPossibleWeightedScore = 0
 
-    for (const question of domain.questions) {
-      const questionWeight = question.isKiller ? 3 : 1
-      const maxValue = question.maxValue ?? 1
-      const clampedResponse = Math.min(question.response, maxValue)
-      const questionEarnedScore = clampedResponse * questionWeight
-      const questionMaxScore = maxValue * questionWeight
+            for (const question of domain.questions) {
+                  const questionWeight = question.isKiller ? 3 : 1
+                  const maxValue = 1.0 // Standardized max base score in Excel is 1
 
-      domainEarnedScore += questionEarnedScore
-      domainMaxScore += questionMaxScore
+                  // Treat -1 (Unanswered) as 0 for scoring purposes
+                  const effectiveResponse = question.response === -1 ? 0 : question.response
 
-      // Track failed killers
-      if (question.isKiller && question.response === 0) {
-        failedKillers.push({ id: question.id, text: question.text })
+                  domainEarnedWeightedScore += effectiveResponse * questionWeight
+                  domainMaxPossibleWeightedScore += maxValue * questionWeight
+
+                  // Only trigger Killer Failure if EXPLICITLY "0" (No)
+                  // -1 (Unanswered) does not trigger failure yet
+                  if (question.isKiller && question.response === 0) {
+                        failedKillers.push({ id: question.id, text: question.text, domain: question.domain })
+                  }
+            }
+
+            const domainScoreRatio = domainMaxPossibleWeightedScore > 0 ? domainEarnedWeightedScore / domainMaxPossibleWeightedScore : 0
+            const domainAchievement = domainScoreRatio * 100
+            const contribution = (domainAchievement * domain.activeWeight) / 100
+
+            domainScores.push({
+                  domain: domain.name,
+                  score: Math.round(domainAchievement * 100) / 100,
+                  defaultWeight: domain.defaultWeight,
+                  activeWeight: domain.activeWeight,
+                  contribution: Math.round(contribution * 100) / 100,
+                  maxScore: domainMaxPossibleWeightedScore,
+                  earnedScore: Math.round(domainEarnedWeightedScore * 100) / 100,
+            })
+
+            totalContribution += contribution
       }
-    }
 
-    const domainScoreRatio = domainMaxScore > 0 ? domainEarnedScore / domainMaxScore : 0
-    const weightedDomainScore = domainScoreRatio * domain.activeWeight
+      const roundedScore = Math.min(Math.round(totalContribution * 100) / 100, 100)
 
-    domainScores.push({
-      domain: domain.name,
-      score: Math.round(domainScoreRatio * 100 * 100) / 100,
-      defaultWeight: domain.defaultWeight,
-      activeWeight: domain.activeWeight,
-      contribution: Math.round(weightedDomainScore * 100) / 100,
-      maxScore: domainMaxScore,
-      earnedScore: Math.round(domainEarnedScore * 100) / 100,
-    })
+      // Calculate Volatility Score (Sensitivity to top 3 domains)
+      const sortedDomains = [...domainScores].sort((a, b) => b.score - a.score)
+      const top3Avg = sortedDomains.slice(0, 3).reduce((acc, d) => acc + d.score, 0) / 3
+      const bot3Avg = sortedDomains.slice(-3).reduce((acc, d) => acc + d.score, 0) / 3
+      const volatilityScore = Math.round(Math.abs(top3Avg - bot3Avg))
 
-    totalWeightedScore += weightedDomainScore
-    totalWeight += domain.activeWeight
-  }
+      // Normalized Score (Contextualized performance)
+      const normalizedScore = Math.min(Math.round((roundedScore / 85) * 100), 100)
 
-  const totalScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0
-  const roundedScore = Math.min(Math.round(totalScore * 100) / 100, 100)
+      // Auto-decline if 2 or more killer controls fail
+      const isAutoDeclined = failedKillers.length >= 2
+      const { tier, premium } = getRiskTier(roundedScore, isAutoDeclined)
 
-  const { tier, premium } = getRiskTier(roundedScore, failedKillers.length >= 2)
+      return {
+            totalScore: roundedScore,
+            domainScores,
+            riskTier: tier,
+            premiumLoading: premium,
+            autoDeclined: isAutoDeclined,
+            failedKillers,
+            volatilityScore,
+            normalizedScore,
+            declineNarrative: getDeclineNarrative(tier, failedKillers),
+      }
+}
 
-  const autoDeclined = failedKillers.length >= 2
+function getRiskTier(
+      score: number,
+      isAutoDeclined: boolean,
+): { tier: "A" | "B" | "C" | "D"; premium: string } {
+      if (isAutoDeclined || score < 60) {
+            return { tier: "D", premium: "Declined" }
+      }
 
-  let declineNarrative = ""
-
-  if (autoDeclined) {
-    declineNarrative = `Auto-declined due to ${failedKillers.length} failed critical controls: ${failedKillers.map((k) => k.id).join(", ")}`
-  } else {
-    declineNarrative = getDeclineNarrative(tier, failedKillers)
-  }
-
-  return {
-    totalScore: roundedScore,
-    domainScores,
-    riskTier: tier,
-    premiumLoading: premium,
-    autoDeclined,
-    failedKillers,
-    declineNarrative,
-  }
+      if (score >= 90) {
+            return { tier: "A", premium: "Base Rate" }
+      }
+      if (score >= 75) {
+            return { tier: "B", premium: "+20% Loading" }
+      }
+      return { tier: "C", premium: "+50% Loading" }
 }
 
 function getDeclineNarrative(
-  riskTier: "A" | "B" | "C" | "D",
-  failedKillers: Array<{ id: string; text: string }>,
+      riskTier: "A" | "B" | "C" | "D",
+      failedKillers: Array<{ id: string; text: string }>,
 ): string {
-  switch (riskTier) {
-    case "A":
-      return `Strong cyber posture. Tier A assigned based on comprehensive controls across ${failedKillers.length} domains.`
-    case "B":
-      return `Good controls with minor gaps. Tier B assigned. ${failedKillers.length > 0 ? `Review ${failedKillers.length} weak controls.` : "Review recommendations."}`
-    case "C":
-      return `Moderate risk due to control gaps. Tier C assigned. ${failedKillers.length > 0 ? `Address ${failedKillers.length} failed controls.` : "Recommend security improvements."}`
-    case "D":
-      return `Tier D assigned due to significant control gaps.`
-    default:
-      return ""
-  }
+      if (failedKillers.length >= 2) {
+            return `Auto-declined due to ${failedKillers.length} failed critical controls: ${failedKillers.map((k) => k.id).join(", ")}`
+      }
+
+      switch (riskTier) {
+            case "A":
+                  return `Excellent cyber maturity. Tier A approved at Base Rate.`
+            case "B":
+                  return `Good controls detected. Tier B approved with 20% premium loading.`
+            case "C":
+                  return `Minimum threshold met. Tier C approved with 50% premium loading.`
+            case "D":
+                  return `Declined due to insufficient control maturity (score < 60%).`
+            default:
+                  return ""
+      }
 }
 
-export const DOMAINS: Domain[] = [
-  {
-    id: "network_security",
-    name: "Network Security",
-    defaultWeight: 7,
-    activeWeight: 7,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Network Security"),
-  },
-  {
-    id: "data_backup_recovery",
-    name: "Data Backup and Recovery",
-    defaultWeight: 7,
-    activeWeight: 7,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Data Backup and Recovery"),
-  },
-  {
-    id: "certifications",
-    name: "Certifications",
-    defaultWeight: 4,
-    activeWeight: 4,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Certifications"),
-  },
-  {
-    id: "background_verification",
-    name: "Background Verification and Awareness",
-    defaultWeight: 4,
-    activeWeight: 4,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Background Verification and Awareness"),
-  },
-  {
-    id: "regulatory_compliance",
-    name: "Regulatory Compliance",
-    defaultWeight: 5,
-    activeWeight: 5,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Regulatory Compliance"),
-  },
-  {
-    id: "organizational_policies",
-    name: "Organizational Policies",
-    defaultWeight: 5,
-    activeWeight: 5,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Organizational Policies"),
-  },
-  {
-    id: "physical_security",
-    name: "Physical Perimeter Security",
-    defaultWeight: 7,
-    activeWeight: 7,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Physical Perimeter Security"),
-  },
-  {
-    id: "endpoint_security",
-    name: "Endpoint Security",
-    defaultWeight: 6,
-    activeWeight: 6,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Endpoint Security"),
-  },
-  {
-    id: "iot_ot",
-    name: "IoT and OT Network",
-    defaultWeight: 9,
-    activeWeight: 9,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "IoT and OT Network"),
-  },
-  {
-    id: "asset_management",
-    name: "Asset Management",
-    defaultWeight: 6,
-    activeWeight: 6,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Asset Management"),
-  },
-  {
-    id: "iam",
-    name: "Identity and Access Management",
-    defaultWeight: 6,
-    activeWeight: 6,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Identity and Access Management"),
-  },
-  {
-    id: "vapt",
-    name: "Vulnerability Assessment and Penetration Test",
-    defaultWeight: 5,
-    activeWeight: 5,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Vulnerability Assessment and Penetration Test"),
-  },
-  {
-    id: "ransomware",
-    name: "Ransomware Supplemental",
-    defaultWeight: 5,
-    activeWeight: 5,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Ransomware Supplemental"),
-  },
-  {
-    id: "dark_web",
-    name: "Dark Web Exposure",
-    defaultWeight: 2,
-    activeWeight: 2,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Dark Web Exposure"),
-  },
-  {
-    id: "patch_cadence",
-    name: "Change / Patch Cadence",
-    defaultWeight: 5,
-    activeWeight: 5,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Change / Patch Cadence"),
-  },
-  {
-    id: "dlp_dspm",
-    name: "DLP & DSPM",
-    defaultWeight: 4,
-    activeWeight: 4,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "DLP & DSPM"),
-  },
-  {
-    id: "active_directory",
-    name: "Active Directory Configuration",
-    defaultWeight: 3,
-    activeWeight: 3,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Active Directory Configuration"),
-  },
-  {
-    id: "incident_response",
-    name: "Incident Management & Response",
-    defaultWeight: 6,
-    activeWeight: 6,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "Incident Management & Response"),
-  },
-  {
-    id: "soc_soar",
-    name: "SOC & SOAR Capabilities",
-    defaultWeight: 4,
-    activeWeight: 4,
-    questions: ALL_QUESTIONS.filter((q) => q.domain === "SOC & SOAR Capabilities"),
-  },
-]
-
 export function getIndustryWeights(industry: IndustryProfile | null, domains: Domain[]): Domain[] {
-  if (!industry) return domains
-  return domains.map((domain) => ({
-    ...domain,
-    activeWeight: industry.domainWeights[domain.name] || domain.defaultWeight,
-  }))
+      if (!industry) {
+            return domains.map(d => ({ ...d, activeWeight: d.defaultWeight }));
+      }
+
+      return domains.map(domain => {
+            const weight = industry.domainWeights[domain.name];
+            return {
+                  ...domain,
+                  activeWeight: weight !== undefined ? weight : 0
+            };
+      });
 }
