@@ -5,7 +5,7 @@ import { useUnderwriting } from "@/context/underwriting-context"
 import { ControlsPanel } from "@/components/controls-panel"
 import { ReassuranceScreen } from "@/components/reassurance-screen"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, CheckCircle2, Circle, Save, Loader2, ShieldCheck } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Circle, Save, Loader2, ShieldCheck, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -21,11 +21,14 @@ export default function AssessmentPage() {
         handleQuestionChange,
         handleKillerToggle,
         saveDraft,
+        autoSaveDraft,
         submitAssessment,
         handleReset,
         completionStats,
         isLoading,
-        isAdmin
+        isAdmin,
+        isSaving,
+        lastSavedTimestamp
     } = useUnderwriting()
 
     const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set())
@@ -48,6 +51,15 @@ export default function AssessmentPage() {
             setShowReassurance(true)
         }
     }, [completionStats.percentage, isLoading])
+
+    // Auto-save effect (debounced)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            autoSaveDraft()
+        }, 2000) // 2 second debounce
+
+        return () => clearTimeout(timer)
+    }, [domains, selectedIndustry, manualOverrideEnabled, autoSaveDraft])
 
     const handleDomainToggle = useCallback((domainId: string) => {
         setExpandedDomains((prev) => {
@@ -185,11 +197,29 @@ export default function AssessmentPage() {
                         </button>
                         <div className="w-[1px] h-4 bg-slate-200 mx-1" />
                         <button
-                            onClick={saveDraft}
-                            className="text-slate-400 hover:text-si-blue-primary p-2 hover:bg-white rounded-lg transition-all duration-200"
+                            onClick={async () => {
+                                const result = await saveDraft()
+                                if (result.success) {
+                                    alert("Progress saved successfully!")
+                                } else {
+                                    alert(`Save failed: ${result.error}`)
+                                }
+                            }}
+                            className="text-slate-400 hover:text-si-blue-primary p-2 hover:bg-white rounded-lg transition-all duration-200 relative group"
                             title="Save Progress"
                         >
                             <Save className="w-5 h-5" />
+                            {/* Save Status Indicator */}
+                            {isSaving && (
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-si-navy text-white text-[9px] font-bold px-2 py-1 rounded whitespace-nowrap">
+                                    Saving...
+                                </div>
+                            )}
+                            {!isSaving && lastSavedTimestamp && (
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] font-bold px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Saved {new Date(lastSavedTimestamp).toLocaleTimeString()}
+                                </div>
+                            )}
                         </button>
                     </div>
 
@@ -219,6 +249,21 @@ export default function AssessmentPage() {
                                 </motion.span>
                             </>
                         )}
+                    </button>
+
+                    <div className="w-[1px] h-6 bg-slate-100 hidden md:block" />
+
+                    <button
+                        onClick={async () => {
+                            const { createClient } = await import('@/lib/supabase/client')
+                            const supabase = createClient()
+                            await supabase.auth.signOut()
+                            window.location.href = '/login'
+                        }}
+                        className="flex items-center gap-2 px-4 py-3 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-si-red hover:border-si-red/30 transition-all active:scale-95"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="hidden lg:inline">Exit Session</span>
                     </button>
                 </div>
             </header>

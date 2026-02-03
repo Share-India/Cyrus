@@ -4,7 +4,7 @@ import { useUnderwriting } from "@/context/underwriting-context"
 import { RiskEngine } from "@/components/risk-engine"
 import { DecisionPanel } from "@/components/decision-panel"
 import { motion } from "framer-motion"
-import { ArrowLeft, ArrowRight, Download, FileText } from "lucide-react"
+import { ArrowLeft, ArrowRight, Download, FileText, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
@@ -59,6 +59,21 @@ export default function DashboardPage() {
                     >
                         <span>Finalize Protocol</span>
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <div className="w-[1px] h-6 bg-slate-100 hidden md:block" />
+
+                    <button
+                        onClick={async () => {
+                            const { createClient } = await import('@/lib/supabase/client')
+                            const supabase = createClient()
+                            await supabase.auth.signOut()
+                            window.location.href = '/login'
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-si-red hover:border-si-red/30 transition-all active:scale-95"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="hidden lg:inline">Exit Session</span>
                     </button>
                 </div>
             </header>

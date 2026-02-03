@@ -25,6 +25,12 @@ interface UnderwritingContextType {
     currentStep: number
     isLoading: boolean
     isIndustryLocked: boolean
+    userProfile: any | null
+    currentDomainIndex: number
+    currentQuestionIndex: number
+    hasDraft: boolean
+    lastSavedTimestamp: string | null
+    isSaving: boolean
 
     // Actions
     setDomains: React.Dispatch<React.SetStateAction<Domain[]>>
@@ -35,9 +41,13 @@ interface UnderwritingContextType {
     handleQuestionChange: (domainId: string, questionId: string, response: number) => void
     handleKillerToggle: (domainId: string, questionId: string, isKiller: boolean) => void
     handleReset: () => void
-    saveDraft: () => void
+    saveDraft: () => Promise<{ success: boolean; error?: string }>
+    autoSaveDraft: () => Promise<void>
     submitAssessment: () => Promise<{ success: boolean; error?: string }>
     refreshData: () => Promise<void>
+    updateProfile: (updates: any) => Promise<{ success: boolean; error?: string }>
+    setCurrentDomainIndex: (index: number) => void
+    setCurrentQuestionIndex: (index: number) => void
 }
 
 const UnderwritingContext = createContext<UnderwritingContextType | undefined>(undefined)
@@ -51,6 +61,12 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const [clientName, setClientName] = useState<string>("")
     const [isLoading, setIsLoading] = useState(true)
     const [isIndustryLocked, setIsIndustryLocked] = useState(false)
+    const [userProfile, setUserProfile] = useState<any | null>(null)
+    const [currentDomainIndex, setCurrentDomainIndex] = useState(0)
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+    const [hasDraft, setHasDraft] = useState(false)
+    const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null)
+    const [isSaving, setIsSaving] = useState(false)
 
     const fetchQuestionnaire = useCallback(async () => {
         const supabase = createClient()
@@ -84,15 +100,15 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             const rawDomains = domainsRes.data || []
             const rawQuestions = questionsRes.data || []
 
-            const stitchedDomains: Domain[] = rawDomains.map(d => ({
+            const stitchedDomains: Domain[] = rawDomains.map((d: any) => ({
                 id: d.id,
                 name: d.name,
                 defaultWeight: Number(d.default_weight),
                 activeWeight: Number(d.default_weight),
                 explanation: d.explanation,
                 questions: rawQuestions
-                    .filter(q => q.domain_id === d.id)
-                    .map(q => ({
+                    .filter((q: any) => q.domain_id === d.id)
+                    .map((q: any) => ({
                         id: q.id,
                         domain: d.name,
                         text: q.text,
@@ -151,12 +167,13 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 // 2. Fetch Profile Role & Draft
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('role, organization_name, industry, draft_data')
+                    .select('*')
                     .eq('id', session.user.id)
                     .single()
 
                 if (profile) {
                     console.log("Found profile:", profile)
+                    setUserProfile(profile)
                     setUserRole(profile.role || 'client')
                     setClientName(profile.organization_name || "")
 
@@ -165,7 +182,6 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     }
 
                     if (profile.industry) {
-                        // Let's defer mapping logic or do it here if we can import INDUSTRY_PROFILES.
                         setSelectedIndustry(profile.industry)
                         setIsIndustryLocked(true)
                         profileIndustry = profile.industry
@@ -217,6 +233,14 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     // Only set if not already locked by profile
                     if (draftToLoad.selectedIndustry && !profileIndustry) setSelectedIndustry(draftToLoad.selectedIndustry)
                     if (draftToLoad.manualOverrideEnabled) setManualOverrideEnabled(draftToLoad.manualOverrideEnabled)
+
+                    // Restore position tracking
+                    if (draftToLoad.currentDomainIndex !== undefined) setCurrentDomainIndex(draftToLoad.currentDomainIndex)
+                    if (draftToLoad.currentQuestionIndex !== undefined) setCurrentQuestionIndex(draftToLoad.currentQuestionIndex)
+                    if (draftToLoad.timestamp) setLastSavedTimestamp(draftToLoad.timestamp)
+
+                    // Set draft flag
+                    setHasDraft(true)
                 } catch (e) {
                     console.error("Error applying draft", e)
                 }
@@ -335,18 +359,41 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
     const handleReset = useCallback(async () => {
         localStorage.removeItem("cyrus_draft_v2")
+
+        // Clear draft from database
+        try {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+
+            if (user) {
+                await supabase
+                    .from('profiles')
+                    .update({ draft_data: null })
+                    .eq('id', user.id)
+            }
+        } catch (e) {
+            console.error("Error clearing cloud draft", e)
+        }
+
         await fetchQuestionnaire()
         setSelectedIndustry("")
         setClientName("")
         setManualOverrideEnabled(false)
+        setCurrentDomainIndex(0)
+        setCurrentQuestionIndex(0)
+        setHasDraft(false)
+        setLastSavedTimestamp(null)
     }, [fetchQuestionnaire])
 
-    const saveDraft = useCallback(async () => {
+    const saveDraft = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+        setIsSaving(true)
         const draft = {
             domains,
             selectedIndustry,
             clientName,
             manualOverrideEnabled,
+            currentDomainIndex,
+            currentQuestionIndex,
             timestamp: new Date().toISOString()
         }
         localStorage.setItem("cyrus_draft_v2", JSON.stringify(draft))
@@ -363,16 +410,60 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
                 if (error) {
                     console.error("Failed to save cloud draft", error)
+                    setIsSaving(false)
+                    return { success: false, error: error.message }
                 } else {
                     console.log("Cloud draft saved successfully")
+                    setLastSavedTimestamp(draft.timestamp)
+                    setHasDraft(true)
+                    setIsSaving(false)
+                    return { success: true }
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error saving cloud draft", e)
+            setIsSaving(false)
+            return { success: false, error: e.message || "Unknown error" }
         }
 
-        alert("Progress saved successfully!")
-    }, [domains, selectedIndustry, clientName, manualOverrideEnabled])
+        setIsSaving(false)
+        return { success: true }
+    }, [domains, selectedIndustry, clientName, manualOverrideEnabled, currentDomainIndex, currentQuestionIndex])
+
+    // Auto-save with debouncing (silent save)
+    const autoSaveDraft = useCallback(async () => {
+        // Don't auto-save if no responses yet
+        const hasResponses = domains.some(d => d.questions.some(q => q.response !== -1))
+        if (!hasResponses) return
+
+        const draft = {
+            domains,
+            selectedIndustry,
+            clientName,
+            manualOverrideEnabled,
+            currentDomainIndex,
+            currentQuestionIndex,
+            timestamp: new Date().toISOString()
+        }
+        localStorage.setItem("cyrus_draft_v2", JSON.stringify(draft))
+
+        try {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+
+            if (user) {
+                await supabase
+                    .from('profiles')
+                    .update({ draft_data: draft })
+                    .eq('id', user.id)
+
+                setLastSavedTimestamp(draft.timestamp)
+                setHasDraft(true)
+            }
+        } catch (e) {
+            console.error("Auto-save failed", e)
+        }
+    }, [domains, selectedIndustry, clientName, manualOverrideEnabled, currentDomainIndex, currentQuestionIndex])
 
     const submitAssessment = useCallback(async () => {
         const supabase = createClient()
@@ -412,8 +503,56 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
         // Clear draft after successful submission
         localStorage.removeItem("cyrus_draft_v2")
+
+        // Clear draft from database
+        try {
+            const supabase2 = createClient()
+            await supabase2
+                .from('profiles')
+                .update({ draft_data: null })
+                .eq('id', user.id)
+        } catch (e) {
+            console.error("Error clearing cloud draft after submission", e)
+        }
+
+        // Clear draft flags
+        setHasDraft(false)
+        setLastSavedTimestamp(null)
+        setCurrentDomainIndex(0)
+        setCurrentQuestionIndex(0)
+
         return { success: true }
     }, [domains, selectedIndustry, result, clientName])
+
+    const updateProfile = useCallback(async (updates: any) => {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) return { success: false, error: "Not authenticated" }
+
+        const { error } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', user.id)
+
+        if (error) {
+            console.error("Profile update error", error)
+            return { success: false, error: error.message }
+        }
+
+        // Refresh local state
+        setUserProfile((prev: any) => prev ? { ...prev, ...updates } : null)
+        if (updates.organization_name) {
+            setClientName(updates.organization_name)
+            localStorage.setItem("cyrus_client_name", updates.organization_name)
+        }
+        if (updates.industry) {
+            setSelectedIndustry(updates.industry)
+            localStorage.setItem("cyrus_selected_industry", updates.industry)
+        }
+
+        return { success: true }
+    }, [])
 
     const value = {
         userRole,
@@ -423,6 +562,12 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         clientName,
         manualOverrideEnabled,
         isIndustryLocked,
+        userProfile,
+        currentDomainIndex,
+        currentQuestionIndex,
+        hasDraft,
+        lastSavedTimestamp,
+        isSaving,
         result,
         completionStats,
         currentStep,
@@ -436,8 +581,12 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         handleKillerToggle,
         handleReset,
         saveDraft,
+        autoSaveDraft,
         submitAssessment,
-        refreshData: fetchQuestionnaire
+        updateProfile,
+        refreshData: fetchQuestionnaire,
+        setCurrentDomainIndex,
+        setCurrentQuestionIndex
     }
 
     return <UnderwritingContext.Provider value={value}>{children}</UnderwritingContext.Provider>

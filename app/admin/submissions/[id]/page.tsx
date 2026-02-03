@@ -66,19 +66,35 @@ export default function SubmissionDetails() {
 
     useEffect(() => {
         const fetchDetails = async () => {
-            const { data, error } = await supabase
+            // Fetch the assessment
+            const { data: assessmentData, error: assessmentError } = await supabase
                 .from('assessments')
-                .select(`
-                    *,
-                    profiles:user_id (email)
-                `)
+                .select('*')
                 .eq('id', params.id)
                 .single()
 
-            if (error) {
-                console.error("Error fetching submission details:", error)
+            if (assessmentError) {
+                console.error("Error fetching submission details:", assessmentError)
+                setIsLoading(false)
+                return
             }
-            if (data) setSubmission(data as any)
+
+            if (assessmentData) {
+                // Fetch the associated profile
+                const { data: profileData } = await supabase
+                    .from('profiles')
+                    .select('email')
+                    .eq('id', assessmentData.user_id)
+                    .single()
+
+                // Combine the data
+                const combinedData = {
+                    ...assessmentData,
+                    profiles: profileData || { email: 'Unknown' }
+                }
+
+                setSubmission(combinedData as any)
+            }
             setIsLoading(false)
         }
 
@@ -135,6 +151,7 @@ export default function SubmissionDetails() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
+                    {/* Excel Export Button */}
                     <button
                         onClick={() => {
                             const industryName = INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id
@@ -145,18 +162,76 @@ export default function SubmissionDetails() {
                                 industryName
                             )
                         }}
-                        className="flex items-center gap-3 px-6 py-3 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="group relative bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl px-6 py-4 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                     >
-                        <FileText className="w-4 h-4" />
-                        Export Excel Report
+                        <div className="flex items-center gap-4">
+                            {/* Share India Logo */}
+                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-all">
+                                <img src="/share-india-new.png" alt="Share India" className="h-6 w-auto brightness-0 invert" />
+                            </div>
+
+                            {/* Client Details */}
+                            <div className="flex flex-col items-start text-left min-w-[280px]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <FileText className="w-3 h-3 text-si-blue-primary" />
+                                    <span className="text-[9px] font-black text-si-blue-primary uppercase tracking-[0.2em]">Excel Report</span>
+                                </div>
+                                <span className="text-sm font-bold text-white mb-0.5 truncate max-w-[260px]">
+                                    {submission_data.clientName || submission.profiles?.email}
+                                </span>
+                                <div className="flex items-center gap-3 text-[10px] text-white/40">
+                                    <span className="font-medium">{INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id.replace(/_/g, ' ')}</span>
+                                    <span>•</span>
+                                    <span className="font-bold text-white/60">{submission.total_score}%</span>
+                                    <span>•</span>
+                                    <span>{new Date(submission.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            {/* Download Icon */}
+                            <div className="ml-2 w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-si-blue-primary group-hover:scale-110 transition-all">
+                                <Download className="w-4 h-4 text-white/60 group-hover:text-white" />
+                            </div>
+                        </div>
                     </button>
+
+                    {/* PDF Export Button */}
                     <button
                         onClick={() => window.print()}
-                        className="flex items-center gap-3 px-6 py-3 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="group relative bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl px-6 py-4 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                     >
-                        <Download className="w-4 h-4" />
-                        Export PDF Audit
+                        <div className="flex items-center gap-4">
+                            {/* Share India Logo */}
+                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-all">
+                                <img src="/share-india-new.png" alt="Share India" className="h-6 w-auto brightness-0 invert" />
+                            </div>
+
+                            {/* Client Details */}
+                            <div className="flex flex-col items-start text-left min-w-[280px]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <FileText className="w-3 h-3 text-emerald-400" />
+                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">PDF Audit</span>
+                                </div>
+                                <span className="text-sm font-bold text-white mb-0.5 truncate max-w-[260px]">
+                                    {submission_data.clientName || submission.profiles?.email}
+                                </span>
+                                <div className="flex items-center gap-3 text-[10px] text-white/40">
+                                    <span className="font-medium">{INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id.replace(/_/g, ' ')}</span>
+                                    <span>•</span>
+                                    <span className="font-bold text-white/60">Tier {submission.risk_tier}</span>
+                                    <span>•</span>
+                                    <span>{new Date(submission.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            {/* Download Icon */}
+                            <div className="ml-2 w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-emerald-400 group-hover:scale-110 transition-all">
+                                <Download className="w-4 h-4 text-white/60 group-hover:text-white" />
+                            </div>
+                        </div>
                     </button>
+
+                    {/* Risk Tier Badge */}
                     <div className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${submission.risk_tier === 'A' ? 'bg-emerald-500 text-white' :
                         submission.risk_tier === 'B' ? 'bg-si-blue-primary text-white' :
                             'bg-si-red text-white'

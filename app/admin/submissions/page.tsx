@@ -26,19 +26,40 @@ export default function SubmissionsDashboard() {
 
     useEffect(() => {
         const fetchSubmissions = async () => {
-            const { data, error } = await supabase
+            // Fetch all assessments
+            const { data: assessmentsData, error: assessmentsError } = await supabase
                 .from('assessments')
-                .select(`
-                    *,
-                    profiles:user_id (email)
-                `)
+                .select('*')
                 .order('created_at', { ascending: false })
 
-            if (error) {
-                console.error("Error fetching submissions:", error)
-                alert(`Error: ${error.message}`)
+            if (assessmentsError) {
+                console.error("Error fetching submissions:", assessmentsError)
+                alert(`Error: ${assessmentsError.message}`)
+                setIsLoading(false)
+                return
             }
-            if (data) setSubmissions(data as any)
+
+            if (assessmentsData && assessmentsData.length > 0) {
+                // Fetch all unique user profiles
+                const userIds = [...new Set(assessmentsData.map(a => a.user_id))]
+                const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, email')
+                    .in('id', userIds)
+
+                // Create a map of user_id to email
+                const profileMap = new Map(
+                    profilesData?.map(p => [p.id, { email: p.email }]) || []
+                )
+
+                // Combine the data
+                const combinedData = assessmentsData.map(assessment => ({
+                    ...assessment,
+                    profiles: profileMap.get(assessment.user_id) || { email: 'Unknown' }
+                }))
+
+                setSubmissions(combinedData as any)
+            }
             setIsLoading(false)
         }
 

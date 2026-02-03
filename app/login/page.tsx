@@ -234,9 +234,9 @@ export default function LoginPage() {
 
                 <div className="relative z-10 flex flex-col h-full">
                     <div className="flex items-center gap-6 mb-24">
-                        <img src="/share-india-new.png" alt="Share India" className="h-10 w-auto brightness-0 invert" />
-                        <div className="h-8 w-[1px] bg-white/10" />
-                        <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.5em]">Risk Division</span>
+                        <img src="/share-india-new.png" alt="Share India" className="h-12 w-auto brightness-0 invert" />
+                        <div className="h-10 w-[1px] bg-white/10" />
+                        <span className="text-xs font-black text-white/30 uppercase tracking-[0.5em]">Risk Division</span>
                     </div>
 
                     <div className="flex-1 flex flex-col justify-center">

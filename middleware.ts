@@ -2,22 +2,84 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+    let response = NextResponse.next({
+        request: {
+            headers: request.headers,
+        },
+    })
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return request.cookies.get(name)?.value
+                },
+                set(name: string, value: string, options: any) {
+                    request.cookies.set({
+                        name,
+                        value,
+                        ...options,
+                    })
+                    response = NextResponse.next({
+                        request: {
+                            headers: request.headers,
+                        },
+                    })
+                    response.cookies.set({
+                        name,
+                        value,
+                        ...options,
+                    })
+                },
+                remove(name: string, options: any) {
+                    request.cookies.set({
+                        name,
+                        value: '',
+                        ...options,
+                    })
+                    response = NextResponse.next({
+                        request: {
+                            headers: request.headers,
+                        },
+                    })
+                    response.cookies.set({
+                        name,
+                        value: '',
+                        ...options,
+                    })
+                },
+            },
+        }
+    )
+
+    const { data: { session } } = await supabase.auth.getSession()
+
     const path = request.nextUrl.pathname
 
-    // Public routes that don't need client info
+    // Public routes
     const publicRoutes = ['/', '/login', '/auth/callback']
-    const isPublicRoute = publicRoutes.some(route => path.startsWith(route))
+    const isPublicRoute = publicRoutes.some(route => path === route || path.startsWith('/auth/'))
 
-    // Protected routes that require client info
-    const protectedRoutes = ['/assessment', '/dashboard', '/submission', '/admin', '/welcome']
+    // Protected routes
+    const protectedRoutes = ['/assessment', '/dashboard', '/submission', '/admin', '/welcome', '/settings']
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
 
-    // Protected routes check removed as we move to Supabase Auth
-    // The previous simple cookie check is no longer valid with the new signup flow.
-    // Real auth protection is now handled by RLS and client-side session checks.
+    if (!session && isProtectedRoute) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        url.searchParams.set('next', path)
+        return NextResponse.redirect(url)
+    }
 
-    // Allow access
-    return NextResponse.next()
+    if (session && path === '/login') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/welcome'
+        return NextResponse.redirect(url)
+    }
+
+    return response
 }
 
 export const config = {

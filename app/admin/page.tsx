@@ -18,7 +18,8 @@ import {
     LayoutDashboard,
     Key,
     Clock,
-    ShieldAlert
+    ShieldAlert,
+    Settings
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -116,6 +117,12 @@ export default function AdminPage() {
                         </div>
                         <Key className="w-4 h-4 opacity-50" />
                     </div>
+                    <Link
+                        href="/welcome#settings"
+                        className="p-3 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all rounded-xl border border-white/10 group"
+                    >
+                        <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                    </Link>
                     <button
                         onClick={handleLogout}
                         className="p-3 bg-white/5 text-white/60 hover:text-white hover:bg-si-red transition-all rounded-xl border border-white/10 group"
