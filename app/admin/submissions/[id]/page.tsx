@@ -25,6 +25,7 @@ import {
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { downloadAssessmentReport } from "@/lib/report-generator"
+import { downloadPDFSummary } from "@/lib/pdf-report-generator"
 import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
 
 interface DetailedSubmission {
@@ -101,7 +102,11 @@ export default function SubmissionDetails() {
         if (params.id) fetchDetails()
     }, [params.id, supabase])
 
+    const [isFinalizing, setIsFinalizing] = useState(false)
+    const [isFinalized, setIsFinalized] = useState(false)
+
     if (isLoading) {
+
         return (
             <div className="min-h-screen bg-white flex items-center justify-center p-6">
                 <div className="flex flex-col items-center gap-4">
@@ -147,99 +152,38 @@ export default function SubmissionDetails() {
                             <FileText className="w-3 h-3 text-si-blue-primary" />
                             <span className="text-[10px] text-si-blue-primary font-black uppercase tracking-[0.3em]">Protocol Code: {submission.id.substring(0, 8)}</span>
                         </div>
-                        <span className="text-sm font-bold text-white font-outfit italic tracking-tight">Risk Profile Audit: {submission.profiles?.email}</span>
+                        <span className="text-sm font-bold text-white font-outfit italic tracking-tight">Technical Risk Audit</span>
                     </div>
+
                 </div>
+
+
                 <div className="flex items-center gap-4">
-                    {/* Excel Export Button */}
+
+
+                    {/* Finalize Protocol Button */}
                     <button
-                        onClick={() => {
-                            const industryName = INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id
-                            downloadAssessmentReport(
-                                result,
-                                submission_data.domains as any,
-                                submission_data.clientName || submission.profiles?.email || 'Unknown Client',
-                                industryName
-                            )
+                        onClick={async () => {
+                            if (isFinalizing) return;
+                            setIsFinalizing(true);
+                            // Simulate database update
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            setIsFinalized(true);
+                            setIsFinalizing(false);
                         }}
-                        className="group relative bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl px-6 py-4 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                        disabled={isFinalized || isFinalizing}
+                        className={`group flex items-center gap-3 px-8 py-4 font-black text-[11px] uppercase tracking-[0.15em] rounded-2xl transition-all duration-500 shadow-xl ${isFinalized
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-si-blue-primary to-cyan-400 text-white hover:from-cyan-400 hover:to-si-blue-primary hover:shadow-cyan-400/40 hover:scale-[1.02] active:scale-[0.98]"
+                            }`}
                     >
-                        <div className="flex items-center gap-4">
-                            {/* Share India Logo */}
-                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-all">
-                                <img src="/share-india-new.png" alt="Share India" className="h-6 w-auto brightness-0 invert" />
-                            </div>
-
-                            {/* Client Details */}
-                            <div className="flex flex-col items-start text-left min-w-[280px]">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <FileText className="w-3 h-3 text-si-blue-primary" />
-                                    <span className="text-[9px] font-black text-si-blue-primary uppercase tracking-[0.2em]">Excel Report</span>
-                                </div>
-                                <span className="text-sm font-bold text-white mb-0.5 truncate max-w-[260px]">
-                                    {submission_data.clientName || submission.profiles?.email}
-                                </span>
-                                <div className="flex items-center gap-3 text-[10px] text-white/40">
-                                    <span className="font-medium">{INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id.replace(/_/g, ' ')}</span>
-                                    <span>•</span>
-                                    <span className="font-bold text-white/60">{submission.total_score}%</span>
-                                    <span>•</span>
-                                    <span>{new Date(submission.created_at).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-
-                            {/* Download Icon */}
-                            <div className="ml-2 w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-si-blue-primary group-hover:scale-110 transition-all">
-                                <Download className="w-4 h-4 text-white/60 group-hover:text-white" />
-                            </div>
-                        </div>
+                        <span>{isFinalizing ? "Processing..." : isFinalized ? "Protocol Finalized" : "Finalize Protocol"}</span>
+                        {!isFinalized && !isFinalizing && <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                        {isFinalized && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                     </button>
-
-                    {/* PDF Export Button */}
-                    <button
-                        onClick={() => window.print()}
-                        className="group relative bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl px-6 py-4 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        <div className="flex items-center gap-4">
-                            {/* Share India Logo */}
-                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-all">
-                                <img src="/share-india-new.png" alt="Share India" className="h-6 w-auto brightness-0 invert" />
-                            </div>
-
-                            {/* Client Details */}
-                            <div className="flex flex-col items-start text-left min-w-[280px]">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <FileText className="w-3 h-3 text-emerald-400" />
-                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">PDF Audit</span>
-                                </div>
-                                <span className="text-sm font-bold text-white mb-0.5 truncate max-w-[260px]">
-                                    {submission_data.clientName || submission.profiles?.email}
-                                </span>
-                                <div className="flex items-center gap-3 text-[10px] text-white/40">
-                                    <span className="font-medium">{INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id.replace(/_/g, ' ')}</span>
-                                    <span>•</span>
-                                    <span className="font-bold text-white/60">Tier {submission.risk_tier}</span>
-                                    <span>•</span>
-                                    <span>{new Date(submission.created_at).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-
-                            {/* Download Icon */}
-                            <div className="ml-2 w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-emerald-400 group-hover:scale-110 transition-all">
-                                <Download className="w-4 h-4 text-white/60 group-hover:text-white" />
-                            </div>
-                        </div>
-                    </button>
-
-                    {/* Risk Tier Badge */}
-                    <div className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${submission.risk_tier === 'A' ? 'bg-emerald-500 text-white' :
-                        submission.risk_tier === 'B' ? 'bg-si-blue-primary text-white' :
-                            'bg-si-red text-white'
-                        }`}>
-                        Risk Tier {submission.risk_tier}
-                    </div>
                 </div>
             </header>
+
 
             <main className="max-w-[1400px] mx-auto p-12">
                 {/* Critical Failure Overlay (Killer Alert) */}
@@ -282,11 +226,21 @@ export default function SubmissionDetails() {
                     <div className="lg:col-span-8 space-y-12">
                         <div className="bg-slate-50 p-12 rounded-[56px] border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-12 group transition-all hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50">
                             <div>
-                                <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-[0.4em] block mb-4">Compliance Rating</span>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-[0.4em] block">Compliance Rating</span>
+                                    <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-lg ${submission.risk_tier === 'A' ? 'bg-emerald-500 text-white' :
+                                        submission.risk_tier === 'B' ? 'bg-si-blue-primary text-white' :
+                                            'bg-si-red text-white'
+                                        }`}>
+                                        Risk Tier {submission.risk_tier}
+                                    </div>
+                                </div>
+
                                 <h1 className="text-[120px] font-black text-si-navy font-outfit tracking-tighter italic leading-none">
                                     {submission.total_score}<span className="text-si-blue-primary not-italic opacity-20">%</span>
                                 </h1>
                             </div>
+
                             <div className="flex flex-col items-center md:items-end text-center md:text-right gap-6">
                                 <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm w-full md:w-auto">
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Premium Loading</span>
@@ -363,11 +317,73 @@ export default function SubmissionDetails() {
                                         <div className="w-14 h-14 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center text-si-blue-primary">
                                             <Lock className="w-7 h-7" />
                                         </div>
-                                        <div>
+                                        <div className="flex-1">
                                             <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-1">Audit Standard</span>
                                             <span className="text-sm font-bold block uppercase tracking-tighter">Cyrus-Weight-Audit v2.0</span>
                                             <span className="text-[10px] font-bold text-emerald-400/50 block font-mono uppercase">Verified SHA-256</span>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Export Manifest Section */}
+                                <div className="mt-16 pt-12 border-t border-white/5 space-y-6">
+                                    <h4 className="text-[10px] font-black text-si-blue-primary uppercase tracking-[0.4em]">Export Manifest</h4>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {/* Excel Export */}
+                                        <button
+                                            onClick={() => {
+                                                const industryName = INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id
+                                                downloadAssessmentReport(
+                                                    result,
+                                                    submission_data.domains as any,
+                                                    submission_data.clientName || submission.profiles?.email || 'Unknown Client',
+                                                    industryName,
+                                                    submission.profiles?.email || '',
+                                                    submission.created_at,
+                                                    submission.id
+                                                )
+                                            }}
+                                            className="w-full group flex items-center justify-between p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-si-blue-primary/20 rounded-xl flex items-center justify-center text-si-blue-primary">
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest block">XLSX Audit</span>
+                                                    <span className="text-[9px] text-white/40 font-bold uppercase tracking-tighter">Institutional Report</span>
+                                                </div>
+                                            </div>
+                                            <Download className="w-4 h-4 text-white/20 group-hover:text-white transition-colors" />
+                                        </button>
+
+                                        {/* PDF Export */}
+                                        <button
+                                            onClick={() => {
+                                                const industryName = INDUSTRY_PROFILES.find(p => p.id === submission.industry_id)?.name || submission.industry_id
+                                                downloadPDFSummary(
+                                                    result,
+                                                    submission_data.domains as any,
+                                                    submission_data.clientName || submission.profiles?.email || 'Unknown Client',
+                                                    industryName,
+                                                    submission.profiles?.email || '',
+                                                    submission.created_at,
+                                                    submission.id
+                                                )
+                                            }}
+                                            className="w-full group flex items-center justify-between p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+                                                    <Download className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest block">PDF Audit</span>
+                                                    <span className="text-[9px] text-white/40 font-bold uppercase tracking-tighter">Risk Profile Summary</span>
+                                                </div>
+                                            </div>
+                                            <Download className="w-4 h-4 text-white/20 group-hover:text-white transition-colors" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -375,6 +391,7 @@ export default function SubmissionDetails() {
                                 <ShieldCheck className="w-80 h-80 rotate-12" />
                             </div>
                         </div>
+
 
                         {/* Audit Log (Nodes) */}
                         <div className="bg-slate-50 p-12 rounded-[56px] border border-slate-100">

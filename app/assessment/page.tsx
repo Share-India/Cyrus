@@ -5,7 +5,7 @@ import { useUnderwriting } from "@/context/underwriting-context"
 import { ControlsPanel } from "@/components/controls-panel"
 import { ReassuranceScreen } from "@/components/reassurance-screen"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, CheckCircle2, Circle, Save, Loader2, ShieldCheck, Settings, LogOut } from "lucide-react"
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Save, Loader2, ShieldCheck, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -80,7 +80,7 @@ export default function AssessmentPage() {
         }
     }
 
-    const handleFinish = async () => {
+    const handleFinalize = async () => {
         if (completionStats.percentage < 100) {
             router.push("/dashboard")
             return
@@ -132,12 +132,19 @@ export default function AssessmentPage() {
                     <p className="text-lg text-slate-500 font-medium leading-relaxed mb-12 px-8">
                         Your technical risk assessment has been securely transmitted. Our underwriting team will review the parameters and issue an official risk profile shortly.
                     </p>
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <button
+                            onClick={() => router.push("/dashboard")}
+                            className="flex-1 py-4 bg-si-blue-primary text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-si-navy transition-all duration-300 shadow-xl shadow-si-blue-primary/20 flex items-center justify-center gap-2"
+                        >
+                            <ShieldCheck className="w-4 h-4" />
+                            View Risk Analysis
+                        </button>
                         <button
                             onClick={() => router.push("/")}
-                            className="w-full py-4 bg-si-navy text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-si-blue-primary transition-all duration-300 shadow-xl shadow-si-navy/20"
+                            className="flex-1 py-4 bg-white border border-slate-200 text-si-navy text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-50 transition-all duration-300"
                         >
-                            Return to Command Center
+                            Return Home
                         </button>
                     </div>
                 </motion.div>
@@ -223,33 +230,45 @@ export default function AssessmentPage() {
                         </button>
                     </div>
 
-                    <button
-                        onClick={handleFinish}
-                        disabled={isSubmitting}
-                        className={`px-6 py-2.5 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all duration-300 shadow-xl active:scale-95 group flex items-center gap-2 ${completionStats.percentage === 100
-                            ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
-                            : 'bg-si-navy hover:bg-si-blue-primary shadow-si-navy/20'
-                            }`}
-                    >
-                        {isSubmitting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : completionStats.percentage === 100 ? (
-                            <>
-                                Finalize & Submit
-                                <ShieldCheck className="w-4 h-4" />
-                            </>
-                        ) : (
-                            <>
+                    {completionStats.percentage < 100 ? (
+                        <button
+                            onClick={handleFinalize}
+                            disabled={isSubmitting}
+                            className="px-6 py-2.5 bg-si-navy text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-si-blue-primary transition-all duration-300 shadow-xl shadow-si-navy/20 active:scale-95 group flex items-center gap-2"
+                        >
+                            Analyze Risk
+                            <motion.span
+                                animate={{ x: [0, 4, 0] }}
+                                transition={{ repeat: Infinity, duration: 1.5 }}
+                            >
+                                →
+                            </motion.span>
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => router.push("/dashboard")}
+                                className="hidden sm:flex px-6 py-2.5 bg-white border border-slate-200 text-si-navy text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-slate-50 transition-all duration-300 flex items-center gap-2"
+                            >
                                 Analyze Risk
-                                <motion.span
-                                    animate={{ x: [0, 4, 0] }}
-                                    transition={{ repeat: Infinity, duration: 1.5 }}
-                                >
-                                    →
-                                </motion.span>
-                            </>
-                        )}
-                    </button>
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={handleFinalize}
+                                disabled={isSubmitting}
+                                className="px-6 py-2.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-emerald-500 transition-all duration-300 shadow-xl shadow-emerald-500/20 active:scale-95 group flex items-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <>
+                                        Finalize & Submit
+                                        <ShieldCheck className="w-4 h-4" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
 
                     <div className="w-[1px] h-6 bg-slate-100 hidden md:block" />
 

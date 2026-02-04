@@ -4,8 +4,7 @@ import { useState } from "react"
 import type { ScoringResult } from "@/lib/scoring-engine"
 import { DecisionBadge } from "./decision-badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { AlertCircle, Terminal, HelpCircle, FileText, ChevronDown, Download, ArrowUpRight } from "lucide-react"
-import { downloadAssessmentReport } from "@/lib/report-generator"
+import { AlertCircle, Terminal, HelpCircle, FileText, ChevronDown, ArrowUpRight } from "lucide-react"
 import type { Domain } from "@/lib/scoring-engine"
 import { useUnderwriting } from "@/context/underwriting-context"
 
@@ -190,20 +189,7 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
           <div className="absolute top-0 right-0 w-32 h-32 bg-si-blue-primary/10 blur-3xl -mr-16 -mt-16 pointer-events-none" />
         </div>
 
-        {/* Download Report Button */}
-        <motion.button
-          onClick={() => downloadAssessmentReport(result, domains)}
-          disabled={isProvisional}
-          className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] shadow-xl flex items-center justify-center gap-3 border border-white/20 group/dl transition-all ${isProvisional
-            ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none border-slate-200"
-            : "bg-si-blue-primary text-white shadow-si-blue-primary/30 hover:shadow-2xl hover:shadow-si-blue-primary/50 si-interactive"
-            }`}
-          whileHover={isProvisional ? {} : { scale: 1.02 }}
-          whileTap={isProvisional ? {} : { scale: 0.98 }}
-        >
-          <Download className={`w-5 h-5 ${isProvisional ? "text-slate-400" : "group-hover:animate-bounce text-white"}`} />
-          <span className="font-outfit">{isProvisional ? "Complete All Questions to Export" : "Export Institutional Audit"}</span>
-        </motion.button>
+
       </div>
 
       {/* Corporate Footer Branded */}

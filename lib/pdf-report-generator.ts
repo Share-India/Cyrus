@@ -13,7 +13,10 @@ export async function downloadPDFSummary(
     result: ScoringResult,
     domains: Domain[],
     clientName: string = '',
-    industryName: string = ''
+    industryName: string = '',
+    clientEmail: string = '',
+    submissionDate: string = '',
+    protocolId: string = ''
 ) {
     const doc = new jsPDF()
 
@@ -60,10 +63,20 @@ export async function downloadPDFSummary(
     doc.text('CYBER RISK ASSESSMENT SUMMARY', 15, yPosition)
     yPosition += 10
 
-    // Client Information Section (if provided)
-    if (clientName || industryName) {
+    // Client Information Section - Always show with all available details
+    const hasClientInfo = clientName || industryName || clientEmail || submissionDate || protocolId
+    if (hasClientInfo) {
+        // Calculate height based on number of fields
+        let infoHeight = 12 // Base height
+        if (clientName) infoHeight += 5
+        if (clientEmail) infoHeight += 5
+        if (industryName) infoHeight += 5
+        if (submissionDate) infoHeight += 5
+        if (protocolId) infoHeight += 5
+        infoHeight += 3 // Padding
+
         doc.setFillColor(245, 247, 250) // Light blue-gray background
-        doc.roundedRect(15, yPosition, 180, 20, 2, 2, 'F')
+        doc.roundedRect(15, yPosition, 180, infoHeight, 2, 2, 'F')
 
         yPosition += 7
         doc.setFontSize(9)
@@ -72,19 +85,47 @@ export async function downloadPDFSummary(
         doc.text('CLIENT INFORMATION', 20, yPosition)
         yPosition += 6
 
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(...DARK_GRAY)
+        doc.setFontSize(8)
+
         if (clientName) {
+            doc.setFont('helvetica', 'bold')
+            doc.text('Organization:', 20, yPosition)
             doc.setFont('helvetica', 'normal')
-            doc.setTextColor(...DARK_GRAY)
-            doc.setFontSize(8)
-            doc.text(`Client Name: ${clientName}`, 20, yPosition)
+            doc.text(clientName, 55, yPosition)
+            yPosition += 5
+        }
+
+        if (clientEmail) {
+            doc.setFont('helvetica', 'bold')
+            doc.text('Email:', 20, yPosition)
+            doc.setFont('helvetica', 'normal')
+            doc.text(clientEmail, 55, yPosition)
             yPosition += 5
         }
 
         if (industryName) {
+            doc.setFont('helvetica', 'bold')
+            doc.text('Industry Type:', 20, yPosition)
             doc.setFont('helvetica', 'normal')
-            doc.setTextColor(...DARK_GRAY)
-            doc.setFontSize(8)
-            doc.text(`Industry Type: ${industryName}`, 20, yPosition)
+            doc.text(industryName, 55, yPosition)
+            yPosition += 5
+        }
+
+        if (submissionDate) {
+            doc.setFont('helvetica', 'bold')
+            doc.text('Submission Date:', 20, yPosition)
+            doc.setFont('helvetica', 'normal')
+            doc.text(submissionDate, 55, yPosition)
+            yPosition += 5
+        }
+
+        if (protocolId) {
+            doc.setFont('helvetica', 'bold')
+            doc.text('Protocol ID:', 20, yPosition)
+            doc.setFont('helvetica', 'normal')
+            doc.text(protocolId, 55, yPosition)
             yPosition += 5
         }
 

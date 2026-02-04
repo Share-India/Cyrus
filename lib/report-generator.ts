@@ -5,9 +5,23 @@ export function downloadAssessmentReport(
     result: ScoringResult,
     domains: Domain[],
     clientName: string = '',
-    industryName: string = ''
+    industryName: string = '',
+    clientEmail: string = '',
+    submissionDate: string = '',
+    protocolId: string = ''
 ) {
     const workbook = XLSX.utils.book_new()
+
+    // Format date for display
+    const formattedDate = submissionDate
+        ? new Date(submissionDate).toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        : new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
 
     // 1. Summary Sheet
     const summaryData: any[][] = [
@@ -15,18 +29,29 @@ export function downloadAssessmentReport(
         ['"YOU GENERATE, WE MULTIPLY"'],
         ["An IRDAI Licensed Direct Insurance Broker (Composite)"],
         [],
-        ...(clientName || industryName ? [
-            ["CLIENT INFORMATION"],
-            ...(clientName ? [["Client Name:", clientName]] : []),
-            ...(industryName ? [["Industry Type:", industryName]] : []),
-            [],
-        ] : []),
+        ["CLIENT INFORMATION"],
+        ["-------------------------------------------------"],
+        ...(clientName ? [["Organization Name:", clientName]] : []),
+        ...(clientEmail ? [["Client Email:", clientEmail]] : []),
+        ...(industryName ? [["Industry Type:", industryName]] : []),
+        ...(protocolId ? [["Protocol ID:", protocolId]] : []),
+        ["Report Generated:", formattedDate],
+        ...(submissionDate ? [["Original Submission:", new Date(submissionDate).toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })]] : []),
+        [],
         ["ASSESSMENT SUMMARY"],
         ["-------------------------------------------------"],
-        ["OVERALL RISK SCORE", result.totalScore.toFixed(2)],
+        ["OVERALL RISK SCORE", result.totalScore.toFixed(2) + "%"],
         ["ASSIGNED RISK TIER", result.riskTier],
         ["PREMIUM LOADING", result.premiumLoading],
         ["AUTO-DECLINE STATUS", result.autoDeclined ? "TRIGGERED (POLICY INELIGIBLE)" : "CLEAR"],
+        ["NORMALIZED SCORE", result.normalizedScore.toFixed(2)],
+        ["VOLATILITY SCORE", result.volatilityScore.toFixed(2)],
         [],
         ["UNDERWRITING LOGIC & NARRATIVE"],
         ...summaryToRows(result.declineNarrative || "Standard Risk Assessment - Policy Eligible for Underwriting"),
@@ -35,10 +60,10 @@ export function downloadAssessmentReport(
         ["Domain", "Score %", "Earned pts", "Max pts", "Weight %", "Contribution"],
         ...result.domainScores.map((ds) => [
             ds.domain,
-            ds.score.toFixed(2),
+            ds.score.toFixed(2) + "%",
             ds.earnedScore.toFixed(1),
             ds.maxScore,
-            ds.activeWeight,
+            ds.activeWeight + "%",
             ds.contribution.toFixed(2),
         ]),
         [],

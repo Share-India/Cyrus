@@ -193,7 +193,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 setUserRole(null)
             }
 
-            // 3. Initialize Domains (Cloud Draft -> Local Draft -> Fresh)
+            // 3. Initialize Domains (Cloud Draft -> Local Draft -> Last Submission -> Fresh)
             let finalDomains = [...DOMAINS] // Start with fresh copy
             let draftToLoad = cloudDraftData
 
@@ -243,6 +243,43 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     setHasDraft(true)
                 } catch (e) {
                     console.error("Error applying draft", e)
+                }
+            } else if (session?.user) {
+                // If no draft, check for last submission
+                console.log("🔍 No draft found, checking for last submission...")
+                const { data: lastAssessment } = await supabase
+                    .from('assessments')
+                    .select('submission_data, industry_id')
+                    .eq('user_id', session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single()
+
+                if (lastAssessment?.submission_data) {
+                    const subData = lastAssessment.submission_data as any
+                    console.log("📊 Loaded last submission data")
+
+                    if (subData.domains) {
+                        finalDomains = finalDomains.map(d => {
+                            const savedD = subData.domains.find((sd: any) => (sd.id === d.id || sd.name === d.name))
+                            if (savedD) {
+                                return {
+                                    ...d,
+                                    activeWeight: savedD.activeWeight || d.defaultWeight,
+                                    questions: d.questions.map(q => {
+                                        const savedQ = savedD.questions?.find((sq: any) => (sq.id === q.id || sq.text === q.text))
+                                        return savedQ ? { ...q, response: savedQ.response, isKiller: savedQ.isKiller ?? q.isKiller } : q
+                                    })
+                                }
+                            }
+                            return d
+                        })
+                    }
+
+                    if (subData.selectedIndustry || lastAssessment.industry_id) {
+                        setSelectedIndustry(subData.selectedIndustry || lastAssessment.industry_id)
+                    }
+                    if (subData.clientName) setClientName(subData.clientName)
                 }
             }
 

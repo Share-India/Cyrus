@@ -27,33 +27,11 @@ export function QuestionRow({ question, onResponseChange, onKillerToggle }: Ques
             <span className="text-[9px] font-black text-si-blue-primary bg-si-blue-primary/10 px-2.5 py-1 rounded-lg tracking-widest uppercase border border-si-blue-primary/20">
               {question.id}
             </span>
-            {isAdmin && question.isKiller && (
-              <span className="text-[9px] font-black text-white bg-si-red px-2.5 py-1 rounded-lg tracking-widest uppercase shadow-lg shadow-si-red/20">
-                Killer Control
-              </span>
-            )}
-            {!isAdmin && question.isKiller && question.response === 0 && (
-              <span className="text-[9px] font-black text-white bg-si-red px-2.5 py-1 rounded-lg tracking-widest uppercase shadow-lg shadow-si-red/20 animate-pulse">
-                Critical Failure
-              </span>
-            )}
           </div>
           <p className="text-[13px] text-si-navy font-bold leading-relaxed transition-colors tracking-tight">
             {question.text}
           </p>
         </div>
-
-        {/* Killer Toggle - Restricted to Admin */}
-        {isAdmin && (
-          <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 h-fit">
-            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Killer</span>
-            <Switch
-              checked={question.isKiller}
-              onCheckedChange={onKillerToggle}
-              className="data-[state=checked]:bg-si-red scale-75"
-            />
-          </div>
-        )}
       </div>
 
       {/* Response Control */}

@@ -164,41 +164,34 @@ export default function AdminPage() {
                         <h3 className="text-xs font-black text-si-navy/30 uppercase tracking-[0.5em] px-2">Operational Modules</h3>
 
                         <Link href="/admin/content" className="block group">
-                            <div className="bg-si-navy text-white p-10 rounded-[40px] shadow-2xl shadow-si-navy/20 hover:bg-si-blue-primary transition-all duration-500 relative overflow-hidden h-full">
+                            <div className="bg-gradient-to-br from-si-navy to-si-navy/90 text-white p-10 rounded-[40px] shadow-2xl shadow-si-navy/20 hover:from-si-blue-primary hover:to-si-navy transition-all duration-500 relative overflow-hidden h-full">
                                 <div className="relative z-10 h-full flex flex-col justify-between">
                                     <div>
-                                        <div className="w-14 h-14 bg-white/10 rounded-2x border border-white/10 flex items-center justify-center mb-10 group-hover:scale-110 transition-transform">
-                                            <Scale className="w-7 h-7" />
+                                        <div className="flex items-center gap-4 mb-10">
+                                            <div className="w-14 h-14 bg-white/10 rounded-2xl border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <Scale className="w-7 h-7" />
+                                            </div>
+                                            <div className="w-14 h-14 bg-si-red/20 rounded-2xl border border-si-red/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <AlertTriangle className="w-7 h-7 text-si-red" />
+                                            </div>
                                         </div>
-                                        <h4 className="text-3xl font-black font-outfit tracking-tighter italic mb-4">Weight <br />Processor.</h4>
-                                        <p className="text-sm text-white/50 font-medium leading-relaxed max-w-[200px]">Adjust domain multipliers and strategic risk weights.</p>
+                                        <h4 className="text-3xl font-black font-outfit tracking-tighter italic mb-4">Risk <br />Configuration.</h4>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-white/50 font-medium leading-relaxed max-w-[280px]">
+                                                Adjust domain multipliers, strategic risk weights, and manage killer units.
+                                            </p>
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                <span className="text-[9px] font-bold bg-white/10 px-3 py-1 rounded-full uppercase tracking-wider">Weights</span>
+                                                <span className="text-[9px] font-bold bg-si-red/20 text-si-red px-3 py-1 rounded-full uppercase tracking-wider">Killer Units</span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="mt-12 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] group-hover:gap-4 transition-all">
-                                        Access Controls <ChevronRight className="w-4 h-4" />
+                                        Configure Settings <ChevronRight className="w-4 h-4" />
                                     </div>
                                 </div>
                                 <div className="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity">
                                     <Scale className="w-48 h-48" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        <Link href="/admin/content" className="block group">
-                            <div className="bg-white border-[3px] border-si-red p-10 rounded-[40px] hover:bg-si-red group transition-all duration-500 relative overflow-hidden h-full">
-                                <div className="relative z-10 h-full flex flex-col justify-between">
-                                    <div>
-                                        <div className="w-14 h-14 bg-si-red/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center mb-10 text-si-red group-hover:text-white transition-colors duration-500">
-                                            <AlertTriangle className="w-7 h-7" />
-                                        </div>
-                                        <h4 className="text-3xl font-black font-outfit tracking-tighter italic mb-4 text-si-navy group-hover:text-white transition-colors">Killer <br />Units.</h4>
-                                        <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-[200px] group-hover:text-white/60 transition-colors">Manage critical failures and system-auto-decline triggers.</p>
-                                    </div>
-                                    <div className="mt-12 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-si-red group-hover:text-white group-hover:gap-4 transition-all">
-                                        Access Units <ChevronRight className="w-4 h-4" />
-                                    </div>
-                                </div>
-                                <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-10 transition-opacity">
-                                    <AlertTriangle className="w-48 h-48" />
                                 </div>
                             </div>
                         </Link>

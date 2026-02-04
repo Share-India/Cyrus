@@ -4,7 +4,7 @@ import { useUnderwriting } from "@/context/underwriting-context"
 import { RiskEngine } from "@/components/risk-engine"
 import { DecisionPanel } from "@/components/decision-panel"
 import { motion } from "framer-motion"
-import { ArrowLeft, ArrowRight, Download, FileText, Settings, LogOut } from "lucide-react"
+import { ArrowLeft, Download, FileText, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
@@ -52,13 +52,6 @@ export default function DashboardPage() {
                     >
                         <FileText className="w-4 h-4" />
                         <span className="hidden md:inline">PDF Summary</span>
-                    </button>
-                    <button
-                        onClick={() => router.push("/submission")}
-                        className="group px-6 py-2.5 bg-si-blue-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-si-blue-secondary transition-colors shadow-lg shadow-si-blue-primary/20 flex items-center gap-2"
-                    >
-                        <span>Finalize Protocol</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </button>
 
                     <div className="w-[1px] h-6 bg-slate-100 hidden md:block" />

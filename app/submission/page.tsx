@@ -2,14 +2,13 @@
 
 import { useUnderwriting } from "@/context/underwriting-context"
 import { motion } from "framer-motion"
-import { ArrowLeft, CheckCircle2, Download, Clock, FileCheck, Mail, FileText } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Clock, FileCheck, Mail, FileText } from "lucide-react"
 import Link from "next/link"
-import { downloadAssessmentReport } from "@/lib/report-generator"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
 import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
 
 export default function SubmissionPage() {
-    const { result, domains, clientName, selectedIndustry, isAdmin } = useUnderwriting()
+    const { result, domains, clientName, selectedIndustry } = useUnderwriting()
 
     // Get industry name from ID
     const industryName = INDUSTRY_PROFILES.find(p => p.id === selectedIndustry)?.name || ''
@@ -62,15 +61,6 @@ export default function SubmissionPage() {
                         <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         <span>Download PDF Summary</span>
                     </button>
-                    {isAdmin && (
-                        <button
-                            onClick={() => downloadAssessmentReport(result, domains, clientName, industryName)}
-                            className="px-8 py-4 bg-si-blue-primary text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-si-blue-secondary transition-all duration-300 shadow-xl shadow-si-blue-primary/20 flex items-center gap-3 justify-center group"
-                        >
-                            <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                            <span>Download Excel Report</span>
-                        </button>
-                    )}
                     <Link
                         href="/"
                         className="px-8 py-4 bg-white border border-slate-200 text-si-navy font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-3 justify-center"
