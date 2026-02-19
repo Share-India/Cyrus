@@ -1,7 +1,8 @@
 "use client"
 
-import { ShieldCheck, ArrowRight, Play, FileText, BarChart3, Lock, User, Building2, Save, LogOut, CheckCircle2, AlertCircle, Globe, Settings as SettingsIcon, Shield } from "lucide-react"
+import { ShieldCheck, ArrowRight, Play, FileText, BarChart3, Lock, User, Building2, Save, LogOut, CheckCircle2, AlertCircle, Globe, Settings as SettingsIcon, Shield, ExternalLink } from "lucide-react"
 import Link from "next/link"
+import { getDossier } from "@/lib/company-data"
 import { useUnderwriting } from "@/context/underwriting-context"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -15,6 +16,7 @@ export default function WelcomePage() {
         userProfile,
         isAdmin,
         updateProfile,
+        signOut,
         isLoading: contextLoading,
     } = useUnderwriting()
 
@@ -55,11 +57,7 @@ export default function WelcomePage() {
         setIsSaving(false)
     }
 
-    const handleLogout = async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-        window.location.href = '/login'
-    }
+
 
     return (
         <div className="min-h-screen bg-slate-50 font-inter text-slate-900 flex flex-col">
@@ -70,7 +68,7 @@ export default function WelcomePage() {
                     <div className="h-8 w-[1px] bg-slate-200" />
                     <div>
                         <h1 className="text-xl font-black text-si-navy font-outfit tracking-tight">CYRUS<span className="text-si-blue-primary">.PRO</span></h1>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Risk Protocol</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Cyber Audit</p>
                     </div>
                 </div>
 
@@ -86,7 +84,7 @@ export default function WelcomePage() {
                         <SettingsIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
                     </Link>
                     <button
-                        onClick={handleLogout}
+                        onClick={signOut}
                         className="px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-si-red hover:border-si-red/30 transition-all active:scale-95"
                     >
                         Exit Session
@@ -95,88 +93,245 @@ export default function WelcomePage() {
             </header>
 
             {/* Hero Section */}
-            <main className="max-w-6xl mx-auto w-full p-8 md:p-16 space-y-32">
-                <section className="flex flex-col justify-center min-h-[70vh]">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}
-                    >
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-si-blue-primary/10 rounded-full text-si-blue-primary font-bold text-xs uppercase tracking-widest mb-8">
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>Underwriting v2.0 Live</span>
-                        </div>
-
-                        <h1 className="text-5xl md:text-7xl font-black text-si-navy font-outfit tracking-tight mb-8 leading-tight">
-                            Comprehensive <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-si-blue-primary to-si-blue-secondary">Cyber Risk Profiling</span>
-                        </h1>
-
-                        {clientName && (
-                            <div className="flex items-center gap-3 mb-6 p-4 bg-white border border-slate-100 rounded-2xl w-fit shadow-sm">
-                                <div className="w-8 h-8 rounded-full bg-si-navy text-white flex items-center justify-center font-black text-xs uppercase">
-                                    {clientName.substring(0, 1)}
-                                </div>
-                                <span className="text-sm font-bold text-si-navy uppercase tracking-tight">Active Node: {clientName}</span>
+            <main className="max-w-7xl mx-auto w-full p-8 md:p-16">
+                <section className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center min-h-[70vh] py-16">
+                    {/* Left Column: Core CTA */}
+                    <div className="lg:col-span-7">
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.8 }}
+                        >
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-si-blue-primary/10 rounded-full text-si-blue-primary font-bold text-xs uppercase tracking-widest mb-8">
+                                <ShieldCheck className="w-4 h-4" />
+                                <span>Audit Framework v2.0 Live</span>
                             </div>
-                        )}
 
-                        <p className="text-lg md:text-xl text-slate-600 max-w-2xl leading-relaxed mb-8">
-                            This protocol assesses your organization's cybersecurity posture across 19 critical infrastructure domains. The output is a definitive risk tier rating and premium loading determination.
-                        </p>
+                            <h1 className="text-5xl md:text-7xl font-black text-si-navy font-outfit tracking-tight mb-8 leading-tight">
+                                Comprehensive <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-si-blue-primary to-si-blue-secondary">Cyber Risk Profiling</span>
+                            </h1>
 
-                        <div className="flex flex-col md:flex-row gap-6 items-start">
-                            <Link href="/assessment">
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="group px-8 py-5 bg-si-navy text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-si-navy/20 flex items-center gap-4 hover:bg-si-blue-primary transition-colors"
-                                >
-                                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                        <Play className="w-5 h-5 fill-current" />
-                                    </div>
-                                    <div className="text-left">
-                                        <span className="block text-[10px] text-white/60 mb-1">
-                                            {completionStats.percentage > 0 ? "RESUME SESSION" : "INITIALIZE PROTOCOL"}
-                                        </span>
-                                        <span className="text-lg">
-                                            {completionStats.percentage > 0 ? "Continue Assessment" : "Begin Assessment"}
-                                        </span>
-                                    </div>
-                                    <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform" />
-                                </motion.button>
-                            </Link>
+                            <p className="text-lg md:text-xl text-slate-600 max-w-xl leading-relaxed mb-10">
+                                This audit assesses your organization's cybersecurity posture across 19 critical infrastructure domains. The output is a definitive risk tier rating and premium loading determination.
+                            </p>
 
-                            {completionStats.percentage > 0 && (
-                                <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                                    <div className="relative w-12 h-12">
-                                        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                                            <path
-                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                fill="none"
-                                                stroke="#E2E8F0"
-                                                strokeWidth="3"
-                                            />
-                                            <path
-                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                fill="none"
-                                                stroke="#3B82F6"
-                                                strokeWidth="3"
-                                                strokeDasharray={`${completionStats.percentage}, 100`}
-                                            />
-                                        </svg>
-                                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-si-navy">
-                                            {completionStats.percentage}%
+                            <div className="flex flex-col sm:flex-row gap-6 items-start">
+                                <Link href="/assessment">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="group px-8 py-5 bg-si-navy text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-si-navy/20 flex items-center gap-4 hover:bg-si-blue-primary transition-colors"
+                                    >
+                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                            <Play className="w-5 h-5 fill-current" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block text-[10px] text-white/60 mb-1">
+                                                {completionStats.percentage > 0 ? "RESUME SESSION" : "INITIALIZE AUDIT"}
+                                            </span>
+                                            <span className="text-lg">
+                                                {completionStats.percentage > 0 ? "Continue Assessment" : "Begin Assessment"}
+                                            </span>
+                                        </div>
+                                        <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform" />
+                                    </motion.button>
+                                </Link>
+
+                                {completionStats.percentage > 0 && (
+                                    <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                                        <div className="relative w-12 h-12">
+                                            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                                <path
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                    fill="none"
+                                                    stroke="#E2E8F0"
+                                                    strokeWidth="3"
+                                                />
+                                                <path
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                    fill="none"
+                                                    stroke="#3B82F6"
+                                                    strokeWidth="3"
+                                                    strokeDasharray={`${completionStats.percentage}, 100`}
+                                                />
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-si-navy">
+                                                {completionStats.percentage}%
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-si-navy uppercase">Overall Progress</p>
+                                            <p className="text-[10px] text-slate-500 font-medium">{completionStats.answered} / {completionStats.total} Answered</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-si-navy uppercase">Progress</p>
-                                        <p className="text-[10px] text-slate-500 font-medium">{completionStats.answered} / {completionStats.total} Answered</p>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    {/* Right Column: Client Context Docket */}
+                    <div className="lg:col-span-5">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            className="bg-si-navy text-white rounded-[48px] p-10 border border-white/5 shadow-2xl shadow-si-navy/40 relative overflow-hidden group"
+                        >
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-12">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-si-blue-primary/20 rounded-xl flex items-center justify-center text-si-blue-primary border border-si-blue-primary/30">
+                                            <Shield className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-si-blue-primary">Verified Node</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest block">System Status</span>
+                                        <span className="text-[10px] text-emerald-400 font-black uppercase flex items-center gap-2 justify-end">
+                                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                            Synchronized
+                                        </span>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    </motion.div>
+
+                                <div className="space-y-10">
+                                    {/* Dynamic Dossier Implementation */}
+                                    {(() => {
+                                        const dossier = userProfile?.company_dossier || getDossier(userProfile?.organization_name)
+
+                                        if (dossier) {
+                                            return (
+                                                <>
+                                                    <div>
+                                                        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Organizational Legacy</span>
+                                                        <div className="flex items-start gap-5">
+                                                            <div className="w-16 h-16 bg-white/5 rounded-[24px] border border-white/10 flex items-center justify-center text-si-blue-primary group-hover:bg-si-blue-primary group-hover:text-white transition-all duration-500">
+                                                                <Building2 className="w-8 h-8" />
+                                                            </div>
+                                                            <div>
+                                                                <h2 className="text-2xl font-black font-outfit tracking-tight mb-1 italic">
+                                                                    {dossier.name}
+                                                                </h2>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-si-blue-primary" />
+                                                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">
+                                                                        {dossier.founded ? `Est. ${dossier.founded}` : 'Established Node'} • {dossier.hq || 'Global Reach'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
+                                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-2">Leadership</span>
+                                                            <p className="text-[11px] font-bold text-white/70 truncate">{dossier.leadership || 'Verified Stakeholders'}</p>
+                                                            <p className="text-[9px] text-white/40 mt-1 uppercase">Corporate Control</p>
+                                                        </div>
+                                                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
+                                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-2">Capabilities</span>
+                                                            <p className="text-[11px] font-bold text-white/70 truncate">{dossier.legacy || 'Strategic Influence'}</p>
+                                                            <p className="text-[9px] text-white/40 mt-1 uppercase">Market Position</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Core Portfolio</span>
+                                                        <div className="space-y-3">
+                                                            {(dossier.portfolio || ["Standardized Infrastructure", "Secure Network Ops"]).map((item: string, idx: number) => (
+                                                                <div key={idx} className="flex items-center gap-3 text-white/60">
+                                                                    <div className="w-1 h-1 rounded-full bg-si-blue-primary" />
+                                                                    <span className="text-[10px] font-medium tracking-tight">{item}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="w-10 h-10 bg-si-blue-primary/10 rounded-xl flex items-center justify-center text-si-blue-primary border border-si-blue-primary/20">
+                                                                <Globe className="w-5 h-5" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-[11px] font-medium text-white/60 leading-relaxed italic">
+                                                                    "{dossier.description || 'Verified organizational profile being evaluated against the highest cybersecurity benchmarks.'}"
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {dossier.website && (
+                                                            <a
+                                                                href={dossier.website}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="ml-4 p-3 bg-white/5 hover:bg-si-blue-primary/20 rounded-xl border border-white/5 transition-colors group/link"
+                                                                title="Visit Official Website"
+                                                            >
+                                                                <ExternalLink className="w-4 h-4 text-white/40 group-hover/link:text-si-blue-primary transition-colors" />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )
+                                        }
+
+                                        /* Fallback for completely unknown future clients */
+                                        return (
+                                            <>
+                                                <div>
+                                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Organizational Identity</span>
+                                                    <div className="flex items-start gap-5">
+                                                        <div className="w-16 h-16 bg-white/5 rounded-[24px] border border-white/10 flex items-center justify-center text-si-blue-primary group-hover:bg-si-blue-primary group-hover:text-white transition-all duration-500">
+                                                            <Building2 className="w-8 h-8" />
+                                                        </div>
+                                                        <div>
+                                                            <h2 className="text-2xl font-black font-outfit tracking-tight mb-1 italic">
+                                                                {userProfile?.organization_name || "Unidentified Client"}
+                                                            </h2>
+                                                            <div className="flex items-center gap-2">
+                                                                <Globe className="w-3 h-3 text-si-blue-primary" />
+                                                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">
+                                                                    {INDUSTRY_PROFILES.find(p => p.id === userProfile?.industry)?.name || "Standard Risk Sector"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white/5 rounded-3xl p-6 border border-white/5 flex items-center gap-5 group-hover:bg-white/10 transition-colors">
+                                                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
+                                                        <User className="w-6 h-6" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-sm font-bold block">{userProfile?.name || "Member Profile"}</span>
+                                                        <span className="text-[10px] font-mono text-white/20 select-all block mt-0.5">{userProfile?.email || userProfile?.username || "authenticated_node"}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-8 border-t border-white/5">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="w-10 h-10 bg-si-blue-primary/10 rounded-xl flex items-center justify-center text-si-blue-primary border border-si-blue-primary/20">
+                                                            <Lock className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-xs font-medium text-white/60 leading-relaxed italic">
+                                                                "This session is protected by end-to-end encryption. All credentials for {userProfile?.organization_name || 'this organization'} are being cross-referenced with active threat databases."
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* Decorative Background Elements */}
+                            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-si-blue-primary/5 rounded-full blur-[100px] -mr-40 -mt-20 pointer-events-none" />
+                            <div className="absolute -bottom-20 -left-20 w-[300px] h-[300px] bg-si-blue-primary/10 rounded-full blur-[80px] opacity-20 pointer-events-none" />
+                        </motion.div>
+                    </div>
                 </section>
 
 

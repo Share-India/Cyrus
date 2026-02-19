@@ -55,14 +55,14 @@ export function PageLoader() {
                             <img
                                 src="/share-india-monogram.png"
                                 alt="Share India"
-                                className="w-20 h-20 md:w-24 md:h-24 shadow-2xl rounded-2xl"
+                                className="w-20 h-20 md:w-24 md:h-24 shadow-2xl rounded-2xl border-none"
                             />
 
                             {/* Inner pulse ring */}
                             <motion.div
                                 animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                                 transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
-                                className="absolute inset-0 border-2 border-si-blue-primary rounded-2xl"
+                                className="absolute inset-0 border-2 border-si-blue-primary/30 rounded-2xl"
                             />
                         </motion.div>
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import type { ScoringResult } from "@/lib/scoring-engine"
+import { type ScoringResult, getCurrentPremiumLoading } from "@/lib/scoring-engine"
 import { Shield, ChevronRight, Info } from "lucide-react"
 
 interface RiskTierCardProps {
@@ -139,8 +139,8 @@ export function RiskTierCard({ result }: RiskTierCardProps) {
           <div className={`p-4 rounded-2xl border ${config.policyCard.bg} ${config.policyCard.border}`}>
             <span className={`block text-[9px] font-black uppercase tracking-[0.2em] mb-2 ${config.policyCard.title}`}>Policy Load</span>
             <div className="flex items-baseline gap-1.5">
-              <span className={`font-black font-outfit ${config.policyCard.value} ${getLoadFontSize(result.premiumLoading)}`}>
-                {result.premiumLoading}
+              <span className={`font-black font-outfit ${config.policyCard.value} ${getLoadFontSize(getCurrentPremiumLoading(result.riskTier))}`}>
+                {getCurrentPremiumLoading(result.riskTier)}
               </span>
             </div>
           </div>

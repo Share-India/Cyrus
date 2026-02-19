@@ -1,8 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { ShieldCheck, ArrowLeft, FileText, ExternalLink, Calendar, User, BarChart } from "lucide-react"
+import {
+    ShieldCheck,
+    ArrowLeft,
+    FileText,
+    ExternalLink,
+    Calendar,
+    User,
+    BarChart,
+    Search,
+    Filter,
+    Download,
+    ChevronDown,
+    ArrowUpDown
+} from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 
@@ -22,6 +35,10 @@ interface Submission {
 export default function SubmissionsDashboard() {
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [selectedSector, setSelectedSector] = useState("All")
+    const [selectedTier, setSelectedTier] = useState("All")
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Submission | 'profiles.organization_name', direction: 'asc' | 'desc' }>({ key: 'created_at', direction: 'desc' })
     const supabase = createClient()
 
     useEffect(() => {
@@ -44,12 +61,12 @@ export default function SubmissionsDashboard() {
                 const userIds = [...new Set(assessmentsData.map(a => a.user_id))]
                 const { data: profilesData } = await supabase
                     .from('profiles')
-                    .select('id, email')
+                    .select('id, email, organization_name, name, username, industry')
                     .in('id', userIds)
 
-                // Create a map of user_id to email
+                // Create a map of user_id to profile
                 const profileMap = new Map(
-                    profilesData?.map(p => [p.id, { email: p.email }]) || []
+                    profilesData?.map(p => [p.id, p]) || []
                 )
 
                 // Combine the data
@@ -65,6 +82,54 @@ export default function SubmissionsDashboard() {
 
         fetchSubmissions()
     }, [supabase])
+
+    const filteredSubmissions = useMemo(() => {
+        let result = [...submissions]
+
+        // Search Filter
+        if (searchTerm) {
+            const lowTerm = searchTerm.toLowerCase()
+            result = result.filter(s =>
+                (s.profiles as any)?.organization_name?.toLowerCase().includes(lowTerm) ||
+                (s.profiles as any)?.email?.toLowerCase().includes(lowTerm) ||
+                s.id.toLowerCase().includes(lowTerm)
+            )
+        }
+
+        // Sector Filter
+        if (selectedSector !== "All") {
+            result = result.filter(s => ((s.profiles as any)?.industry || s.industry_id.replace(/_/g, ' ')) === selectedSector)
+        }
+
+        // Tier Filter
+        if (selectedTier !== "All") {
+            result = result.filter(s => s.risk_tier.toUpperCase() === selectedTier.toUpperCase())
+        }
+
+        // Sorting
+        result.sort((a, b) => {
+            let aVal: any = a[sortConfig.key as keyof Submission]
+            let bVal: any = b[sortConfig.key as keyof Submission]
+
+            if (sortConfig.key === 'profiles.organization_name') {
+                aVal = (a.profiles as any)?.organization_name || "Individual"
+                bVal = (b.profiles as any)?.organization_name || "Individual"
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
+            return 0
+        })
+
+        return result
+    }, [submissions, searchTerm, selectedSector, selectedTier, sortConfig])
+
+    const handleSort = (key: keyof Submission | 'profiles.organization_name') => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+        }))
+    }
 
     if (isLoading) {
         return (
@@ -92,95 +157,196 @@ export default function SubmissionsDashboard() {
             <main className="max-w-7xl mx-auto p-8">
                 <div className="mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-black text-si-navy font-outfit mb-2">Risk Protocol Reports</h1>
+                        <h1 className="text-3xl font-black text-si-navy font-outfit mb-2">Audit Reports</h1>
                         <p className="text-slate-500 font-medium">Review and analyze finalized client underwriting submissions.</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm font-bold text-si-navy">{submissions.length} Total Submissions</span>
-                        </div>
+                        <button
+                            onClick={() => {
+                                const headers = ["ID", "Organization", "User", "Sector", "Score", "Tier", "Date"]
+                                const rows = filteredSubmissions.map(s => [
+                                    s.id,
+                                    (s.profiles as any)?.organization_name || "Individual",
+                                    (s.profiles as any)?.name || s.profiles?.email,
+                                    (s.profiles as any)?.industry || s.industry_id.replace(/_/g, ' '),
+                                    `${s.total_score}%`,
+                                    s.risk_tier,
+                                    new Date(s.created_at).toLocaleDateString()
+                                ])
+                                const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n")
+                                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+                                const url = URL.createObjectURL(blob)
+                                const link = document.createElement("a")
+                                link.setAttribute("href", url)
+                                link.setAttribute("download", `submissions_export_${new Date().toISOString().split('T')[0]}.csv`)
+                                link.style.visibility = 'hidden'
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                            }}
+                            className="px-6 py-2.5 bg-si-navy text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-si-blue-primary transition-all shadow-lg shadow-si-navy/10"
+                        >
+                            <Download className="w-4 h-4" />
+                            Export CSV
+                        </button>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-si-navy/5 overflow-hidden">
+                {/* Filter Bar */}
+                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-8 flex flex-wrap items-center gap-6">
+                    <div className="flex-1 min-w-[300px] relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search Organization, Email or ID..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-si-blue-primary/10 transition-all placeholder:text-slate-300"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all">
+                            <Filter className="w-3 h-3 text-slate-400" />
+                            <select
+                                value={selectedSector}
+                                onChange={(e) => setSelectedSector(e.target.value)}
+                                className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
+                            >
+                                <option value="All">All Sectors</option>
+                                {[...new Set(submissions.map(s => (s.profiles as any)?.industry || s.industry_id.replace(/_/g, ' ')))].map(sector => (
+                                    <option key={sector} value={sector}>{sector}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all">
+                            <ShieldCheck className="w-3 h-3 text-slate-400" />
+                            <select
+                                value={selectedTier}
+                                onChange={(e) => setSelectedTier(e.target.value)}
+                                className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
+                            >
+                                <option value="All">All Tiers</option>
+                                <option value="TIER A">Tier A</option>
+                                <option value="TIER B">Tier B</option>
+                                <option value="TIER C">Tier C</option>
+                                <option value="DECLINE">Decline</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <span className="text-sm font-bold text-si-navy">{submissions.length} Total Submissions</span>
+                <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                                    <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Identifier</th>
-                                    <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Industry</th>
-                                    <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Score</th>
+                                    <th
+                                        onClick={() => handleSort('profiles.organization_name')}
+                                        className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            Organization / Client
+                                            {sortConfig.key === 'profiles.organization_name' && <ArrowUpDown className="w-3 h-3" />}
+                                        </div>
+                                    </th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">User / Sector</th>
+                                    <th
+                                        onClick={() => handleSort('total_score')}
+                                        className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center cursor-pointer hover:bg-slate-100/50 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-center gap-2">
+                                            Score
+                                            {sortConfig.key === 'total_score' && <ArrowUpDown className="w-3 h-3" />}
+                                        </div>
+                                    </th>
                                     <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Tier</th>
-                                    <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Submission Date</th>
+                                    <th
+                                        onClick={() => handleSort('created_at')}
+                                        className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            Submission Date
+                                            {sortConfig.key === 'created_at' && <ArrowUpDown className="w-3 h-3" />}
+                                        </div>
+                                    </th>
                                     <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {submissions.length === 0 ? (
+                                {filteredSubmissions.map((sub, idx) => (
+                                    <motion.tr
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        key={sub.id}
+                                        className="group border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+                                    >
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-si-navy text-xs uppercase group-hover:bg-si-navy group-hover:text-white transition-colors duration-300">
+                                                    {(sub.profiles as any)?.organization_name?.substring(0, 2) || (sub.profiles as any)?.email?.substring(0, 2) || 'CL'}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-black text-si-navy">{(sub.profiles as any)?.organization_name || 'Individual Client'}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">ID: {sub.id.substring(0, 8)}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-600 truncate max-w-[150px]">
+                                                    {(sub.profiles as any)?.name || (sub.profiles as any)?.email}
+                                                </span>
+                                                <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-tighter">
+                                                    {(sub.profiles as any)?.industry || sub.industry_id.replace(/_/g, ' ')}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className="inline-block px-3 py-1 bg-si-blue-primary/10 rounded-lg">
+                                                <span className="text-sm font-black text-si-blue-primary">{sub.total_score}%</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className={`inline-block px-3 py-1 rounded-lg ${sub.risk_tier.includes('A') ? 'bg-emerald-100 text-emerald-700' :
+                                                sub.risk_tier.includes('B') ? 'bg-amber-100 text-amber-700' :
+                                                    'bg-si-red/10 text-si-red'
+                                                }`}>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{sub.risk_tier}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-slate-600">
+                                                    {new Date(sub.created_at).toLocaleDateString()}
+                                                </span>
+                                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tight">
+                                                    {new Date(sub.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <Link
+                                                href={`/admin/submissions/${sub.id}`}
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-si-navy text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-si-blue-primary transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0"
+                                            >
+                                                <span>Review</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </Link>
+                                        </td>
+                                    </motion.tr>
+                                ))}
+                                {filteredSubmissions.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-8 py-20 text-center text-slate-400">
-                                            No assessments have been submitted yet.
+                                        <td colSpan={6} className="px-8 py-20 text-center">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <Search className="w-12 h-12 text-slate-200" />
+                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No matching audits found</p>
+                                            </div>
                                         </td>
                                     </tr>
-                                ) : (
-                                    submissions.map((sub, idx) => (
-                                        <motion.tr
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            key={sub.id}
-                                            className="group hover:bg-slate-50/50 transition-colors"
-                                        >
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-si-navy text-xs uppercase group-hover:bg-si-navy group-hover:text-white transition-colors duration-300">
-                                                        {sub.profiles?.email?.substring(0, 2) || 'CL'}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-black text-si-navy">{sub.profiles?.email}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">ID: {sub.id.substring(0, 8)}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <span className="text-sm font-bold text-slate-600 capitalize">{sub.industry_id.replace(/_/g, ' ')}</span>
-                                            </td>
-                                            <td className="px-8 py-6 text-center">
-                                                <div className="inline-block px-3 py-1 bg-si-blue-primary/10 rounded-lg">
-                                                    <span className="text-sm font-black text-si-blue-primary">{sub.total_score}%</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6 text-center">
-                                                <div className={`inline-block px-3 py-1 rounded-lg font-black text-xs ${sub.risk_tier === 'A' ? 'bg-emerald-50 text-emerald-600' :
-                                                    sub.risk_tier === 'B' ? 'bg-blue-50 text-blue-600' :
-                                                        sub.risk_tier === 'C' ? 'bg-orange-50 text-orange-600' :
-                                                            'bg-red-50 text-red-600'
-                                                    }`}>
-                                                    Tier {sub.risk_tier}
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col">
-                                                    <span className="text-xs font-bold text-slate-600">
-                                                        {new Date(sub.created_at).toLocaleDateString()}
-                                                    </span>
-                                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tight">
-                                                        {new Date(sub.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6 text-right">
-                                                <Link
-                                                    href={`/admin/submissions/${sub.id}`}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 hover:bg-si-navy hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 active:scale-95"
-                                                >
-                                                    View Report
-                                                    <ExternalLink className="w-3 h-3" />
-                                                </Link>
-                                            </td>
-                                        </motion.tr>
-                                    ))
                                 )}
                             </tbody>
                         </table>

@@ -63,9 +63,9 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
     }
 
     if (result.riskTier === "B") {
-      reasons.push("Tier B detected: Structural loading enforced (+20%) due to suboptimal posture.")
+      reasons.push("Tier B detected: Structural loading enforced (+40%) due to suboptimal posture.")
     } else if (result.riskTier === "C") {
-      reasons.push("Tier C detected: Maximum loading enforced (+50%) due to high risk volatility.")
+      reasons.push("Tier C detected: Maximum loading enforced (+80%) due to high risk volatility.")
     }
 
     return reasons.slice(0, 4)
@@ -74,9 +74,9 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
   const reasons = getReasons()
 
   return (
-    <div className="h-full flex flex-col bg-white text-si-navy font-inter">
+    <div className="h-full flex flex-col font-inter bg-white/40">
       {/* Premium Header */}
-      <div className="p-8 border-b border-slate-100 bg-gradient-to-b from-white to-slate-50">
+      <div className="p-8 border-b border-white/20 bg-white/40 backdrop-blur-md">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2.5 bg-si-blue-primary text-white rounded-xl shadow-lg shadow-si-blue-primary/20">
             <Terminal className="w-6 h-6" />
@@ -105,10 +105,10 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
           >
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-si-blue-primary" />
-              <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] text-slate-400">Underwriting Rationale</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Underwriting Rationale</span>
             </div>
             <motion.div animate={{ rotate: expandedReasons ? 180 : 0 }}>
-              <ChevronDown className="w-4 h-4 text-slate-300 group-hover/btn:text-si-blue-primary transition-colors" />
+              <ChevronDown className="w-4 h-4 text-slate-400 group-hover/btn:text-si-blue-primary transition-colors" />
             </motion.div>
           </button>
 
@@ -127,14 +127,14 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.1 }}
-                      className="flex gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200 group/reason si-interactive"
+                      className="flex gap-4 p-5 rounded-2xl bg-white/60 border border-white/50 group/reason cursor-pointer hover:bg-white/80 transition-all shadow-sm"
                     >
                       <AlertCircle size={18} className="text-si-blue-primary mt-0.5 flex-shrink-0 opacity-80 group-hover/reason:opacity-100 transition-opacity" />
                       <p className="text-[11px] text-slate-700 font-bold leading-relaxed tracking-tight">{reason}</p>
                     </motion.div>
                   ))
                 ) : (
-                  <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+                  <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200/50 text-center backdrop-blur-sm">
                     <p className="text-[11px] text-emerald-700 font-black uppercase tracking-widest">No Adverse Volatility Detected</p>
                   </div>
                 )}
@@ -153,8 +153,8 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
                   key={idx}
                   onClick={() => onNavigateToDomain(driver.domainId)}
                   className={`w-full text-left p-4 rounded-xl border transition-all duration-300 group ${driver.type === "critical"
-                    ? "bg-red-50 border-red-100 hover:border-red-300"
-                    : "bg-amber-50 border-amber-100 hover:border-amber-300"
+                    ? "bg-red-50/50 border-red-100 hover:border-red-300 backdrop-blur-sm"
+                    : "bg-amber-50/50 border-amber-100 hover:border-amber-300 backdrop-blur-sm"
                     }`}
                   whileHover={{ x: 4 }}
                 >
@@ -176,7 +176,7 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
         )}
 
         {/* Methodology Info */}
-        <div className="p-6 rounded-2xl bg-si-navy shadow-xl shadow-si-navy/20 border border-slate-200 relative overflow-hidden">
+        <div className="p-6 rounded-2xl bg-si-navy shadow-xl shadow-si-navy/20 border border-white/10 relative overflow-hidden group">
           <div className="relative z-10 flex items-start gap-4">
             <HelpCircle className="w-6 h-6 text-si-blue-primary flex-shrink-0" />
             <div>
@@ -186,14 +186,12 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
               </p>
             </div>
           </div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-si-blue-primary/10 blur-3xl -mr-16 -mt-16 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-si-blue-primary/10 blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-si-blue-primary/20 transition-colors" />
         </div>
-
-
       </div>
 
       {/* Corporate Footer Branded */}
-      <div className="p-8 border-t border-slate-100 text-center bg-slate-50">
+      <div className="p-6 border-t border-white/20 text-center bg-white/40 backdrop-blur-md">
         <p className="text-[11px] font-black text-si-navy uppercase tracking-[0.4em] mb-2 leading-none">
           Share India Insurance Brokers
         </p>

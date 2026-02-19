@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname
 
     // Public routes
-    const publicRoutes = ['/', '/login', '/auth/callback']
+    const publicRoutes = ['/login', '/auth/callback']
     const isPublicRoute = publicRoutes.some(route => path === route || path.startsWith('/auth/'))
 
     // Protected routes
@@ -73,11 +73,13 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
+    /* 
     if (session && path === '/login') {
         const url = request.nextUrl.clone()
         url.pathname = '/welcome'
         return NextResponse.redirect(url)
     }
+    */
 
     return response
 }

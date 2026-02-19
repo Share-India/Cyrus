@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
-import type { Domain, ScoringResult } from "./scoring-engine"
+import { type Domain, type ScoringResult, getCurrentPremiumLoading } from "./scoring-engine"
 
 // Extend jsPDF type to include autoTable
 declare module "jspdf" {
@@ -27,41 +27,48 @@ export async function downloadPDFSummary(
     const DARK_GRAY = [71, 85, 105] as [number, number, number]
 
     let yPosition = 20
+    const startY = yPosition
 
     // Add Share India Logo with proper aspect ratio
+    let logoHeight = 0
+    const logoWidth = 35 // Slightly smaller width for better proportion
+
     try {
-        const logoImg = await loadImage('/share-india-logo.png')
-        // Fixed aspect ratio - logo is approximately 3:1 (width:height)
-        const logoWidth = 45
-        const logoHeight = 15 // Maintains 3:1 aspect ratio
-        doc.addImage(logoImg, 'PNG', 15, yPosition, logoWidth, logoHeight)
+        const { dataUrl, width, height } = await loadImage('/share-india-logo.png')
+        logoHeight = (height / width) * logoWidth
+        doc.addImage(dataUrl, 'PNG', 15, yPosition, logoWidth, logoHeight)
     } catch (error) {
         console.warn('Logo not loaded, continuing without it')
     }
 
-    yPosition += 20
+    // Company Header - Positioned to the right of the logo
+    const textX = 15 + logoWidth + 8
+    let textY = yPosition + 8 // Optical alignment with logo top
 
-    // Company Header
-    doc.setFontSize(10)
+    doc.setFontSize(12) // Slightly larger company name
     doc.setTextColor(...NAVY)
     doc.setFont('helvetica', 'bold')
-    doc.text('SHARE INDIA INSURANCE BROKERS', 15, yPosition)
-    yPosition += 5
+    doc.text('SHARE INDIA INSURANCE BROKERS', textX, textY)
 
+    textY += 6
     doc.setFontSize(8)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...DARK_GRAY)
-    doc.text('An IRDAI Licensed Direct Insurance Broker (Composite)', 15, yPosition)
-    yPosition += 4
-    doc.text('"YOU GENERATE, WE MULTIPLY"', 15, yPosition)
-    yPosition += 10
+    doc.text('An IRDAI Licensed Direct Insurance Broker (Composite)', textX, textY)
+
+    textY += 5
+    doc.setFont('helvetica', 'italic')
+    doc.text('"YOU GENERATE, WE MULTIPLY"', textX, textY)
+
+    // Update yPosition to be below the tallest element (logo or text) + padding
+    yPosition = Math.max(startY + logoHeight, textY) + 20
 
     // Title
-    doc.setFontSize(18)
+    doc.setFontSize(22) // Larger title
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...NAVY)
     doc.text('CYBER RISK ASSESSMENT SUMMARY', 15, yPosition)
-    yPosition += 10
+    yPosition += 15
 
     // Client Information Section - Always show with all available details
     const hasClientInfo = clientName || industryName || clientEmail || submissionDate || protocolId
@@ -182,7 +189,7 @@ export async function downloadPDFSummary(
     doc.text('Premium Loading:', 20, yPosition)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...DARK_GRAY)
-    doc.text(result.premiumLoading, 70, yPosition)
+    doc.text(getCurrentPremiumLoading(result.riskTier), 70, yPosition)
     yPosition += 6
 
     // Auto-Decline Status
@@ -375,7 +382,13 @@ export async function downloadPDFSummary(
 }
 
 // Helper function to load image
-function loadImage(url: string): Promise<string> {
+interface ImageInfo {
+    dataUrl: string
+    width: number
+    height: number
+}
+
+function loadImage(url: string): Promise<ImageInfo> {
     return new Promise((resolve, reject) => {
         const img = new Image()
         img.crossOrigin = 'Anonymous'
@@ -386,7 +399,11 @@ function loadImage(url: string): Promise<string> {
             const ctx = canvas.getContext('2d')
             if (ctx) {
                 ctx.drawImage(img, 0, 0)
-                resolve(canvas.toDataURL('image/png'))
+                resolve({
+                    dataUrl: canvas.toDataURL('image/png'),
+                    width: img.width,
+                    height: img.height
+                })
             } else {
                 reject(new Error('Could not get canvas context'))
             }

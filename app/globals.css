@@ -4,118 +4,98 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Share India Official Brand Colors (from shareindiainsurance.com) */
+  /* Share India Official Brand Colors (Refined) */
   --share-india-blue: #2DA9FF;
-  /* Primary blue - buttons, actions */
   --share-india-blue-secondary: #0EA5E9;
-  /* Secondary blue - gradients */
   --share-india-red: #E53935;
-  /* Accent red - badges, highlights */
-  --share-india-navy: #1E293B;
-  /* Headings */
-  --share-india-charcoal: #062434;
-  /* Body text */
+  --share-india-navy: #0F172A;
+  /* Darker, richer navy */
+  --share-india-charcoal: #1E293B;
 
-  /* Core theme based on official Share India branding */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(0.99 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /* Core theme - Premium Feel */
+  --background: oklch(0.985 0.01 240);
+  /* Very subtle cool gray/blue tint */
+  --foreground: oklch(0.13 0.02 240);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0.02 240);
+
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.13 0.02 240);
 
-  /* Primary: Share India Blue #2DA9FF */
-  --primary: oklch(0.72 0.15 230);
-  /* Bright sky blue */
-  --primary-foreground: oklch(0.985 0 0);
+  /* Primary: Share India Blue variations */
+  --primary: oklch(0.68 0.16 235);
+  /* Vibrant Blue */
+  --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary: Share India Red #E53935 */
-  --secondary: oklch(0.62 0.24 25);
-  /* Vibrant red */
-  --secondary-foreground: oklch(0.985 0 0);
+  /* Secondary: Deep Navy/Slate */
+  --secondary: oklch(0.25 0.04 240);
+  --secondary-foreground: oklch(0.99 0 0);
 
-  /* Muted: Subtle grays */
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Muted */
+  --muted: oklch(0.96 0.01 240);
+  --muted-foreground: oklch(0.55 0.02 240);
 
-  /* Accent: Share India Blue gradient */
-  --accent: oklch(0.68 0.16 225);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Accent: Electric Blue */
+  --accent: oklch(0.85 0.1 235);
+  --accent-foreground: oklch(0.25 0.04 240);
 
-  /* Destructive: Share India Red */
+  /* Destructive */
   --destructive: oklch(0.62 0.24 25);
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive-foreground: oklch(0.99 0 0);
 
-  /* Neutrals */
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.5 0.15 250);
-  /* Blue ring */
+  /* Borders & Inputs */
+  --border: oklch(0.92 0.01 240);
+  --input: oklch(0.92 0.01 240);
+  --ring: oklch(0.68 0.16 235);
 
-  /* Charts - Share India themed */
-  --chart-1: oklch(0.42 0.12 250);
-  /* Blue */
-  --chart-2: oklch(0.55 0.22 25);
-  /* Red */
-  --chart-3: oklch(0.6 0.15 270);
-  /* Purple */
-  --chart-4: oklch(0.65 0.18 180);
-  /* Cyan */
+  /* Charts */
+  --chart-1: oklch(0.68 0.16 235);
+  --chart-2: oklch(0.25 0.04 240);
+  --chart-3: oklch(0.62 0.24 25);
+  --chart-4: oklch(0.85 0.1 235);
   --chart-5: oklch(0.7 0.2 140);
-  /* Green */
 
-  /* Spacing */
-  --radius: 0.75rem;
+  --radius: 1rem;
 
   /* Sidebar */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.42 0.12 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.5 0.15 250);
+  --sidebar: oklch(0.99 0 0);
+  --sidebar-foreground: oklch(0.13 0.02 240);
+  --sidebar-primary: oklch(0.68 0.16 235);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.01 240);
+  --sidebar-accent-foreground: oklch(0.13 0.02 240);
+  --sidebar-border: oklch(0.92 0.01 240);
+  --sidebar-ring: oklch(0.68 0.16 235);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.5 0.15 250);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.6 0.24 25);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.5 0.15 250);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.5 0.15 250);
-  --chart-1: oklch(0.5 0.15 250);
-  --chart-2: oklch(0.6 0.24 25);
-  --chart-3: oklch(0.65 0.18 270);
-  --chart-4: oklch(0.7 0.2 180);
-  --chart-5: oklch(0.75 0.22 140);
-  --sidebar: oklch(0.2 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.5 0.15 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.5 0.15 250);
+  --background: oklch(0.1 0.02 240);
+  --foreground: oklch(0.99 0 0);
+  --card: oklch(0.15 0.02 240);
+  --card-foreground: oklch(0.99 0 0);
+  --popover: oklch(0.15 0.02 240);
+  --popover-foreground: oklch(0.99 0 0);
+  --primary: oklch(0.68 0.16 235);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.25 0.04 240);
+  --secondary-foreground: oklch(0.99 0 0);
+  --muted: oklch(0.2 0.02 240);
+  --muted-foreground: oklch(0.7 0.02 240);
+  --accent: oklch(0.25 0.04 240);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.62 0.24 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.2 0.02 240);
+  --input: oklch(0.2 0.02 240);
+  --ring: oklch(0.68 0.16 235);
 }
 
 @theme inline {
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Inter", "Courier New", monospace;
+  --font-outfit: "Outfit", sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -135,23 +115,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 
   /* Custom Share India Colors */
   --color-si-navy: var(--share-india-navy);
@@ -163,71 +131,74 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
     cursor: default;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     cursor: default;
   }
 }
 
-/* Share India Cyber Insurance - Custom Styles */
 @layer components {
+
+  /* Premium Glassmorphism */
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Premium Shadows */
+  .premium-shadow {
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.02),
+      0 10px 15px -3px rgba(0, 0, 0, 0.04),
+      0 20px 25px -5px rgba(0, 0, 0, 0.02);
+  }
+
+  .premium-shadow-hover:hover {
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.04),
+      0 25px 30px -5px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Text Gradients */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-si-navy to-si-blue-primary;
+  }
+
+  .text-gradient-red {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-si-red to-orange-500;
+  }
 
   /* Score color coding */
   .cyrus-score-color-excellent {
-    @apply text-green-600;
+    @apply text-emerald-600 font-bold;
   }
 
   .cyrus-score-color-warning {
-    @apply text-amber-500;
+    @apply text-amber-500 font-bold;
   }
 
   .cyrus-score-color-critical {
-    @apply text-red-600;
+    @apply text-si-red font-bold;
   }
 
-  /* Cursor interactivity */
+  /* Interactive Elements */
   .cursor-interactive {
-    @apply transition-all duration-300 ease-out;
-    cursor: pointer;
+    @apply transition-all duration-300 ease-out cursor-pointer;
   }
 
   .cursor-interactive:hover {
-    @apply scale-[1.02] shadow-lg;
+    @apply scale-[1.02];
   }
 
   .cursor-interactive:active {
     @apply scale-[0.98];
-  }
-
-  /* Button ripple effect */
-  .btn-ripple {
-    @apply relative overflow-hidden;
-    cursor: pointer;
-  }
-
-  .btn-ripple:before {
-    content: '';
-    @apply absolute top-1/2 left-1/2 w-0 h-0 rounded-full bg-white/30;
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-  }
-
-  .btn-ripple:hover:before {
-    @apply w-80 h-80;
-  }
-
-  /* Card hover effect */
-  .card-hover {
-    @apply transition-all duration-300 ease-in-out;
-    cursor: pointer;
-  }
-
-  .card-hover:hover {
-    @apply shadow-xl -translate-y-1 border-primary/50;
   }
 
   /* Smooth transitions */
@@ -237,50 +208,36 @@
 
   /* Domain card styling */
   .domain-card {
-    @apply bg-card rounded-xl p-6 border border-border;
-    @apply transition-all duration-300 ease-in-out;
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl p-6;
     cursor: pointer;
   }
 
   .domain-card:hover {
-    @apply shadow-xl border-primary/40 bg-card/80;
-    transform: translateY(-4px);
+    @apply border-si-blue-primary/30 -translate-y-1;
   }
 
-  /* Question card styling */
-  .question-card {
-    @apply bg-white rounded-lg p-4 border border-slate-200;
-    @apply transition-all duration-200 ease-in-out;
-  }
-
-  .question-card:hover {
-    @apply border-primary/30 shadow-md;
-  }
-
-  /* Killer question badge */
-  .killer-badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-    @apply bg-gradient-to-r from-red-500 to-red-600 text-white;
-    @apply shadow-sm;
-  }
-
-  /* Share India official brand gradient (135deg from website) */
-  .si-gradient {
-    @apply bg-gradient-to-br from-[#2DA9FF] to-[#0EA5E9];
-  }
-
-  .si-gradient-text {
-    @apply bg-gradient-to-r from-[#2DA9FF] to-[#E53935] bg-clip-text text-transparent;
-  }
-
-  /* Rounded corners matching Share India website (24px-32px) */
+  /* SI Card Standard */
   .si-card {
-    @apply rounded-3xl;
-    /* 24px */
+    @apply bg-white rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden;
   }
 
-  .si-card-lg {
-    @apply rounded-[2rem];
-    /* 32px */
+  /* Killer Badge */
+  .killer-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider;
+    @apply bg-gradient-to-r from-si-red to-orange-600 text-white shadow-md shadow-si-red/20;
   }
+}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
 }

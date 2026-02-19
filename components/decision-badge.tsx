@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import type { ScoringResult } from "@/lib/scoring-engine"
+import { type ScoringResult, getCurrentPremiumLoading } from "@/lib/scoring-engine"
 import { ShieldCheck, ShieldAlert, ShieldX, Activity } from "lucide-react"
 
 interface DecisionBadgeProps {
@@ -94,7 +94,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         <div className="flex items-center justify-between pt-8 border-t border-white/5 relative z-10">
           <div>
             <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Institutional Premium Load</span>
-            <span className={`text-5xl font-black font-outfit ${config.textColor}`}>{result.premiumLoading}</span>
+            <span className={`text-5xl font-black font-outfit ${config.textColor}`}>{getCurrentPremiumLoading(result.riskTier)}</span>
           </div>
           <div className="text-right">
             <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Final Risk Tier</span>

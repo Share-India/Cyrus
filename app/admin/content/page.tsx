@@ -11,6 +11,8 @@ export default function AdminContentPage() {
     const { domains, refreshData, isLoading, isAdmin } = useUnderwriting()
     const [isSaving, setIsSaving] = useState(false)
     const [expandedDomain, setExpandedDomain] = useState<string | null>(null)
+    const [stagedKillers, setStagedKillers] = useState<Record<string, boolean>>({})
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
     if (!isAdmin) {
         return (
@@ -51,6 +53,42 @@ export default function AdminContentPage() {
         setIsSaving(false)
     }
 
+    const handleKillerToggle = (qId: string, currentStatus: boolean) => {
+        const newStatus = stagedKillers[qId] !== undefined ? !stagedKillers[qId] : !currentStatus
+        setStagedKillers(prev => ({
+            ...prev,
+            [qId]: newStatus
+        }))
+        setHasUnsavedChanges(true)
+    }
+
+    const handleSaveRiskConfiguration = async () => {
+        setIsSaving(true)
+        const supabase = createClient()
+
+        try {
+            const updates = Object.entries(stagedKillers).map(([id, is_killer]) =>
+                supabase.from('questions').update({ is_killer }).eq('id', id)
+            )
+
+            const results = await Promise.all(updates)
+            const error = results.find(r => r.error)?.error
+
+            if (error) {
+                alert("Error saving risk configuration: " + error.message)
+            } else {
+                setStagedKillers({})
+                setHasUnsavedChanges(false)
+                await refreshData()
+                alert("Risk Configuration deployed globally!")
+            }
+        } catch (e: any) {
+            alert("Unexpected error: " + e.message)
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-white font-inter pb-20">
             {/* Header */}
@@ -64,15 +102,25 @@ export default function AdminContentPage() {
                             <Scale className="w-3 h-3 text-si-blue-primary" />
                             <span className="text-[10px] text-si-blue-primary font-black uppercase tracking-[0.3em]">Module: Content Processor</span>
                         </div>
-                        <h1 className="text-xl font-black text-white font-outfit tracking-tight mt-1">Operational Protocol Editor</h1>
+                        <h1 className="text-xl font-black text-white font-outfit tracking-tight mt-1">Audit framework Editor</h1>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-6">
+                    {hasUnsavedChanges && (
+                        <button
+                            onClick={handleSaveRiskConfiguration}
+                            disabled={isSaving}
+                            className="px-6 py-3 bg-si-red text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-xl hover:bg-si-red/80 transition-all duration-500 shadow-xl shadow-si-red/20 flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+                        >
+                            <Save className="w-4 h-4" />
+                            Save Risk Configuration
+                        </button>
+                    )}
                     {isSaving && (
                         <div className="flex items-center gap-3 py-2 px-4 bg-si-blue-primary/10 rounded-full border border-si-blue-primary/20 animate-pulse">
                             <div className="w-2 h-2 bg-si-blue-primary rounded-full" />
-                            <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest">Encrypting...</span>
+                            <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest">Processing...</span>
                         </div>
                     )}
                     <button className="px-6 py-3 bg-white text-si-navy text-[10px] font-black uppercase tracking-[0.3em] rounded-xl hover:bg-si-blue-primary hover:text-white transition-all duration-500 shadow-xl shadow-white/5">
@@ -101,7 +149,7 @@ export default function AdminContentPage() {
                                             type="text"
                                             defaultValue={domain.name}
                                             onBlur={(e) => handleUpdateDomain(domain.id, { name: e.target.value })}
-                                            className="font-black text-2xl text-si-navy bg-transparent border-none focus:ring-0 p-0 font-outfit italic tracking-tight hover:bg-slate-200/50 rounded-xl px-4 py-1 transition-all"
+                                            className="w-full font-black text-2xl text-si-navy bg-transparent border-none focus:ring-0 p-0 font-outfit italic tracking-tight hover:bg-slate-200/50 rounded-xl px-4 py-1 transition-all"
                                         />
                                         <div className="flex items-center gap-4 mt-2 px-4">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Reference ID:</span>
@@ -191,11 +239,16 @@ export default function AdminContentPage() {
 
                                                             <div className="flex items-center gap-8 bg-white px-6 py-4 rounded-2xl border border-slate-100 shrink-0">
                                                                 <button
-                                                                    onClick={() => handleUpdateQuestion(q.id, { is_killer: !q.isKiller })}
-                                                                    className={`flex items-center gap-3 px-4 py-2 rounded-xl border-2 transition-all ${q.isKiller ? 'bg-si-red border-si-red text-white shadow-lg shadow-si-red/20' : 'bg-slate-50 border-slate-50 text-slate-300 hover:border-si-red hover:text-si-red'}`}
+                                                                    onClick={() => handleKillerToggle(q.id, q.isKiller)}
+                                                                    className={`flex items-center gap-3 px-4 py-2 rounded-xl border-2 transition-all ${(stagedKillers[q.id] !== undefined ? stagedKillers[q.id] : q.isKiller)
+                                                                        ? 'bg-si-red border-si-red text-white shadow-lg shadow-si-red/20'
+                                                                        : 'bg-slate-50 border-slate-50 text-slate-300 hover:border-si-red hover:text-si-red'
+                                                                        } ${stagedKillers[q.id] !== undefined ? 'ring-2 ring-si-blue-primary/50 ring-offset-2' : ''}`}
                                                                 >
-                                                                    <Zap className={`w-4 h-4 ${q.isKiller ? 'animate-pulse' : ''}`} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Killer Control</span>
+                                                                    <Zap className={`w-4 h-4 ${(stagedKillers[q.id] !== undefined ? stagedKillers[q.id] : q.isKiller) ? 'animate-pulse' : ''}`} />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                                                        {stagedKillers[q.id] !== undefined ? 'Staged Change' : 'Killer Control'}
+                                                                    </span>
                                                                 </button>
 
                                                                 <div className="flex items-center gap-2">

@@ -43,9 +43,10 @@ interface UnderwritingContextType {
     handleReset: () => void
     saveDraft: () => Promise<{ success: boolean; error?: string }>
     autoSaveDraft: () => Promise<void>
-    submitAssessment: () => Promise<{ success: boolean; error?: string }>
+    submitAssessment: () => Promise<{ success: boolean; assessmentId?: string; error?: string }>
     refreshData: () => Promise<void>
     updateProfile: (updates: any) => Promise<{ success: boolean; error?: string }>
+    signOut: () => Promise<void>
     setCurrentDomainIndex: (index: number) => void
     setCurrentQuestionIndex: (index: number) => void
 }
@@ -72,12 +73,10 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         const supabase = createClient()
 
         try {
-            // Add timeout to prevent infinite hanging (5 seconds for faster fallback)
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Database timeout after 5s')), 5000)
             )
 
-            // Fetch Domains and Questions in parallel with timeout
             const fetchPromise = Promise.all([
                 supabase.from('domains').select('*').order('display_order', { ascending: true }),
                 supabase.from('questions').select('*')
@@ -90,13 +89,10 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
             if (domainsRes.error || questionsRes.error) {
                 console.error("Error fetching questionnaire", domainsRes.error || questionsRes.error)
-                // Fallback to local DOMAINS
-                console.warn("⚠️ Falling back to local domain data")
-                setDomains(DOMAINS)
+                setDomains(JSON.parse(JSON.stringify(DOMAINS)))
                 return
             }
 
-            // Stitch them together
             const rawDomains = domainsRes.data || []
             const rawQuestions = questionsRes.data || []
 
@@ -114,40 +110,15 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                         text: q.text,
                         type: q.type,
                         options: q.options,
-                        response: -1, // Default state
+                        response: -1,
                         isKiller: q.is_killer
                     }))
             }))
 
-            // Apply local draft if exists
-            const saved = localStorage.getItem("cyrus_draft_v2")
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved)
-                    // Merge draft responses into the fresh domains list
-                    stitchedDomains.forEach(d => {
-                        const savedDomain = parsed.domains?.find((sd: any) => sd.id === d.id)
-                        if (savedDomain) {
-                            d.activeWeight = savedDomain.activeWeight
-                            d.questions.forEach(q => {
-                                const savedQ = savedDomain.questions?.find((sq: any) => sq.id === q.id)
-                                if (savedQ) q.response = savedQ.response
-                            })
-                        }
-                    })
-                    if (parsed.selectedIndustry) setSelectedIndustry(parsed.selectedIndustry)
-                    if (parsed.manualOverrideEnabled !== undefined) setManualOverrideEnabled(parsed.manualOverrideEnabled)
-                } catch (e) {
-                    console.error("Failed to merge draft", e)
-                }
-            }
-
             setDomains(stitchedDomains)
         } catch (error) {
             console.error("❌ Failed to fetch questionnaire:", error)
-            // Fallback to local DOMAINS constant
-            console.warn("⚠️ Using local domain data as fallback")
-            setDomains(DOMAINS)
+            setDomains(JSON.parse(JSON.stringify(DOMAINS)))
         }
     }, [])
 
@@ -159,9 +130,12 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
             // 1. Get User Session
             const { data: { session } } = await supabase.auth.getSession()
+            console.log("🔍 Session Check:", session ? `Active: ${session.user.id}` : "No Session")
 
             let cloudDraftData: any = null
             let profileIndustry: string | null = null
+            // CRITICAL: Use JSON.parse(JSON.stringify()) for a TRUE deep copy to prevent mutation leakage
+            let finalDomains: Domain[] = JSON.parse(JSON.stringify(DOMAINS))
 
             if (session?.user) {
                 // 2. Fetch Profile Role & Draft
@@ -172,7 +146,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     .single()
 
                 if (profile) {
-                    console.log("Found profile:", profile)
+                    console.log("👤 Profile Found:", profile.role, "| Has Draft:", !!profile.draft_data)
                     setUserProfile(profile)
                     setUserRole(profile.role || 'client')
                     setClientName(profile.organization_name || "")
@@ -193,94 +167,66 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 setUserRole(null)
             }
 
-            // 3. Initialize Domains (Cloud Draft -> Local Draft -> Last Submission -> Fresh)
-            let finalDomains = [...DOMAINS] // Start with fresh copy
+            // 3. Draft Resolution (Cloud -> Local)
             let draftToLoad = cloudDraftData
+            const userId = session?.user?.id
+            const storageKey = userId ? `cyrus_draft_v2_${userId}` : "cyrus_draft_v2_guest"
 
-            // If no cloud draft, try local storage
             if (!draftToLoad) {
-                const localSaved = localStorage.getItem("cyrus_draft_v2")
+                const localSaved = localStorage.getItem(storageKey)
                 if (localSaved) {
                     try {
                         draftToLoad = JSON.parse(localSaved)
-                        console.log("📦 Loaded local draft")
-                    } catch (e) { console.error("Bad local draft", e) }
+                        console.log("📦 Found Local Draft")
+                    } catch (e) {
+                        console.error("Bad local draft", e)
+                    }
                 }
-            } else {
-                console.log("☁️ Loaded cloud draft")
-                // Update local storage to match cloud
-                localStorage.setItem("cyrus_draft_v2", JSON.stringify(cloudDraftData))
             }
 
-            if (draftToLoad) {
-                try {
-                    if (draftToLoad.domains) {
-                        finalDomains = finalDomains.map(d => {
-                            const savedD = draftToLoad.domains.find((sd: any) => sd.id === d.id)
-                            if (savedD) {
-                                return {
-                                    ...d,
-                                    activeWeight: savedD.activeWeight,
-                                    questions: d.questions.map(q => {
-                                        const savedQ = savedD.questions?.find((sq: any) => sq.id === q.id)
-                                        return savedQ ? { ...q, response: savedQ.response, isKiller: savedQ.isKiller ?? q.isKiller } : q
-                                    })
+            // 4. Apply State
+            if (session?.user) {
+                if (draftToLoad) {
+                    console.log("📦 Applying draft to domains")
+                    try {
+                        if (draftToLoad.domains) {
+                            finalDomains = finalDomains.map((d: Domain) => {
+                                const savedD = draftToLoad.domains.find((sd: any) => sd.id === d.id)
+                                if (savedD) {
+                                    return {
+                                        ...d,
+                                        activeWeight: d.activeWeight,
+                                        questions: d.questions.map((q: any) => {
+                                            const savedQ = savedD.questions?.find((sq: any) => sq.id === q.id)
+                                            return savedQ ? { ...q, response: savedQ.response } : q
+                                        })
+                                    }
                                 }
-                            }
-                            return d
-                        })
+                                return d
+                            })
+                        }
+                        if (draftToLoad.selectedIndustry && !profileIndustry) setSelectedIndustry(draftToLoad.selectedIndustry)
+                        if (draftToLoad.manualOverrideEnabled) setManualOverrideEnabled(draftToLoad.manualOverrideEnabled)
+                        if (draftToLoad.currentDomainIndex !== undefined) setCurrentDomainIndex(draftToLoad.currentDomainIndex)
+                        if (draftToLoad.currentQuestionIndex !== undefined) setCurrentQuestionIndex(draftToLoad.currentQuestionIndex)
+                        if (draftToLoad.timestamp) setLastSavedTimestamp(draftToLoad.timestamp)
+                        setHasDraft(true)
+                    } catch (e) {
+                        console.error("Error applying draft", e)
                     }
-                    // Only set if not already locked by profile
-                    if (draftToLoad.selectedIndustry && !profileIndustry) setSelectedIndustry(draftToLoad.selectedIndustry)
-                    if (draftToLoad.manualOverrideEnabled) setManualOverrideEnabled(draftToLoad.manualOverrideEnabled)
-
-                    // Restore position tracking
-                    if (draftToLoad.currentDomainIndex !== undefined) setCurrentDomainIndex(draftToLoad.currentDomainIndex)
-                    if (draftToLoad.currentQuestionIndex !== undefined) setCurrentQuestionIndex(draftToLoad.currentQuestionIndex)
-                    if (draftToLoad.timestamp) setLastSavedTimestamp(draftToLoad.timestamp)
-
-                    // Set draft flag
-                    setHasDraft(true)
-                } catch (e) {
-                    console.error("Error applying draft", e)
+                } else {
+                    console.log("✨ Starting fresh assessment for user")
                 }
-            } else if (session?.user) {
-                // If no draft, check for last submission
-                console.log("🔍 No draft found, checking for last submission...")
-                const { data: lastAssessment } = await supabase
-                    .from('assessments')
-                    .select('submission_data, industry_id')
-                    .eq('user_id', session.user.id)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single()
-
-                if (lastAssessment?.submission_data) {
-                    const subData = lastAssessment.submission_data as any
-                    console.log("📊 Loaded last submission data")
-
-                    if (subData.domains) {
-                        finalDomains = finalDomains.map(d => {
-                            const savedD = subData.domains.find((sd: any) => (sd.id === d.id || sd.name === d.name))
-                            if (savedD) {
-                                return {
-                                    ...d,
-                                    activeWeight: savedD.activeWeight || d.defaultWeight,
-                                    questions: d.questions.map(q => {
-                                        const savedQ = savedD.questions?.find((sq: any) => (sq.id === q.id || sq.text === q.text))
-                                        return savedQ ? { ...q, response: savedQ.response, isKiller: savedQ.isKiller ?? q.isKiller } : q
-                                    })
-                                }
-                            }
-                            return d
-                        })
-                    }
-
-                    if (subData.selectedIndustry || lastAssessment.industry_id) {
-                        setSelectedIndustry(subData.selectedIndustry || lastAssessment.industry_id)
-                    }
-                    if (subData.clientName) setClientName(subData.clientName)
-                }
+            } else {
+                // Guest / No Auth fallback
+                console.log("🔒 No active session - forcing clean state")
+                localStorage.removeItem("cyrus_draft_v2_guest")
+                setSelectedIndustry("")
+                setClientName("")
+                setManualOverrideEnabled(false)
+                setHasDraft(false)
+                // Ensure domains are strictly fresh copies of framework defaults
+                finalDomains = JSON.parse(JSON.stringify(DOMAINS))
             }
 
             console.log('📦 Initialized domains')
@@ -309,9 +255,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
     const completionStats = useMemo(() => {
         if (domains.length === 0) return { total: 0, answered: 0, percentage: 0 }
-        const totalQuestions = domains.reduce((sum, d) => sum + d.questions.length, 0)
+        const totalQuestions = domains.reduce((sum: number, d: Domain) => sum + d.questions.length, 0)
         const answeredQuestions = domains.reduce(
-            (sum, d) => sum + d.questions.filter((q) => q.response !== -1).length,
+            (sum: number, d: Domain) => sum + d.questions.filter((q: any) => q.response !== -1).length,
             0
         )
         const percentage = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0
@@ -328,11 +274,10 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     // Actions
     const handleIndustryChange = useCallback((industryId: string) => {
         setSelectedIndustry(industryId)
-        // Find the industry profile and apply weights
         const profile = INDUSTRY_PROFILES.find(p => p.id === industryId)
         if (profile) {
             setDomains(prevDomains =>
-                prevDomains.map(domain => ({
+                prevDomains.map((domain: Domain) => ({
                     ...domain,
                     activeWeight: profile.domainWeights[domain.name] || domain.defaultWeight
                 }))
@@ -343,11 +288,10 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const handleManualOverrideToggle = useCallback((enabled: boolean) => {
         setManualOverrideEnabled(enabled)
         if (!enabled && selectedIndustry) {
-            // Reapply industry weights when turning off manual override
             const profile = INDUSTRY_PROFILES.find(p => p.id === selectedIndustry)
             if (profile) {
                 setDomains(prevDomains =>
-                    prevDomains.map(domain => ({
+                    prevDomains.map((domain: Domain) => ({
                         ...domain,
                         activeWeight: profile.domainWeights[domain.name] || domain.defaultWeight
                     }))
@@ -358,17 +302,17 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
     const handleDomainWeightChange = useCallback((domainId: string, newWeight: number) => {
         setDomains((prevDomains) =>
-            prevDomains.map((domain) => (domain.id === domainId ? { ...domain, activeWeight: newWeight } : domain)),
+            prevDomains.map((domain: Domain) => (domain.id === domainId ? { ...domain, activeWeight: newWeight } : domain)),
         )
     }, [])
 
     const handleQuestionChange = useCallback((domainId: string, questionId: string, response: number) => {
         setDomains((prevDomains) =>
-            prevDomains.map((domain) => {
+            prevDomains.map((domain: Domain) => {
                 if (domain.id === domainId) {
                     return {
                         ...domain,
-                        questions: domain.questions.map((question) =>
+                        questions: domain.questions.map((question: any) =>
                             question.id === questionId ? { ...question, response } : question,
                         ),
                     }
@@ -380,11 +324,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
     const handleKillerToggle = useCallback((domainId: string, questionId: string, isKiller: boolean) => {
         setDomains((prevDomains) =>
-            prevDomains.map((domain) => {
+            prevDomains.map((domain: Domain) => {
                 if (domain.id === domainId) {
                     return {
                         ...domain,
-                        questions: domain.questions.map((question) =>
+                        questions: domain.questions.map((question: any) =>
                             question.id === questionId ? { ...question, isKiller } : question,
                         ),
                     }
@@ -397,7 +341,6 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const handleReset = useCallback(async () => {
         localStorage.removeItem("cyrus_draft_v2")
 
-        // Clear draft from database
         try {
             const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser()
@@ -433,44 +376,45 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             currentQuestionIndex,
             timestamp: new Date().toISOString()
         }
-        localStorage.setItem("cyrus_draft_v2", JSON.stringify(draft))
 
         try {
             const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
+            const { data: { session } } = await supabase.auth.getSession()
+            const user = session?.user
+
+            const storageKey = user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest"
+            localStorage.setItem(storageKey, JSON.stringify(draft))
 
             if (user) {
                 const { error } = await supabase
                     .from('profiles')
-                    .update({ draft_data: draft })
+                    .update({
+                        draft_data: draft,
+                        organization_name: clientName,
+                        industry: selectedIndustry
+                    })
                     .eq('id', user.id)
 
                 if (error) {
                     console.error("Failed to save cloud draft", error)
                     setIsSaving(false)
                     return { success: false, error: error.message }
-                } else {
-                    console.log("Cloud draft saved successfully")
-                    setLastSavedTimestamp(draft.timestamp)
-                    setHasDraft(true)
-                    setIsSaving(false)
-                    return { success: true }
                 }
             }
+
+            setLastSavedTimestamp(draft.timestamp)
+            setHasDraft(true)
+            setIsSaving(false)
+            return { success: true }
         } catch (e: any) {
-            console.error("Error saving cloud draft", e)
+            console.error("Error saving draft", e)
             setIsSaving(false)
             return { success: false, error: e.message || "Unknown error" }
         }
-
-        setIsSaving(false)
-        return { success: true }
     }, [domains, selectedIndustry, clientName, manualOverrideEnabled, currentDomainIndex, currentQuestionIndex])
 
-    // Auto-save with debouncing (silent save)
     const autoSaveDraft = useCallback(async () => {
-        // Don't auto-save if no responses yet
-        const hasResponses = domains.some(d => d.questions.some(q => q.response !== -1))
+        const hasResponses = domains.some((d: Domain) => d.questions.some((q: any) => q.response !== -1))
         if (!hasResponses) return
 
         const draft = {
@@ -482,21 +426,28 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             currentQuestionIndex,
             timestamp: new Date().toISOString()
         }
-        localStorage.setItem("cyrus_draft_v2", JSON.stringify(draft))
 
         try {
             const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
+            const { data: { session } } = await supabase.auth.getSession()
+            const user = session?.user
+
+            const storageKey = user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest"
+            localStorage.setItem(storageKey, JSON.stringify(draft))
 
             if (user) {
                 await supabase
                     .from('profiles')
-                    .update({ draft_data: draft })
+                    .update({
+                        draft_data: draft,
+                        organization_name: clientName,
+                        industry: selectedIndustry
+                    })
                     .eq('id', user.id)
-
-                setLastSavedTimestamp(draft.timestamp)
-                setHasDraft(true)
             }
+
+            setLastSavedTimestamp(draft.timestamp)
+            setHasDraft(true)
         } catch (e) {
             console.error("Auto-save failed", e)
         }
@@ -508,7 +459,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
         if (!user) return { success: false, error: "User not authenticated" }
 
-        const { error } = await supabase.from('assessments').insert({
+        const { data: insertedData, error } = await supabase.from('assessments').insert({
             user_id: user.id,
             industry_id: selectedIndustry || 'standard',
             total_score: result.totalScore,
@@ -516,11 +467,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             premium_loading: result.premiumLoading,
             auto_declined: result.autoDeclined,
             submission_data: {
-                domains: domains.map(d => ({
+                domains: domains.map((d: Domain) => ({
                     id: d.id,
                     name: d.name,
                     activeWeight: d.activeWeight,
-                    questions: d.questions.map(q => ({
+                    questions: d.questions.map((q: any) => ({
                         id: q.id,
                         text: q.text,
                         response: q.response,
@@ -531,17 +482,16 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 clientName,
                 selectedIndustry
             }
-        })
+        }).select('id').single()
 
         if (error) {
             console.error("Submission error", error)
             return { success: false, error: error.message }
         }
 
-        // Clear draft after successful submission
-        localStorage.removeItem("cyrus_draft_v2")
+        const storageKey = user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest"
+        localStorage.removeItem(storageKey)
 
-        // Clear draft from database
         try {
             const supabase2 = createClient()
             await supabase2
@@ -552,13 +502,14 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             console.error("Error clearing cloud draft after submission", e)
         }
 
-        // Clear draft flags
+        // Clear draft flags and RESET domains to fresh state
+        setDomains(JSON.parse(JSON.stringify(DOMAINS)))
         setHasDraft(false)
         setLastSavedTimestamp(null)
         setCurrentDomainIndex(0)
         setCurrentQuestionIndex(0)
 
-        return { success: true }
+        return { success: true, assessmentId: insertedData?.id }
     }, [domains, selectedIndustry, result, clientName])
 
     const updateProfile = useCallback(async (updates: any) => {
@@ -577,18 +528,34 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             return { success: false, error: error.message }
         }
 
-        // Refresh local state
         setUserProfile((prev: any) => prev ? { ...prev, ...updates } : null)
         if (updates.organization_name) {
             setClientName(updates.organization_name)
-            localStorage.setItem("cyrus_client_name", updates.organization_name)
         }
         if (updates.industry) {
             setSelectedIndustry(updates.industry)
-            localStorage.setItem("cyrus_selected_industry", updates.industry)
         }
 
         return { success: true }
+    }, [])
+
+    const signOut = useCallback(async () => {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (user) {
+            const storageKey = `cyrus_draft_v2_${user.id}`
+            localStorage.removeItem(storageKey)
+        }
+
+        localStorage.removeItem("cyrus_draft_v2")
+        localStorage.removeItem("cyrus_draft_v2_guest")
+        localStorage.removeItem("cyrus_client_name")
+        localStorage.removeItem("cyrus_selected_industry")
+        sessionStorage.clear()
+
+        await supabase.auth.signOut()
+        window.location.href = '/login'
     }, [])
 
     const value = {
@@ -621,6 +588,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         autoSaveDraft,
         submitAssessment,
         updateProfile,
+        signOut,
         refreshData: fetchQuestionnaire,
         setCurrentDomainIndex,
         setCurrentQuestionIndex

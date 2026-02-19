@@ -65,7 +65,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 4.0,
                   "Background Verification and Employee Awareness": 4.0,
                   "Regulatory Compliance": 5.0,
-                  "Organizational Policies and Procedures": 5.0,
+                  "Organization Policies and Procedures": 5.0,
                   "Physical Perimeter Security": 7.0,
                   "Endpoint Security": 6.0,
                   "IoT and OT Network": 9.0,
@@ -74,11 +74,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 5.0,
                   "Ransomware Supplemental": 5.0,
                   "Dark Web Exposure": 2.0,
-                  "Change/Patch Cadence": 5.0,
+                  "Change / Patch Cadence": 5.0,
                   "DLP and DSPM": 4.0,
                   "Active Directory Configuration": 3.0,
-                  "Incident Management and Response": 6.0,
-                  "SOC and SOAR Capabilities": 4.0
+                  "Incident Management Response": 6.0,
+                  "SOC and SOAR": 4.0
             }
       },
       {
@@ -90,7 +90,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 3.0,
                   "Background Verification and Employee Awareness": 4.0,
                   "Regulatory Compliance": 5.0,
-                  "Organizational Policies and Procedures": 3.0,
+                  "Organization Policies and Procedures": 3.0,
                   "Physical Perimeter Security": 7.0,
                   "Endpoint Security": 6.0,
                   "IoT and OT Network": 10.0,
@@ -99,11 +99,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 6.0,
                   "Ransomware Supplemental": 7.0,
                   "Dark Web Exposure": 2.0,
-                  "Change/Patch Cadence": 5.0,
+                  "Change / Patch Cadence": 5.0,
                   "DLP and DSPM": 4.0,
                   "Active Directory Configuration": 4.0,
-                  "Incident Management and Response": 5.0,
-                  "SOC and SOAR Capabilities": 4.0
+                  "Incident Management Response": 5.0,
+                  "SOC and SOAR": 4.0
             }
       },
       {
@@ -115,7 +115,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 3.0,
                   "Background Verification and Employee Awareness": 5.0,
                   "Regulatory Compliance": 6.0,
-                  "Organizational Policies and Procedures": 4.0,
+                  "Organization Policies and Procedures": 4.0,
                   "Physical Perimeter Security": 9.0,
                   "Endpoint Security": 5.0,
                   "IoT and OT Network": 9.0,
@@ -124,11 +124,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 5.0,
                   "Ransomware Supplemental": 6.0,
                   "Dark Web Exposure": 2.0,
-                  "Change/Patch Cadence": 4.0,
+                  "Change / Patch Cadence": 4.0,
                   "DLP and DSPM": 3.0,
                   "Active Directory Configuration": 4.0,
-                  "Incident Management and Response": 6.0,
-                  "SOC and SOAR Capabilities": 5.0
+                  "Incident Management Response": 6.0,
+                  "SOC and SOAR": 5.0
             }
       },
       {
@@ -140,7 +140,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 4.0,
                   "Background Verification and Employee Awareness": 5.0,
                   "Regulatory Compliance": 6.0,
-                  "Organizational Policies and Procedures": 4.0,
+                  "Organization Policies and Procedures": 4.0,
                   "Physical Perimeter Security": 2.0,
                   "Endpoint Security": 7.0,
                   "IoT and OT Network": 2.0,
@@ -149,11 +149,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 7.0,
                   "Ransomware Supplemental": 6.0,
                   "Dark Web Exposure": 4.0,
-                  "Change/Patch Cadence": 6.0,
+                  "Change / Patch Cadence": 6.0,
                   "DLP and DSPM": 8.0,
                   "Active Directory Configuration": 6.0,
-                  "Incident Management and Response": 5.0,
-                  "SOC and SOAR Capabilities": 0.0
+                  "Incident Management Response": 5.0,
+                  "SOC and SOAR": 0.0
             }
       },
       {
@@ -165,7 +165,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 4.0,
                   "Background Verification and Employee Awareness": 5.0,
                   "Regulatory Compliance": 9.0,
-                  "Organizational Policies and Procedures": 4.0,
+                  "Organization Policies and Procedures": 4.0,
                   "Physical Perimeter Security": 5.0,
                   "Endpoint Security": 6.0,
                   "IoT and OT Network": 5.0,
@@ -174,11 +174,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 5.0,
                   "Ransomware Supplemental": 8.0,
                   "Dark Web Exposure": 4.0,
-                  "Change/Patch Cadence": 4.0,
+                  "Change / Patch Cadence": 4.0,
                   "DLP and DSPM": 7.0,
                   "Active Directory Configuration": 3.0,
-                  "Incident Management and Response": 2.0,
-                  "SOC and SOAR Capabilities": 1.0
+                  "Incident Management Response": 2.0,
+                  "SOC and SOAR": 1.0
             }
       },
       {
@@ -190,7 +190,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 3.0,
                   "Background Verification and Employee Awareness": 4.0,
                   "Regulatory Compliance": 6.0,
-                  "Organizational Policies and Procedures": 4.0,
+                  "Organization Policies and Procedures": 4.0,
                   "Physical Perimeter Security": 4.0,
                   "Endpoint Security": 6.0,
                   "IoT and OT Network": 3.0,
@@ -199,11 +199,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 6.0,
                   "Ransomware Supplemental": 6.0,
                   "Dark Web Exposure": 7.0,
-                  "Change/Patch Cadence": 6.0,
+                  "Change / Patch Cadence": 6.0,
                   "DLP and DSPM": 7.0,
                   "Active Directory Configuration": 5.0,
-                  "Incident Management and Response": 5.0,
-                  "SOC and SOAR Capabilities": 2.0
+                  "Incident Management Response": 5.0,
+                  "SOC and SOAR": 2.0
             }
       },
       {
@@ -215,7 +215,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 3.0,
                   "Background Verification and Employee Awareness": 6.0,
                   "Regulatory Compliance": 5.0,
-                  "Organizational Policies and Procedures": 4.0,
+                  "Organization Policies and Procedures": 4.0,
                   "Physical Perimeter Security": 7.0,
                   "Endpoint Security": 8.0,
                   "IoT and OT Network": 4.0,
@@ -224,11 +224,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 5.0,
                   "Ransomware Supplemental": 6.0,
                   "Dark Web Exposure": 6.0,
-                  "Change/Patch Cadence": 5.0,
+                  "Change / Patch Cadence": 5.0,
                   "DLP and DSPM": 6.0,
                   "Active Directory Configuration": 4.0,
-                  "Incident Management and Response": 4.0,
-                  "SOC and SOAR Capabilities": 3.0
+                  "Incident Management Response": 4.0,
+                  "SOC and SOAR": 3.0
             }
       },
       {
@@ -240,7 +240,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 3.0,
                   "Background Verification and Employee Awareness": 5.0,
                   "Regulatory Compliance": 6.0,
-                  "Organizational Policies and Procedures": 4.0,
+                  "Organization Policies and Procedures": 4.0,
                   "Physical Perimeter Security": 7.0,
                   "Endpoint Security": 5.0,
                   "IoT and OT Network": 8.0,
@@ -249,11 +249,11 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 5.0,
                   "Ransomware Supplemental": 6.0,
                   "Dark Web Exposure": 3.0,
-                  "Change/Patch Cadence": 5.0,
+                  "Change / Patch Cadence": 5.0,
                   "DLP and DSPM": 4.0,
                   "Active Directory Configuration": 4.0,
-                  "Incident Management and Response": 6.0,
-                  "SOC and SOAR Capabilities": 4.0
+                  "Incident Management Response": 6.0,
+                  "SOC and SOAR": 4.0
             }
       },
       {
@@ -265,7 +265,7 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Certifications": 4.0,
                   "Background Verification and Employee Awareness": 6.0,
                   "Regulatory Compliance": 10.0,
-                  "Organizational Policies and Procedures": 5.0,
+                  "Organization Policies and Procedures": 5.0,
                   "Physical Perimeter Security": 3.0,
                   "Endpoint Security": 6.0,
                   "IoT and OT Network": 1.0,
@@ -274,11 +274,97 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
                   "Vulnerability Assessment and Penetration Test": 7.0,
                   "Ransomware Supplemental": 6.0,
                   "Dark Web Exposure": 7.0,
-                  "Change/Patch Cadence": 5.0,
+                  "Change / Patch Cadence": 5.0,
                   "DLP and DSPM": 8.0,
                   "Active Directory Configuration": 2.0,
-                  "Incident Management and Response": 1.0,
-                  "SOC and SOAR Capabilities": 1.0
+                  "Incident Management Response": 1.0,
+                  "SOC and SOAR": 1.0
+            }
+      }
+]
+
+export type RelevancyLevel = "critical" | "standard" | "niche" | "not_required"
+
+export interface CertRelevancy {
+      id: string
+      name: string
+      levels: Record<string, RelevancyLevel> // industryId -> level
+}
+
+export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
+      {
+            id: "CERT-001",
+            name: "ISO/IEC 27001",
+            levels: {
+                  "cyber_security": "critical",
+                  "it_and_tehnology_services": "critical",
+                  "financial_services_and_banking": "critical",
+                  "healthcare_and_pharmaceuticals": "standard",
+                  "manufacturing_and_engineering": "standard",
+                  "retail_and_e-commerce": "standard",
+                  "hospitality_and_tourism": "standard",
+                  "logistics_and_transporation": "standard",
+                  "construction_and_infrastructure": "standard"
+            }
+      },
+      {
+            id: "CERT-002",
+            name: "NIST Framework",
+            levels: {
+                  "cyber_security": "critical",
+                  "it_and_tehnology_services": "critical",
+                  "financial_services_and_banking": "critical",
+                  "manufacturing_and_engineering": "standard",
+                  "healthcare_and_pharmaceuticals": "standard",
+                  "retail_and_e-commerce": "niche",
+                  "logistics_and_transporation": "niche",
+                  "construction_and_infrastructure": "niche",
+                  "hospitality_and_tourism": "niche"
+            }
+      },
+      {
+            id: "CERT-003",
+            name: "SOC 2 Type II",
+            levels: {
+                  "it_and_tehnology_services": "critical",
+                  "cyber_security": "critical",
+                  "financial_services_and_banking": "standard",
+                  "healthcare_and_pharmaceuticals": "standard",
+                  "retail_and_e-commerce": "niche",
+                  "manufacturing_and_engineering": "not_required",
+                  "construction_and_infrastructure": "not_required",
+                  "hospitality_and_tourism": "not_required",
+                  "logistics_and_transporation": "not_required"
+            }
+      },
+      {
+            id: "CERT-004",
+            name: "HIPAA",
+            levels: {
+                  "healthcare_and_pharmaceuticals": "critical",
+                  "it_and_tehnology_services": "niche",
+                  "cyber_security": "niche",
+                  "financial_services_and_banking": "not_required",
+                  "manufacturing_and_engineering": "not_required",
+                  "retail_and_e-commerce": "not_required",
+                  "hospitality_and_tourism": "not_required",
+                  "logistics_and_transporation": "not_required",
+                  "construction_and_infrastructure": "not_required"
+            }
+      },
+      {
+            id: "CERT-005",
+            name: "PCI DSS",
+            levels: {
+                  "retail_and_e-commerce": "critical",
+                  "hospitality_and_tourism": "critical",
+                  "financial_services_and_banking": "critical",
+                  "it_and_tehnology_services": "standard",
+                  "cyber_security": "standard",
+                  "healthcare_and_pharmaceuticals": "niche",
+                  "logistics_and_transporation": "niche",
+                  "manufacturing_and_engineering": "not_required",
+                  "construction_and_infrastructure": "not_required"
             }
       }
 ]
@@ -657,6 +743,10 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
                   {
                         "label": "No",
                         "value": 0.0
+                  },
+                  {
+                        "label": "N/A",
+                        "value": -2
                   }
             ],
       },
@@ -675,6 +765,10 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
                   {
                         "label": "No",
                         "value": 0.0
+                  },
+                  {
+                        "label": "N/A",
+                        "value": -2
                   }
             ],
       },
@@ -693,6 +787,10 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
                   {
                         "label": "No",
                         "value": 0.0
+                  },
+                  {
+                        "label": "N/A",
+                        "value": -2
                   }
             ],
       },
@@ -711,6 +809,10 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
                   {
                         "label": "No",
                         "value": 0.0
+                  },
+                  {
+                        "label": "N/A",
+                        "value": -2
                   }
             ],
       },
@@ -729,6 +831,10 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
                   {
                         "label": "No",
                         "value": 0.0
+                  },
+                  {
+                        "label": "N/A",
+                        "value": 1.0
                   }
             ],
       },
@@ -847,7 +953,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       {
             id: "BV-007",
             domain: "Background Verification and Employee Awareness",
-            text: "Does applicant provide security awareness training to employees at least annually?",
+            text: "Does applicant provide security awareness training to employees annually?",
             type: "binary",
             response: -1,
             isKiller: false,
@@ -954,7 +1060,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "OP-001",
-            domain: "Organizational Policies and Procedures",
+            domain: "Organization Policies and Procedures",
             text: "Do you have a Cyber Crisis Management Plan?",
             type: "binary",
             response: -1,
@@ -972,7 +1078,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "OP-002",
-            domain: "Organizational Policies and Procedures",
+            domain: "Organization Policies and Procedures",
             text: "Do you have an Information Technology Policy?",
             type: "binary",
             response: -1,
@@ -990,7 +1096,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "OP-003",
-            domain: "Organizational Policies and Procedures",
+            domain: "Organization Policies and Procedures",
             text: "Do you have an Information Security Policy?",
             type: "binary",
             response: -1,
@@ -1008,7 +1114,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "OP-004",
-            domain: "Organizational Policies and Procedures",
+            domain: "Organization Policies and Procedures",
             text: "Do you have an Incident Management Policy?",
             type: "binary",
             response: -1,
@@ -1026,7 +1132,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "OP-005",
-            domain: "Organizational Policies and Procedures",
+            domain: "Organization Policies and Procedures",
             text: "Do you have a Data Protection & Privacy Policy?",
             type: "binary",
             response: -1,
@@ -1044,7 +1150,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "OP-006",
-            domain: "Organizational Policies and Procedures",
+            domain: "Organization Policies and Procedures",
             text: "Do you have a Business Continuity Plan (BCP)?",
             type: "binary",
             response: -1,
@@ -1786,7 +1892,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "PC-001",
-            domain: "Change/Patch Cadence",
+            domain: "Change / Patch Cadence",
             text: "Is there a documented change/patch management policy?",
             type: "binary",
             response: -1,
@@ -1804,7 +1910,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "PC-002",
-            domain: "Change/Patch Cadence",
+            domain: "Change / Patch Cadence",
             text: "Is target time to deploy critical patches <24 hours?",
             type: "binary",
             response: -1,
@@ -1822,7 +1928,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "PC-003",
-            domain: "Change/Patch Cadence",
+            domain: "Change / Patch Cadence",
             text: "Is year-to-date critical patch compliance >90%?",
             type: "binary",
             response: -1,
@@ -1916,7 +2022,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "IR-001",
-            domain: "Incident Management and Response",
+            domain: "Incident Management Response",
             text: "How is incident management and response process executed?",
             type: "multiple",
             response: -1,
@@ -1942,7 +2048,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "IR-002",
-            domain: "Incident Management and Response",
+            domain: "Incident Management Response",
             text: "Are historical incident statistics maintained?",
             type: "binary",
             response: -1,
@@ -1960,7 +2066,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-001",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "What is SOC monitoring capability?",
             type: "multiple",
             response: -1,
@@ -1986,7 +2092,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-002",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "Is there a mechanism for real-time alerting and escalation?",
             type: "binary",
             response: -1,
@@ -2004,7 +2110,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-003",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "Is external reporting responsibility defined?",
             type: "governance",
             response: -1,
@@ -2026,7 +2132,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-004",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "Is log monitoring conducted 24\u00d77?",
             type: "coverage",
             response: -1,
@@ -2048,7 +2154,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-005",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "Are OT logs integrated where feasible?",
             type: "coverage",
             response: -1,
@@ -2070,7 +2176,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-006",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "Are alerts triaged with defined SLAs?",
             type: "governance",
             response: -1,
@@ -2092,7 +2198,7 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
       },
       {
             id: "SOC-007",
-            domain: "SOC and SOAR Capabilities",
+            domain: "SOC and SOAR",
             text: "Is incident automation or playbooks used?",
             type: "coverage",
             response: -1,
@@ -2115,6 +2221,14 @@ const ALL_QUESTIONS: UnderwritingQuestion[] = [
 ]
 
 export const DOMAINS: Domain[] = [
+      {
+            id: "organizational_policies_and_procedures",
+            name: "Organization Policies and Procedures",
+            explanation: "This checks for established rules and procedures governing security.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Organization Policies and Procedures"),
+      },
       {
             id: "network_security",
             name: "Network Security",
@@ -2156,12 +2270,20 @@ export const DOMAINS: Domain[] = [
             questions: ALL_QUESTIONS.filter((q) => q.domain === "Regulatory Compliance"),
       },
       {
-            id: "organizational_policies_and_procedures",
-            name: "Organizational Policies and Procedures",
-            explanation: "This checks for established rules and procedures governing security.",
+            id: "ransomware_supplemental",
+            name: "Ransomware Supplemental",
+            explanation: "This section helps assess protection against ransomware.",
             defaultWeight: 5.0,
             activeWeight: 5.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "Organizational Policies and Procedures"),
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Ransomware Supplemental"),
+      },
+      {
+            id: "vulnerability_assessment_and_penetration_test",
+            name: "Vulnerability Assessment and Penetration Test",
+            explanation: "This evaluates your proactive identification of security weaknesses.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Vulnerability Assessment and Penetration Test"),
       },
       {
             id: "physical_perimeter_security",
@@ -2180,14 +2302,6 @@ export const DOMAINS: Domain[] = [
             questions: ALL_QUESTIONS.filter((q) => q.domain === "Endpoint Security"),
       },
       {
-            id: "iot_and_ot_network",
-            name: "IoT and OT Network",
-            explanation: "This assesses security of connected devices and operational technology.",
-            defaultWeight: 9.0,
-            activeWeight: 9.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "IoT and OT Network"),
-      },
-      {
             id: "asset_management",
             name: "Asset Management",
             explanation: "This evaluates how you track and manage your IT assets.",
@@ -2196,28 +2310,12 @@ export const DOMAINS: Domain[] = [
             questions: ALL_QUESTIONS.filter((q) => q.domain === "Asset Management"),
       },
       {
-            id: "identity_and_access_management",
-            name: "Identity and Access Management",
-            explanation: "This assesses how you control user access to systems and data.",
-            defaultWeight: 6.0,
-            activeWeight: 6.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "Identity and Access Management"),
-      },
-      {
-            id: "vulnerability_assessment_and_penetration_test",
-            name: "Vulnerability Assessment and Penetration Test",
-            explanation: "This evaluates your proactive identification of security weaknesses.",
-            defaultWeight: 5.0,
-            activeWeight: 5.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "Vulnerability Assessment and Penetration Test"),
-      },
-      {
-            id: "ransomware_supplemental",
-            name: "Ransomware Supplemental",
-            explanation: "This section helps assess protection against ransomware.",
-            defaultWeight: 5.0,
-            activeWeight: 5.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "Ransomware Supplemental"),
+            id: "iot_and_ot_network",
+            name: "IoT and OT Network",
+            explanation: "This assesses security of connected devices and operational technology.",
+            defaultWeight: 9.0,
+            activeWeight: 9.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "IoT and OT Network"),
       },
       {
             id: "dark_web_exposure",
@@ -2228,22 +2326,6 @@ export const DOMAINS: Domain[] = [
             questions: ALL_QUESTIONS.filter((q) => q.domain === "Dark Web Exposure"),
       },
       {
-            id: "change_patch_cadence",
-            name: "Change/Patch Cadence",
-            explanation: "This evaluates how quickly you update systems to fix vulnerabilities.",
-            defaultWeight: 5.0,
-            activeWeight: 5.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "Change/Patch Cadence"),
-      },
-      {
-            id: "dlp_and_dspm",
-            name: "DLP and DSPM",
-            explanation: "This assesses measures to prevent sensitive data loss.",
-            defaultWeight: 4.0,
-            activeWeight: 4.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "DLP and DSPM"),
-      },
-      {
             id: "active_directory_configuration",
             name: "Active Directory Configuration",
             explanation: "This evaluates the security of your central user and computer management.",
@@ -2252,20 +2334,44 @@ export const DOMAINS: Domain[] = [
             questions: ALL_QUESTIONS.filter((q) => q.domain === "Active Directory Configuration"),
       },
       {
+            id: "change_patch_cadence",
+            name: "Change / Patch Cadence",
+            explanation: "This evaluates how quickly you update systems to fix vulnerabilities.",
+            defaultWeight: 5.0,
+            activeWeight: 5.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Change / Patch Cadence"),
+      },
+      {
             id: "incident_management_and_response",
-            name: "Incident Management and Response",
+            name: "Incident Management Response",
             explanation: "This assesses your readiness to respond to security incidents.",
             defaultWeight: 6.0,
             activeWeight: 6.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "Incident Management and Response"),
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Incident Management Response"),
       },
       {
             id: "soc_and_soar_capabilities",
-            name: "SOC and SOAR Capabilities",
+            name: "SOC and SOAR",
             explanation: "This evaluates your real-time threat monitoring and automated response capabilities.",
             defaultWeight: 4.0,
             activeWeight: 4.0,
-            questions: ALL_QUESTIONS.filter((q) => q.domain === "SOC and SOAR Capabilities"),
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "SOC and SOAR"),
+      },
+      {
+            id: "identity_and_access_management",
+            name: "Identity and Access Management",
+            explanation: "This assesses how you control user access to systems and data.",
+            defaultWeight: 6.0,
+            activeWeight: 6.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "Identity and Access Management"),
+      },
+      {
+            id: "dlp_and_dspm",
+            name: "DLP and DSPM",
+            explanation: "This assesses measures to prevent sensitive data loss.",
+            defaultWeight: 4.0,
+            activeWeight: 4.0,
+            questions: ALL_QUESTIONS.filter((q) => q.domain === "DLP and DSPM"),
       },
 ]
 
@@ -2280,11 +2386,15 @@ export function calculateScore(domains: Domain[]): ScoringResult {
             let domainMaxPossibleWeightedScore = 0
 
             for (const question of domain.questions) {
-                  const questionWeight = question.isKiller ? 3 : 1
+                  const questionWeight = question.isKiller ? 5 : 1
                   const maxValue = 1.0 // Standardized max base score in Excel is 1
 
                   // Treat -1 (Unanswered) as 0 for scoring purposes
-                  const effectiveResponse = question.response === -1 ? 0 : question.response
+                  // Treat -2 (N/A) as 1.0 (Full points as per user request)
+                  let effectiveResponse = 0
+                  if (question.response === -1) effectiveResponse = 0
+                  else if (question.response === -2) effectiveResponse = 1.0
+                  else effectiveResponse = question.response
 
                   domainEarnedWeightedScore += effectiveResponse * questionWeight
                   domainMaxPossibleWeightedScore += maxValue * questionWeight
@@ -2346,16 +2456,16 @@ function getRiskTier(
       isAutoDeclined: boolean,
 ): { tier: "A" | "B" | "C" | "D"; premium: string } {
       if (isAutoDeclined || score < 60) {
-            return { tier: "D", premium: "Declined" }
+            return { tier: "D", premium: "Decline" }
       }
 
       if (score >= 90) {
             return { tier: "A", premium: "Base Rate" }
       }
       if (score >= 75) {
-            return { tier: "B", premium: "+20% Loading" }
+            return { tier: "B", premium: "+40% Loading" }
       }
-      return { tier: "C", premium: "+50% Loading" }
+      return { tier: "C", premium: "+80% Loading" }
 }
 
 function getDeclineNarrative(
@@ -2370,13 +2480,23 @@ function getDeclineNarrative(
             case "A":
                   return `Excellent cyber maturity. Tier A approved at Base Rate.`
             case "B":
-                  return `Good controls detected. Tier B approved with 20% premium loading.`
+                  return `Good controls detected. Tier B approved with +40% premium loading.`
             case "C":
-                  return `Minimum threshold met. Tier C approved with 50% premium loading.`
+                  return `Fair controls detected. Tier C approved with +80% premium loading.`
             case "D":
-                  return `Declined due to insufficient control maturity (score < 60%).`
+                  return `Declined due to poor control maturity (score < 60%).`
             default:
                   return ""
+      }
+}
+
+export function getCurrentPremiumLoading(riskTier: string): string {
+      switch (riskTier) {
+            case "A": return "Base Rate"
+            case "B": return "+40% Loading"
+            case "C": return "+80% Loading"
+            case "D": return "Decline"
+            default: return "Pending"
       }
 }
 
