@@ -1,6 +1,27 @@
 "use client"
 
-import { getCurrentPremiumLoading } from "@/lib/scoring-engine"
+import { getCurrentPremiumLoading, getRecommendations, Recommendation, INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+
+const LEGACY_INDUSTRY_MAP: Record<string, string> = {
+    "it_and_tehnology_services": "IT and Technology Services",
+    "logistics_and_transporation": "Logistics and Transportation",
+    "it and tehnology services": "IT and Technology Services",
+    "IT and Tehnology Services": "IT and Technology Services",
+    "logistics and transporation": "Logistics and Transportation",
+    "Logistics and Transporation": "Logistics and Transportation",
+}
+
+function resolveIndustryName(raw: string | undefined | null): string {
+    if (!raw) return 'Unknown'
+    const match = INDUSTRY_PROFILES.find(p => p.id === raw || p.name === raw)
+    if (match) return match.name
+    if (LEGACY_INDUSTRY_MAP[raw]) return LEGACY_INDUSTRY_MAP[raw]
+    const lowerRaw = raw.toLowerCase()
+    const legacyMatch = Object.entries(LEGACY_INDUSTRY_MAP).find(([k]) => k.toLowerCase() === lowerRaw)
+    if (legacyMatch) return legacyMatch[1]
+    return raw.replace(/_/g, ' ')
+}
+
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useParams, useRouter } from "next/navigation"
@@ -30,7 +51,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import { downloadAssessmentReport } from "@/lib/report-generator"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
-import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+
 import {
     Radar,
     RadarChart,
@@ -80,6 +101,7 @@ export default function SubmissionDetails() {
     const [policyDoc, setPolicyDoc] = useState<{ file_name: string; file_path: string; uploaded_at: string; download_url?: string } | null>(null)
     const [auditDoc, setAuditDoc] = useState<{ file_name: string; file_path: string; uploaded_at: string; download_url?: string } | null>(null)
     const [isPolicyLoading, setIsPolicyLoading] = useState(false)
+    const [recommendations, setRecommendations] = useState<Recommendation[]>([])
     const supabase = createClient()
 
     useEffect(() => {
@@ -142,6 +164,10 @@ export default function SubmissionDetails() {
                     }))
                     setBenchmarkData(benchmark)
                 }
+
+                // Generate Recommendations
+                const recs = getRecommendations(assessmentData.submission_data.domains, assessmentData.industry_id)
+                setRecommendations(recs)
             }
             setIsLoading(false)
         }
@@ -238,7 +264,7 @@ export default function SubmissionDetails() {
                             <FileText className="w-3 h-3 text-si-blue-primary" />
                             <span className="text-[10px] text-si-blue-primary font-black uppercase tracking-[0.3em]">Audit ID: {submission.id.substring(0, 8)}</span>
                         </div>
-                        <span className="text-sm font-bold text-white font-outfit italic tracking-tight">Technical Risk Audit</span>
+                        <span className="text-sm font-bold text-white font-outfit tracking-tight">Technical Risk Audit</span>
                     </div>
 
                 </div>
@@ -249,12 +275,9 @@ export default function SubmissionDetails() {
 
                     {/* Finalize Protocol Button */}
                     <button
-                        onClick={async () => {
+                        onClick={() => {
                             if (isFinalizing) return;
                             setIsFinalizing(true);
-
-                            // Simulate database update
-                            await new Promise(resolve => setTimeout(resolve, 1500));
 
                             // Generate Rich HTML Email Table
                             const clientEmail = submission.profiles?.email || "";
@@ -278,7 +301,7 @@ export default function SubmissionDetails() {
                                     <!-- Header -->
                                     <tr style="background-color: #1e293b;">
                                         <td style="padding: 30px; text-align: center;">
-                                            <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-style: italic;">ASSESSMENT FINALIZED</h2>
+                                            <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-style:;">ASSESSMENT FINALIZED</h2>
                                             <p style="color: #94a3b8; margin: 10px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Audit ID: ${submission.id.substring(0, 8)}</p>
                                         </td>
                                     </tr>
@@ -337,33 +360,39 @@ export default function SubmissionDetails() {
                                 </table>
                             `;
 
-                            // Copy to clipboard as rich text
+                            // Copy to clipboard as rich text asynchronously (so it doesn't block window.open)
                             try {
                                 const blob = new Blob([htmlBody], { type: 'text/html' });
                                 const plainTextBlob = new Blob(["Risk Report Summary\n\nScore: " + submission.total_score], { type: 'text/plain' });
 
-                                await navigator.clipboard.write([
+                                navigator.clipboard.write([
                                     new ClipboardItem({
                                         'text/html': blob,
                                         'text/plain': plainTextBlob
                                     })
-                                ]);
-
-                                toast.success("Report copied to clipboard!", {
-                                    description: "Paste (Ctrl+V) into the email body after your client opens.",
-                                    duration: 5000,
+                                ]).then(() => {
+                                    toast.success("Report copied to clipboard!", {
+                                        description: "Paste (Ctrl+V) into the email body after your client opens.",
+                                        duration: 5000,
+                                    });
+                                }).catch((err) => {
+                                    console.error('Failed to copy html: ', err);
+                                    toast.error("Could not copy table automatically.");
                                 });
                             } catch (err) {
                                 console.error('Failed to copy html: ', err);
                                 toast.error("Could not copy table automatically.");
                             }
 
-                            // Trigger Gmail
+                            // Trigger Gmail IMMDEDIATELY (synchronously with click to prevent popup blockers)
                             const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(clientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(">> PASTE REPORT TABLE HERE <<")}`;
                             window.open(gmailUrl, '_blank');
 
-                            setIsFinalized(true);
-                            setIsFinalizing(false);
+                            // Simulate database update
+                            setTimeout(() => {
+                                setIsFinalized(true);
+                                setIsFinalizing(false);
+                            }, 1500);
                         }}
                         disabled={isFinalized || isFinalizing}
                         className={`group flex items-center gap-3 px-8 py-4 font-black text-[11px] uppercase tracking-[0.15em] rounded-2xl transition-all duration-500 shadow-xl ${isFinalized
@@ -393,7 +422,7 @@ export default function SubmissionDetails() {
                                     <AlertTriangle className="w-12 h-12" />
                                 </div>
                                 <div>
-                                    <h2 className="text-5xl font-black font-outfit tracking-tighter italic mb-4">AUDIT FAILED.</h2>
+                                    <h2 className="text-5xl font-black font-outfit tracking-tighter mb-4">AUDIT FAILED.</h2>
                                     <p className="text-xl font-medium text-white/80 max-w-2xl leading-relaxed">
                                         System detected <span className="text-white font-black underline underline-offset-8 decoration-white/30">{failedKillers.length} critical failures</span>.
                                         Critical security standards were not met, triggering an automatic decline of the assessment.
@@ -418,31 +447,31 @@ export default function SubmissionDetails() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                     {/* Left Column: Data & Score */}
                     <div className="lg:col-span-8 space-y-12">
-                        <div className="bg-slate-50 p-12 rounded-[56px] border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-12 group transition-all hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50">
+                        <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-lg shadow-slate-100/80 flex flex-col md:flex-row items-center justify-between gap-10 transition-all duration-300">
                             <div>
-                                <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center justify-between mb-3">
                                     <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-[0.4em] block">Compliance Rating</span>
-                                    <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-lg ${submission.risk_tier === 'A' ? 'bg-emerald-500 text-white' :
-                                        submission.risk_tier === 'B' ? 'bg-si-blue-primary text-white' :
-                                            'bg-si-red text-white'
+                                    <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] ${submission.risk_tier === 'A' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                        submission.risk_tier === 'B' ? 'bg-blue-50 text-si-blue-primary border border-blue-200' :
+                                            'bg-red-50 text-si-red border border-red-200'
                                         }`}>
                                         Risk Tier {submission.risk_tier}
                                     </div>
                                 </div>
 
-                                <h1 className="text-[120px] font-black text-si-navy font-outfit tracking-tighter italic leading-none">
-                                    {submission.total_score}<span className="text-si-blue-primary not-italic opacity-20">%</span>
+                                <h1 className="text-[100px] font-black text-si-navy font-outfit tracking-tighter leading-none">
+                                    {submission.total_score}<span className="text-si-blue-primary opacity-20">%</span>
                                 </h1>
                             </div>
 
-                            <div className="flex flex-col items-center md:items-end text-center md:text-right gap-6">
-                                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm w-full md:w-auto">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Premium Loading</span>
-                                    <span className="text-3xl font-black text-si-navy font-outfit italic tracking-tight">{getCurrentPremiumLoading(submission.risk_tier)}</span>
+                            <div className="flex flex-col items-center md:items-end text-center md:text-right gap-4">
+                                <div className="bg-slate-50 px-6 py-5 rounded-2xl border border-slate-100 w-full md:w-auto">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Premium Loading</span>
+                                    <span className="text-2xl font-black text-si-navy font-outfit tracking-tight">{getCurrentPremiumLoading(submission.risk_tier)}</span>
                                 </div>
-                                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm w-full md:w-auto">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Industry Group</span>
-                                    <span className="text-sm font-black text-si-navy uppercase tracking-tighter">{submission.industry_id.replace(/_/g, ' ')}</span>
+                                <div className="bg-slate-50 px-6 py-5 rounded-2xl border border-slate-100 w-full md:w-auto">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Industry Group</span>
+                                    <span className="text-sm font-black text-si-navy tracking-tight">{resolveIndustryName(submission.industry_id)}</span>
                                 </div>
                             </div>
                         </div>
@@ -499,9 +528,9 @@ export default function SubmissionDetails() {
                                     <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
                                         <span className="text-[9px] font-bold text-white/40 uppercase tracking-[0.2em] block mb-2">Industry Comparative</span>
                                         <p className="text-sm font-medium text-white/80 leading-relaxed">
-                                            This audit is currently <span className="text-si-blue-primary font-black italic">
+                                            This audit is currently <span className="text-si-blue-primary font-black">
                                                 {submission.total_score > (benchmarkData.reduce((acc, b) => acc + b.IndustryAvg, 0) / (benchmarkData.length || 1)) ? 'above' : 'below'} industry averages
-                                            </span> in terms of overall cyber posture within the <span className="text-white font-bold">{submission.industry_id.replace(/_/g, ' ')}</span> sector.
+                                            </span> in terms of overall cyber posture within the <span className="text-white font-bold">{resolveIndustryName(submission.industry_id)}</span> sector.
                                         </p>
                                     </div>
                                     <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
@@ -517,33 +546,89 @@ export default function SubmissionDetails() {
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-si-blue-primary/10 rounded-full blur-[120px] -mr-40 -mt-40 pointer-events-none" />
                         </div>
 
-                        {/* Breakdown */}
+                        {/* Underwriting Advisor Section */}
                         <div className="space-y-8">
                             <h3 className="text-xs font-black text-si-navy/30 uppercase tracking-[0.5em] px-2 flex items-center gap-4">
-                                <Scale className="w-4 h-4" /> Category breakdown
+                                <Zap className="w-4 h-4 text-amber-500" /> Underwriting advisor
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {result.domainScores.map((ds: any, idx: number) => (
-                                    <div key={idx} className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/20 hover:border-si-blue-primary transition-all group">
-                                        <div className="flex items-center justify-between mb-8">
-                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[10px] font-black text-slate-300 group-hover:bg-si-navy group-hover:text-white transition-all">
-                                                {Math.round(ds.score)}%
-                                            </div>
-                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${ds.score >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-si-red'}`}>
-                                                {Math.round(ds.score)}% Validated
-                                            </div>
+                            <div className="bg-gradient-to-br from-amber-50 to-white p-12 rounded-[56px] border border-amber-100 shadow-xl shadow-amber-900/5 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-10">
+                                        <div className="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                            <ShieldCheck className="w-6 h-6" />
                                         </div>
-                                        <h4 className="text-2xl font-black text-si-navy font-outfit italic tracking-tighter mb-6 leading-none">{ds.domain}</h4>
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-1 h-3 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                                        <div>
+                                            <h4 className="text-2xl font-black text-si-navy font-outfit tracking-tighter leading-none">AI Risk Remediation</h4>
+                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-2">Top 5 Actionable Improvements</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {recommendations.length > 0 ? recommendations.map((rec, idx) => (
+                                            <motion.div
+                                                initial={{ x: -20, opacity: 0 }}
+                                                animate={{ x: 0, opacity: 1 }}
+                                                transition={{ delay: idx * 0.1 }}
+                                                key={idx}
+                                                className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm flex items-center gap-6 group hover:border-amber-500 transition-all"
+                                            >
+                                                <div className={`w-2 h-12 rounded-full ${rec.impact === 'High' ? 'bg-si-red' : rec.impact === 'Medium' ? 'bg-amber-500' : 'bg-si-blue-primary'}`} />
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{rec.domain}</span>
+                                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${rec.impact === 'High' ? 'bg-si-red/10 text-si-red' :
+                                                            rec.impact === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                                                                'bg-si-blue-primary/10 text-si-blue-primary'
+                                                            }`}>
+                                                            {rec.impact} Impact
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-si-navy group-hover:text-amber-600 transition-colors">{rec.action}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[8px] font-black text-slate-300 uppercase block">Domain Weight</span>
+                                                    <span className="text-lg font-black font-outfit text-si-navy">{rec.weight}</span>
+                                                </div>
+                                            </motion.div>
+                                        )) : (
+                                            <p className="text-sm font-medium text-slate-400">No critical recommendations identified for this profile.</p>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-10 p-6 bg-amber-500/5 rounded-[32px] border border-amber-500/10">
+                                        <p className="text-[11px] font-medium text-amber-800 leading-relaxed">
+                                            <strong>Advisor Note:</strong> Implementing the above high-impact controls could potentially improve the overall risk score by up to <span className="font-black">15-20%</span> and move the client to a higher tier.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Breakdown */}
+                        <div className="space-y-5">
+                            <h3 className="text-xs font-black text-si-navy/30 uppercase tracking-[0.5em] px-1 flex items-center gap-3">
+                                <Scale className="w-3.5 h-3.5" /> Category Breakdown
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {result.domainScores.map((ds: any, idx: number) => (
+                                    <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-md hover:shadow-slate-100 transition-all duration-200 group">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-xs font-black text-si-navy font-outfit tracking-tight leading-snug flex-1 pr-3">{ds.domain}</h4>
+                                            <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${ds.score >= 80 ? 'bg-emerald-50 text-emerald-600' : ds.score >= 50 ? 'bg-blue-50 text-si-blue-primary' : 'bg-red-50 text-si-red'}`}>
+                                                {Math.round(ds.score)}%
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                                 <motion.div
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${ds.score}%` }}
-                                                    transition={{ duration: 1.5, ease: "circOut" }}
+                                                    transition={{ duration: 1.2, ease: "easeOut" }}
                                                     className={`h-full rounded-full ${ds.score >= 80 ? 'bg-emerald-400' : ds.score >= 50 ? 'bg-si-blue-primary' : 'bg-si-red'}`}
                                                 />
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-300 uppercase w-12 text-right">W: {ds.activeWeight}</span>
+                                            <span className="text-[9px] font-bold text-slate-300 uppercase w-10 text-right">W:{ds.activeWeight}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -552,11 +637,11 @@ export default function SubmissionDetails() {
                     </div>
 
                     {/* Right Column: Audit Metadata */}
-                    <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-si-navy text-white p-12 rounded-[56px] shadow-2xl shadow-si-navy/30 relative overflow-hidden">
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-si-navy text-white p-10 rounded-[40px] shadow-xl shadow-si-navy/20 relative overflow-hidden">
                             <div className="relative z-10">
-                                <h3 className="text-[11px] font-black text-si-blue-primary uppercase tracking-[0.4em] mb-12">Audit Details</h3>
-                                <div className="space-y-12">
+                                <h3 className="text-[11px] font-black text-si-blue-primary uppercase tracking-[0.4em] mb-10">Audit Details</h3>
+                                <div className="space-y-9">
                                     <div className="flex items-center gap-6">
                                         <div className="w-14 h-14 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center text-si-blue-primary">
                                             <Clock className="w-7 h-7" />
@@ -584,7 +669,7 @@ export default function SubmissionDetails() {
                                         </div>
                                         <div className="flex-1">
                                             <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-1">Sector / Industry</span>
-                                            <span className="text-sm font-bold block uppercase tracking-tighter">{(submission.profiles as any)?.industry || submission.industry_id.replace(/_/g, ' ')}</span>
+                                            <span className="text-sm font-bold block tracking-tighter">{resolveIndustryName((submission.profiles as any)?.industry || submission.industry_id)}</span>
                                             <span className="text-[10px] font-bold text-white/20 block font-mono">CODE: {submission.industry_id}</span>
                                         </div>
                                     </div>
@@ -769,7 +854,7 @@ export default function SubmissionDetails() {
                                                     {q.response === 1 ? 'Pass' : q.response > 0 ? 'Partial' : 'Fail'}
                                                 </span>
                                             </div>
-                                            <span className={`text-xs font-black font-outfit italic ${q.isKiller ? "text-si-red" : "text-si-navy"}`}>
+                                            <span className={`text-xs font-black font-outfit ${q.isKiller ? "text-si-red" : "text-si-navy"}`}>
                                                 {q.response.toFixed(2)}
                                             </span>
                                         </div>

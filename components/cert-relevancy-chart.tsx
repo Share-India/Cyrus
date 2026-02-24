@@ -65,8 +65,8 @@ export function CertRelevancyChart({ selectedIndustryId }: CertRelevancyChartPro
                     <h5 className="text-[10px] font-black text-si-blue-primary uppercase tracking-[0.2em] mb-1">
                         Relevancy Matrix
                     </h5>
-                    <p className="text-xs font-semibold text-si-navy font-outfit">
-                        Compliance Requirements for {INDUSTRY_PROFILES.find(p => p.id === normalizedId)?.name || normalizedId}
+                    <p className="text-xs font-bold text-si-navy font-outfit uppercase tracking-tight">
+                        Protocol Matrix for {INDUSTRY_PROFILES.find(p => p.id === normalizedId)?.name || "General Security Standard"}
                     </p>
                 </div>
                 <div className="flex gap-4">

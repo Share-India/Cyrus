@@ -19,7 +19,7 @@ export function QuestionRow({ question, onResponseChange, onKillerToggle }: Ques
 
   return (
     <motion.div
-      className={`p-6 rounded-2xl border backdrop-blur-md shadow-sm transition-all duration-300 group/row relative overflow-hidden ${question.isKiller
+      className={`p-6 rounded-2xl border backdrop-blur-md shadow-sm transition-all duration-300 group/row relative overflow-hidden ${(question.isKiller && isAdmin)
         ? "border-si-red/40 bg-si-red/[0.03] hover:bg-si-red/[0.05] hover:border-si-red hover:shadow-si-red/10"
         : "border-white/60 bg-white/40 hover:border-si-blue-primary/30 hover:shadow-lg"
         }`}
@@ -28,13 +28,13 @@ export function QuestionRow({ question, onResponseChange, onKillerToggle }: Ques
       <div className="flex items-start justify-between gap-5 relative z-10">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg tracking-widest uppercase border shadow-sm ${question.isKiller
+            <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg tracking-widest uppercase border shadow-sm ${(question.isKiller && isAdmin)
               ? "text-si-red bg-white border-si-red/20"
               : "text-si-blue-primary bg-white/80 border-si-blue-primary/10"
               }`}>
               {question.id}
             </span>
-            {question.isKiller && (
+            {question.isKiller && isAdmin && (
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-si-red text-white">
                 <Zap className="w-2.5 h-2.5 animate-pulse" />
                 <span className="text-[8px] font-black uppercase tracking-tighter">Killer Control</span>

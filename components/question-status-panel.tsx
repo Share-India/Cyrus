@@ -65,7 +65,7 @@ export function QuestionStatusPanel({ domains, onDomainClick }: QuestionStatusPa
                                 className={`px-8 py-5 border-b border-slate-50 transition-colors duration-300 cursor-pointer ${isComplete ? 'bg-emerald-50/50' : 'hover:bg-slate-50'}`}
                             >
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className={`text-[11px] font-bold uppercase tracking-tight flex-1 min-w-0 break-words ${isComplete ? 'text-emerald-700' : 'text-slate-600'}`}>
+                                    <span className={`text-[11px] font-black uppercase tracking-tight font-outfit flex-1 min-w-0 break-words ${isComplete ? 'text-emerald-700' : 'text-slate-600'}`}>
                                         {domain.name}
                                     </span>
                                     {isComplete && <Activity className="w-3 h-3 text-emerald-500" />}

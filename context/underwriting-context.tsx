@@ -44,11 +44,33 @@ interface UnderwritingContextType {
     saveDraft: () => Promise<{ success: boolean; error?: string }>
     autoSaveDraft: () => Promise<void>
     submitAssessment: () => Promise<{ success: boolean; assessmentId?: string; error?: string }>
-    refreshData: () => Promise<void>
+    refreshData: () => Promise<Domain[] | null | void>
     updateProfile: (updates: any) => Promise<{ success: boolean; error?: string }>
     signOut: () => Promise<void>
     setCurrentDomainIndex: (index: number) => void
     setCurrentQuestionIndex: (index: number) => void
+}
+
+// Helper to normalize industry ID (handles old typos and name storage)
+const normalizeIndustryId = (input: string | null | undefined): string => {
+    if (!input) return ""
+
+    // Check if it's already a valid current ID
+    const directMatch = INDUSTRY_PROFILES.find(p => p.id === input)
+    if (directMatch) return directMatch.id
+
+    // Map old typo IDs to new ones
+    const legacyMap: Record<string, string> = {
+        "it_and_tehnology_services": "it_and_technology_services",
+        "logistics_and_transporation": "logistics_and_transportation"
+    }
+    if (legacyMap[input]) return legacyMap[input]
+
+    // Check if it's the human-readable name
+    const nameMatch = INDUSTRY_PROFILES.find(p => p.name === input)
+    if (nameMatch) return nameMatch.id
+
+    return input
 }
 
 const UnderwritingContext = createContext<UnderwritingContextType | undefined>(undefined)
@@ -69,7 +91,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
 
-    const fetchQuestionnaire = useCallback(async () => {
+    const fetchQuestionnaire = useCallback(async (): Promise<Domain[] | null> => {
         const supabase = createClient()
 
         try {
@@ -89,8 +111,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
             if (domainsRes.error || questionsRes.error) {
                 console.error("Error fetching questionnaire", domainsRes.error || questionsRes.error)
-                setDomains(JSON.parse(JSON.stringify(DOMAINS)))
-                return
+                const fallback = JSON.parse(JSON.stringify(DOMAINS))
+                setDomains(fallback)
+                return fallback
             }
 
             const rawDomains = domainsRes.data || []
@@ -116,9 +139,12 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             }))
 
             setDomains(stitchedDomains)
+            return stitchedDomains
         } catch (error) {
             console.error("❌ Failed to fetch questionnaire:", error)
-            setDomains(JSON.parse(JSON.stringify(DOMAINS)))
+            const fallback = JSON.parse(JSON.stringify(DOMAINS))
+            setDomains(fallback)
+            return fallback
         }
     }, [])
 
@@ -134,8 +160,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
             let cloudDraftData: any = null
             let profileIndustry: string | null = null
-            // CRITICAL: Use JSON.parse(JSON.stringify()) for a TRUE deep copy to prevent mutation leakage
-            let finalDomains: Domain[] = JSON.parse(JSON.stringify(DOMAINS))
+
+            // Wait for DB Questionnaire to get UUIDs, fallback to DOMAINS if failed
+            let finalDomains: Domain[] = await fetchQuestionnaire() || JSON.parse(JSON.stringify(DOMAINS))
 
             if (session?.user) {
                 // 2. Fetch Profile Role & Draft
@@ -153,12 +180,27 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
                     if (profile.draft_data) {
                         cloudDraftData = profile.draft_data
+                    } else {
+                        // If no draft, try to load latest submitted assessment for viewing
+                        const { data: latestAssessment } = await supabase
+                            .from('assessments')
+                            .select('*')
+                            .eq('user_id', session.user.id)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single()
+
+                        if (latestAssessment && latestAssessment.submission_data) {
+                            console.log("📄 Found Latest Submission - loading for view")
+                            cloudDraftData = latestAssessment.submission_data
+                        }
                     }
 
                     if (profile.industry) {
-                        setSelectedIndustry(profile.industry)
+                        const normalized = normalizeIndustryId(profile.industry)
+                        setSelectedIndustry(normalized)
                         setIsIndustryLocked(true)
-                        profileIndustry = profile.industry
+                        profileIndustry = normalized
                     }
                 } else {
                     setUserRole('client')
@@ -191,13 +233,13 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     try {
                         if (draftToLoad.domains) {
                             finalDomains = finalDomains.map((d: Domain) => {
-                                const savedD = draftToLoad.domains.find((sd: any) => sd.id === d.id)
+                                const savedD = draftToLoad.domains.find((sd: any) => sd.id === d.id || sd.name === d.name)
                                 if (savedD) {
                                     return {
                                         ...d,
                                         activeWeight: d.activeWeight,
                                         questions: d.questions.map((q: any) => {
-                                            const savedQ = savedD.questions?.find((sq: any) => sq.id === q.id)
+                                            const savedQ = savedD.questions?.find((sq: any) => sq.id === q.id || sq.text === q.text)
                                             return savedQ ? { ...q, response: savedQ.response } : q
                                         })
                                     }
@@ -205,7 +247,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                                 return d
                             })
                         }
-                        if (draftToLoad.selectedIndustry && !profileIndustry) setSelectedIndustry(draftToLoad.selectedIndustry)
+                        if (draftToLoad.selectedIndustry && !profileIndustry) {
+                            setSelectedIndustry(normalizeIndustryId(draftToLoad.selectedIndustry))
+                        }
                         if (draftToLoad.manualOverrideEnabled) setManualOverrideEnabled(draftToLoad.manualOverrideEnabled)
                         if (draftToLoad.currentDomainIndex !== undefined) setCurrentDomainIndex(draftToLoad.currentDomainIndex)
                         if (draftToLoad.currentQuestionIndex !== undefined) setCurrentQuestionIndex(draftToLoad.currentQuestionIndex)
@@ -225,8 +269,6 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 setClientName("")
                 setManualOverrideEnabled(false)
                 setHasDraft(false)
-                // Ensure domains are strictly fresh copies of framework defaults
-                finalDomains = JSON.parse(JSON.stringify(DOMAINS))
             }
 
             console.log('📦 Initialized domains')
@@ -417,6 +459,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         const hasResponses = domains.some((d: Domain) => d.questions.some((q: any) => q.response !== -1))
         if (!hasResponses) return
 
+        setIsSaving(true)
         const draft = {
             domains,
             selectedIndustry,
@@ -450,6 +493,8 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             setHasDraft(true)
         } catch (e) {
             console.error("Auto-save failed", e)
+        } finally {
+            setIsSaving(false)
         }
     }, [domains, selectedIndustry, clientName, manualOverrideEnabled, currentDomainIndex, currentQuestionIndex])
 
@@ -489,6 +534,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             return { success: false, error: error.message }
         }
 
+        // Clear draft from storage only, but keep state for success view/dashboard
         const storageKey = user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest"
         localStorage.removeItem(storageKey)
 
@@ -501,13 +547,6 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         } catch (e) {
             console.error("Error clearing cloud draft after submission", e)
         }
-
-        // Clear draft flags and RESET domains to fresh state
-        setDomains(JSON.parse(JSON.stringify(DOMAINS)))
-        setHasDraft(false)
-        setLastSavedTimestamp(null)
-        setCurrentDomainIndex(0)
-        setCurrentQuestionIndex(0)
 
         return { success: true, assessmentId: insertedData?.id }
     }, [domains, selectedIndustry, result, clientName])

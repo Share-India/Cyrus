@@ -53,7 +53,7 @@ export default function SubmissionPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <button
                         onClick={() => downloadPDFSummary(result, domains, clientName, industryName)}
                         className="px-8 py-4 bg-si-navy text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-si-blue-primary transition-all duration-300 shadow-xl shadow-si-navy/20 flex items-center gap-3 justify-center group"
@@ -61,6 +61,13 @@ export default function SubmissionPage() {
                         <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         <span>Download PDF Summary</span>
                     </button>
+                    <Link
+                        href="/dashboard"
+                        className="px-8 py-4 bg-si-blue-primary text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-si-navy transition-all duration-300 shadow-xl shadow-si-blue-primary/20 flex items-center gap-3 justify-center"
+                    >
+                        <FileCheck className="w-4 h-4" />
+                        <span>View Risk Analysis</span>
+                    </Link>
                     <Link
                         href="/"
                         className="px-8 py-4 bg-white border border-slate-200 text-si-navy font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-3 justify-center"

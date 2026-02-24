@@ -291,8 +291,8 @@ export default function WelcomePage() {
                                                             </h2>
                                                             <div className="flex items-center gap-2">
                                                                 <Globe className="w-3 h-3 text-si-blue-primary" />
-                                                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">
-                                                                    {INDUSTRY_PROFILES.find(p => p.id === userProfile?.industry)?.name || "Standard Risk Sector"}
+                                                                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-outfit">
+                                                                    {INDUSTRY_PROFILES.find(p => p.id === userProfile?.industry || p.name === userProfile?.industry)?.name || "General Risk Profile"}
                                                                 </span>
                                                             </div>
                                                         </div>

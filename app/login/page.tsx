@@ -433,7 +433,7 @@ export default function LoginPage() {
                                                         >
                                                             <option value="" disabled>Select Sector</option>
                                                             {INDUSTRY_PROFILES.map((p) => (
-                                                                <option key={p.id} value={p.name}>{p.name}</option>
+                                                                <option key={p.id} value={p.id}>{p.name}</option>
                                                             ))}
                                                         </select>
                                                         <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 rotate-90 pointer-events-none" />

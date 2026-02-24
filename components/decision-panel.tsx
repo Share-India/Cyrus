@@ -26,7 +26,7 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
     ...result.failedKillers.map(k => ({
       type: "critical",
       domainId: domains.find(d => d.name === k.domain)?.id || "",
-      text: `Critical Control Failure: ${k.text}`,
+      text: isAdmin ? `Killer Failure: ${k.text}` : `Structural Maturity Gap: ${k.text}`,
       score: 0
     })),
     // 2. Lowest Scoring Domains (Weighted)

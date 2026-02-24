@@ -132,8 +132,8 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
             }
       },
       {
-            "id": "it_and_tehnology_services",
-            "name": "IT and Tehnology Services",
+            "id": "it_and_technology_services",
+            "name": "IT and Technology Services",
             "domainWeights": {
                   "Network Security": 8.0,
                   "Data Backup and Recovery": 6.0,
@@ -232,8 +232,8 @@ export const INDUSTRY_PROFILES: IndustryProfile[] = [
             }
       },
       {
-            "id": "logistics_and_transporation",
-            "name": "Logistics and Transporation",
+            "id": "logistics_and_transportation",
+            "name": "Logistics and Transportation",
             "domainWeights": {
                   "Network Security": 6.0,
                   "Data Backup and Recovery": 7.0,
@@ -297,13 +297,13 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
             name: "ISO/IEC 27001",
             levels: {
                   "cyber_security": "critical",
-                  "it_and_tehnology_services": "critical",
+                  "it_and_technology_services": "critical",
                   "financial_services_and_banking": "critical",
                   "healthcare_and_pharmaceuticals": "standard",
                   "manufacturing_and_engineering": "standard",
                   "retail_and_e-commerce": "standard",
                   "hospitality_and_tourism": "standard",
-                  "logistics_and_transporation": "standard",
+                  "logistics_and_transportation": "standard",
                   "construction_and_infrastructure": "standard"
             }
       },
@@ -312,12 +312,12 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
             name: "NIST Framework",
             levels: {
                   "cyber_security": "critical",
-                  "it_and_tehnology_services": "critical",
+                  "it_and_technology_services": "critical",
                   "financial_services_and_banking": "critical",
                   "manufacturing_and_engineering": "standard",
                   "healthcare_and_pharmaceuticals": "standard",
                   "retail_and_e-commerce": "niche",
-                  "logistics_and_transporation": "niche",
+                  "logistics_and_transportation": "niche",
                   "construction_and_infrastructure": "niche",
                   "hospitality_and_tourism": "niche"
             }
@@ -326,7 +326,7 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
             id: "CERT-003",
             name: "SOC 2 Type II",
             levels: {
-                  "it_and_tehnology_services": "critical",
+                  "it_and_technology_services": "critical",
                   "cyber_security": "critical",
                   "financial_services_and_banking": "standard",
                   "healthcare_and_pharmaceuticals": "standard",
@@ -334,7 +334,7 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
                   "manufacturing_and_engineering": "not_required",
                   "construction_and_infrastructure": "not_required",
                   "hospitality_and_tourism": "not_required",
-                  "logistics_and_transporation": "not_required"
+                  "logistics_and_transportation": "not_required"
             }
       },
       {
@@ -342,13 +342,13 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
             name: "HIPAA",
             levels: {
                   "healthcare_and_pharmaceuticals": "critical",
-                  "it_and_tehnology_services": "niche",
+                  "it_and_technology_services": "niche",
                   "cyber_security": "niche",
                   "financial_services_and_banking": "not_required",
                   "manufacturing_and_engineering": "not_required",
                   "retail_and_e-commerce": "not_required",
                   "hospitality_and_tourism": "not_required",
-                  "logistics_and_transporation": "not_required",
+                  "logistics_and_transportation": "not_required",
                   "construction_and_infrastructure": "not_required"
             }
       },
@@ -359,10 +359,10 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
                   "retail_and_e-commerce": "critical",
                   "hospitality_and_tourism": "critical",
                   "financial_services_and_banking": "critical",
-                  "it_and_tehnology_services": "standard",
+                  "it_and_technology_services": "standard",
                   "cyber_security": "standard",
                   "healthcare_and_pharmaceuticals": "niche",
-                  "logistics_and_transporation": "niche",
+                  "logistics_and_transportation": "niche",
                   "manufacturing_and_engineering": "not_required",
                   "construction_and_infrastructure": "not_required"
             }
@@ -2473,7 +2473,7 @@ function getDeclineNarrative(
       failedKillers: Array<{ id: string; text: string }>,
 ): string {
       if (failedKillers.length >= 2) {
-            return `Auto-declined due to ${failedKillers.length} failed critical controls: ${failedKillers.map((k) => k.id).join(", ")}`
+            return `Risk posture fell below structural underwriting requirements due to multiple control gaps. (Ref: SEC-AUTO-DECLINE)`
       }
 
       switch (riskTier) {
@@ -2512,4 +2512,55 @@ export function getIndustryWeights(industry: IndustryProfile | null, domains: Do
                   activeWeight: weight !== undefined ? weight : 0
             };
       });
+}
+
+export interface Recommendation {
+      questionId: string
+      domain: string
+      action: string
+      impact: "High" | "Medium" | "Low"
+      weight: number
+}
+
+export function getRecommendations(
+      domains: Domain[],
+      industryId: string
+): Recommendation[] {
+      const recommendations: Recommendation[] = []
+      const industry = INDUSTRY_PROFILES.find(p => p.id === industryId)
+
+      if (!industry) return []
+
+      const allQuestions = domains.flatMap(d => d.questions)
+      const failedQuestions = allQuestions.filter(q => q.response < 1)
+
+      // Sort by weight of their domain and whether they are a killer question
+      failedQuestions.sort((a, b) => {
+            const weightA = industry.domainWeights[a.domain] || 0
+            const weightB = industry.domainWeights[b.domain] || 0
+
+            if (a.isKiller && !b.isKiller) return -1
+            if (!a.isKiller && b.isKiller) return 1
+
+            return weightB - weightA
+      })
+
+      // Take top 5 recommendations
+      failedQuestions.slice(0, 5).forEach(q => {
+            const weight = industry.domainWeights[q.domain] || 0
+            let impact: "High" | "Medium" | "Low" = "Low"
+
+            if (q.isKiller || weight >= 8) impact = "High"
+            else if (weight >= 5) impact = "Medium"
+
+            recommendations.push({
+                  questionId: q.id,
+                  domain: q.domain,
+                  action: `Implement or improve: ${q.text}`,
+                  impact,
+                  weight
+            })
+      })
+
+      return recommendations
 }

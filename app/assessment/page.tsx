@@ -10,6 +10,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { PolicyUpload } from "@/components/policy-upload"
 import { createClient } from "@/lib/supabase/client"
+import { downloadPDFSummary } from "@/lib/pdf-report-generator"
+import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+
 
 export default function AssessmentPage() {
     const router = useRouter()
@@ -26,7 +29,10 @@ export default function AssessmentPage() {
         autoSaveDraft,
         submitAssessment,
         handleReset,
+        result,
+        clientName,
         completionStats,
+
         isLoading,
         isAdmin,
         isSaving,
@@ -309,7 +315,17 @@ export default function AssessmentPage() {
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button
+                            onClick={() => {
+                                const industryName = INDUSTRY_PROFILES.find(p => p.id === selectedIndustry)?.name || ''
+                                downloadPDFSummary(result, domains, clientName, industryName)
+                            }}
+                            className="flex-1 py-4 bg-si-navy text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-si-blue-primary transition-all duration-300 shadow-xl shadow-si-navy/20 flex items-center justify-center gap-2 group"
+                        >
+                            <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            Download Summary
+                        </button>
                         <button
                             onClick={() => router.push("/dashboard")}
                             className="flex-1 py-4 bg-si-blue-primary text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-si-navy transition-all duration-300 shadow-xl shadow-si-blue-primary/20 flex items-center justify-center gap-2"
@@ -319,11 +335,18 @@ export default function AssessmentPage() {
                         </button>
                         <button
                             onClick={() => router.push("/")}
-                            className="flex-1 py-4 bg-white border border-slate-200 text-si-navy text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-50 transition-all duration-300"
+                            className="py-4 bg-white border border-slate-200 text-si-navy text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-50 transition-all duration-300"
                         >
                             Return Home
                         </button>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="py-4 bg-slate-50 border border-slate-100 text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-100 transition-all duration-300"
+                        >
+                            New Assessment
+                        </button>
                     </div>
+
                 </motion.div>
             </div>
         )

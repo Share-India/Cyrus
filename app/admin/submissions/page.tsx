@@ -18,6 +18,36 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+
+// Helper to resolve industry ID or stored name to human-readable name
+const LEGACY_INDUSTRY_MAP: Record<string, string> = {
+    // Old typo IDs
+    "it_and_tehnology_services": "IT and Technology Services",
+    "logistics_and_transporation": "Logistics and Transportation",
+    // Old typo names (stored directly in profiles.industry)
+    "it and tehnology services": "IT and Technology Services",
+    "IT and Tehnology Services": "IT and Technology Services",
+    "logistics and transporation": "Logistics and Transportation",
+    "Logistics and Transporation": "Logistics and Transportation",
+}
+
+const resolveIndustryName = (industryRaw: string | undefined | null): string => {
+    if (!industryRaw) return "—"
+    // Direct match against current profiles
+    const match = INDUSTRY_PROFILES.find(
+        p => p.id === industryRaw || p.name === industryRaw
+    )
+    if (match) return match.name
+    // Legacy name/ID correction
+    if (LEGACY_INDUSTRY_MAP[industryRaw]) return LEGACY_INDUSTRY_MAP[industryRaw]
+    // Case-insensitive legacy check
+    const lowerRaw = industryRaw.toLowerCase()
+    const legacyMatch = Object.entries(LEGACY_INDUSTRY_MAP).find(([k]) => k.toLowerCase() === lowerRaw)
+    if (legacyMatch) return legacyMatch[1]
+    // Final fallback: replace underscores with spaces
+    return industryRaw.replace(/_/g, ' ')
+}
 
 interface Submission {
     id: string
@@ -26,6 +56,7 @@ interface Submission {
     total_score: number
     risk_tier: string
     premium_loading: string
+    auto_declined: boolean
     created_at: string
     profiles: {
         email: string
@@ -38,6 +69,7 @@ export default function SubmissionsDashboard() {
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedSector, setSelectedSector] = useState("All")
     const [selectedTier, setSelectedTier] = useState("All")
+    const [minScore, setMinScore] = useState(0)
     const [sortConfig, setSortConfig] = useState<{ key: keyof Submission | 'profiles.organization_name', direction: 'asc' | 'desc' }>({ key: 'created_at', direction: 'desc' })
     const supabase = createClient()
 
@@ -98,12 +130,18 @@ export default function SubmissionsDashboard() {
 
         // Sector Filter
         if (selectedSector !== "All") {
-            result = result.filter(s => ((s.profiles as any)?.industry || s.industry_id.replace(/_/g, ' ')) === selectedSector)
+            result = result.filter(s => resolveIndustryName((s.profiles as any)?.industry || s.industry_id) === selectedSector)
         }
 
         // Tier Filter
         if (selectedTier !== "All") {
-            result = result.filter(s => s.risk_tier.toUpperCase() === selectedTier.toUpperCase())
+            const cleanTier = selectedTier.replace('TIER ', '').replace('DECLINE', 'D')
+            result = result.filter(s => s.risk_tier.includes(cleanTier))
+        }
+
+        // Score Range Filter
+        if (minScore > 0) {
+            result = result.filter(s => s.total_score >= minScore)
         }
 
         // Sorting
@@ -163,14 +201,16 @@ export default function SubmissionsDashboard() {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => {
-                                const headers = ["ID", "Organization", "User", "Sector", "Score", "Tier", "Date"]
+                                const headers = ["ID", "Organization", "User", "Sector", "Score", "Tier", "Premium Loading", "Auto Declined", "Date"]
                                 const rows = filteredSubmissions.map(s => [
                                     s.id,
                                     (s.profiles as any)?.organization_name || "Individual",
                                     (s.profiles as any)?.name || s.profiles?.email,
-                                    (s.profiles as any)?.industry || s.industry_id.replace(/_/g, ' '),
+                                    resolveIndustryName((s.profiles as any)?.industry || s.industry_id),
                                     `${s.total_score}%`,
                                     s.risk_tier,
+                                    s.premium_loading,
+                                    s.auto_declined ? "YES" : "NO",
                                     new Date(s.created_at).toLocaleDateString()
                                 ])
                                 const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n")
@@ -214,7 +254,7 @@ export default function SubmissionsDashboard() {
                                 className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
                             >
                                 <option value="All">All Sectors</option>
-                                {[...new Set(submissions.map(s => (s.profiles as any)?.industry || s.industry_id.replace(/_/g, ' ')))].map(sector => (
+                                {[...new Set(submissions.map(s => resolveIndustryName((s.profiles as any)?.industry || s.industry_id)))].map(sector => (
                                     <option key={sector} value={sector}>{sector}</option>
                                 ))}
                             </select>
@@ -233,6 +273,19 @@ export default function SubmissionsDashboard() {
                                 <option value="TIER C">Tier C</option>
                                 <option value="DECLINE">Decline</option>
                             </select>
+                        </div>
+
+                        <div className="flex items-center gap-4 pl-4 border-l border-slate-100">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap min-w-[100px]">Min Score: {minScore}%</span>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="5"
+                                value={minScore}
+                                onChange={(e) => setMinScore(parseInt(e.target.value))}
+                                className="w-32 accent-si-navy h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer"
+                            />
                         </div>
                     </div>
                 </div>
@@ -299,8 +352,8 @@ export default function SubmissionsDashboard() {
                                                 <span className="text-sm font-bold text-slate-600 truncate max-w-[150px]">
                                                     {(sub.profiles as any)?.name || (sub.profiles as any)?.email}
                                                 </span>
-                                                <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-tighter">
-                                                    {(sub.profiles as any)?.industry || sub.industry_id.replace(/_/g, ' ')}
+                                                <span className="text-[10px] font-black text-si-blue-primary tracking-tighter">
+                                                    {resolveIndustryName((sub.profiles as any)?.industry || sub.industry_id)}
                                                 </span>
                                             </div>
                                         </td>
@@ -352,7 +405,7 @@ export default function SubmissionsDashboard() {
                         </table>
                     </div>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     )
 }

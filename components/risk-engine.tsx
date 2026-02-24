@@ -86,7 +86,7 @@ export function RiskEngine({ result, domains }: RiskEngineProps) {
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-[11px] font-black text-si-navy uppercase tracking-tight group-hover/item:text-si-blue-primary transition-colors">
+                    <h4 className="text-[11px] font-black text-si-navy uppercase tracking-tight font-outfit group-hover/item:text-si-blue-primary transition-colors">
                       {domain.domain}
                     </h4>
                     <div className="flex items-center gap-5 mt-2">

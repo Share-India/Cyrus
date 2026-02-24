@@ -17,7 +17,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         textColor: "text-red-700",
         icon: ShieldX,
         label: "AUTO-DECLINED",
-        description: "CRITICAL FAILURE DETECTED",
+        description: "STRUCTURAL RISK INHIBITOR",
       }
     }
 
