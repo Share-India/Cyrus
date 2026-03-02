@@ -6,6 +6,7 @@ import {
     calculateScore,
     INDUSTRY_PROFILES,
     getIndustryWeights,
+    MODEL_VERSION,
     type Domain,
     type ScoringResult,
     type IndustryProfile,
@@ -19,6 +20,7 @@ interface UnderwritingContextType {
     domains: Domain[]
     selectedIndustry: string
     clientName: string
+    organizationWebsite: string
     manualOverrideEnabled: boolean
     result: ScoringResult
     completionStats: { total: number; answered: number; percentage: number }
@@ -82,6 +84,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const [manualOverrideEnabled, setManualOverrideEnabled] = useState(false)
     const [selectedIndustry, setSelectedIndustry] = useState<string>("")
     const [clientName, setClientName] = useState<string>("")
+    const [organizationWebsite, setOrganizationWebsite] = useState<string>("")
     const [isLoading, setIsLoading] = useState(true)
     const [isIndustryLocked, setIsIndustryLocked] = useState(false)
     const [userProfile, setUserProfile] = useState<any | null>(null)
@@ -177,6 +180,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     setUserProfile(profile)
                     setUserRole(profile.role || 'client')
                     setClientName(profile.organization_name || "")
+                    setOrganizationWebsite(profile.organization_website || "")
 
                     if (profile.draft_data) {
                         cloudDraftData = profile.draft_data
@@ -278,6 +282,33 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
         init()
     }, [])
+
+    // 5. Auth State Change Listener (Cross-tab Sync)
+    useEffect(() => {
+        const supabase = createClient()
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log("🔔 Auth Event:", event, session?.user?.id)
+
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                // If user changed in another tab, reload to prevent data contamination
+                if (userProfile && session?.user?.id !== userProfile.id) {
+                    console.warn("🔄 Session mismatch detected. Reloading for account isolation.")
+                    window.location.reload()
+                }
+            }
+
+            if (event === 'SIGNED_OUT') {
+                setUserRole(null)
+                setUserProfile(null)
+                setDomains([])
+                window.location.href = '/login'
+            }
+        })
+
+        return () => {
+            subscription.unsubscribe()
+        }
+    }, [userProfile])
 
     // Derived State
     const result: ScoringResult = useMemo(() => {
@@ -431,9 +462,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 const { error } = await supabase
                     .from('profiles')
                     .update({
-                        draft_data: draft,
+                        draft_data: { ...draft, model_version: MODEL_VERSION },
                         organization_name: clientName,
-                        industry: selectedIndustry
+                        organization_website: organizationWebsite,
+                        industry: selectedIndustry,
+                        app_version: MODEL_VERSION
                     })
                     .eq('id', user.id)
 
@@ -482,9 +515,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 await supabase
                     .from('profiles')
                     .update({
-                        draft_data: draft,
+                        draft_data: { ...draft, model_version: MODEL_VERSION },
                         organization_name: clientName,
-                        industry: selectedIndustry
+                        organization_website: organizationWebsite,
+                        industry: selectedIndustry,
+                        app_version: MODEL_VERSION
                     })
                     .eq('id', user.id)
             }
@@ -502,7 +537,10 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
 
-        if (!user) return { success: false, error: "User not authenticated" }
+        if (!user || (userProfile && user.id !== userProfile.id)) {
+            console.error("🚫 Security Breach Prevented: Session mismatch during submitAssessment")
+            return { success: false, error: "Authentication session mismatch. Please refresh the page and log in again." }
+        }
 
         const { data: insertedData, error } = await supabase.from('assessments').insert({
             user_id: user.id,
@@ -525,8 +563,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 })),
                 result,
                 clientName,
-                selectedIndustry
-            }
+                selectedIndustry,
+                model_version: MODEL_VERSION
+            },
+            model_version: MODEL_VERSION,
+            schema_version: '1.0.0'
         }).select('id').single()
 
         if (error) {
@@ -559,7 +600,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
         const { error } = await supabase
             .from('profiles')
-            .update(updates)
+            .update({ ...updates, app_version: MODEL_VERSION })
             .eq('id', user.id)
 
         if (error) {
@@ -573,6 +614,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         }
         if (updates.industry) {
             setSelectedIndustry(updates.industry)
+        }
+        if (updates.organization_website) {
+            setOrganizationWebsite(updates.organization_website)
         }
 
         return { success: true }
@@ -603,6 +647,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         domains,
         selectedIndustry,
         clientName,
+        organizationWebsite,
         manualOverrideEnabled,
         isIndustryLocked,
         userProfile,

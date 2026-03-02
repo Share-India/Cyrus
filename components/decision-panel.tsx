@@ -63,9 +63,9 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
     }
 
     if (result.riskTier === "B") {
-      reasons.push("Tier B detected: Structural loading enforced (+40%) due to suboptimal posture.")
+      reasons.push("Tier B detected: Substandard risk posture identified.")
     } else if (result.riskTier === "C") {
-      reasons.push("Tier C detected: Maximum loading enforced (+80%) due to high risk volatility.")
+      reasons.push("Tier C detected: High risk volatility observed.")
     }
 
     return reasons.slice(0, 4)
@@ -129,8 +129,8 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
                       transition={{ delay: idx * 0.1 }}
                       className="flex gap-4 p-5 rounded-2xl bg-white/60 border border-white/50 group/reason cursor-pointer hover:bg-white/80 transition-all shadow-sm"
                     >
-                      <AlertCircle size={18} className="text-si-blue-primary mt-0.5 flex-shrink-0 opacity-80 group-hover/reason:opacity-100 transition-opacity" />
-                      <p className="text-[11px] text-slate-700 font-bold leading-relaxed tracking-tight">{reason}</p>
+                      <AlertCircle size={18} className="text-si-blue-primary mt-1 flex-shrink-0 opacity-80 group-hover/reason:opacity-100 transition-opacity" />
+                      <p className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">{reason}</p>
                     </motion.div>
                   ))
                 ) : (

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation"
 import { PolicyUpload } from "@/components/policy-upload"
 import { createClient } from "@/lib/supabase/client"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
-import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+import { INDUSTRY_PROFILES, MODEL_VERSION } from "@/lib/scoring-engine"
 
 
 export default function AssessmentPage() {
@@ -38,7 +38,8 @@ export default function AssessmentPage() {
         isSaving,
         lastSavedTimestamp,
         signOut,
-        userRole
+        userRole,
+        userProfile
     } = useUnderwriting()
 
     const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set())
@@ -139,6 +140,46 @@ export default function AssessmentPage() {
                 alert(`Submission failed: ${res.error}`)
             }
         }
+    }
+
+    const [sessionMismatch, setSessionMismatch] = useState(false)
+
+    // Auth Guard & Session Sync
+    useEffect(() => {
+        const supabase = createClient()
+        const checkSession = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user && userProfile && user.id !== userProfile.id) {
+                setSessionMismatch(true)
+            }
+        }
+        checkSession()
+    }, [userProfile])
+
+    if (sessionMismatch) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white font-inter">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md w-full bg-si-navy p-10 rounded-[40px] border border-white/10 text-center shadow-2xl"
+                >
+                    <div className="w-20 h-20 bg-si-red/20 rounded-[28px] flex items-center justify-center mx-auto mb-8 text-si-red">
+                        <LogOut className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-2xl font-black font-outfit mb-4">Session Conflict Detected</h2>
+                    <p className="text-white/60 text-sm leading-relaxed mb-8">
+                        You have logged into a different account in another tab. To prevent accidental data contamination, this session has been locked.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="w-full py-4 bg-si-blue-primary text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-si-blue-secondary transition-all"
+                    >
+                        Synchronize Session
+                    </button>
+                </motion.div>
+            </div>
+        )
     }
 
     if (isLoading) {
@@ -319,7 +360,7 @@ export default function AssessmentPage() {
                         <button
                             onClick={() => {
                                 const industryName = INDUSTRY_PROFILES.find(p => p.id === selectedIndustry)?.name || ''
-                                downloadPDFSummary(result, domains, clientName, industryName)
+                                downloadPDFSummary(result, domains, clientName, industryName, '', lastSavedTimestamp || new Date().toISOString(), '', MODEL_VERSION, lastSavedTimestamp || new Date().toISOString())
                             }}
                             className="flex-1 py-4 bg-si-navy text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-si-blue-primary transition-all duration-300 shadow-xl shadow-si-navy/20 flex items-center justify-center gap-2 group"
                         >
@@ -485,12 +526,16 @@ export default function AssessmentPage() {
             <main className="flex-1 max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
                 {/* Left Rail: Navigation */}
                 <div className="hidden lg:block col-span-3 sticky top-28 self-start h-fit max-h-[calc(100vh-10rem)] overflow-y-auto pr-4 custom-scrollbar">
-                    <div className="mb-4 px-4 py-2 bg-slate-100/50 rounded-lg border border-slate-200/50">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Navigation Map</span>
+                    <div className="mb-4 px-4 py-3 bg-slate-100/50 rounded-lg border border-slate-200/50 flex flex-col gap-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Navigation Map</span>
+                        <span className="text-[9px] font-bold text-si-blue-primary/60 uppercase tracking-tight">System v{MODEL_VERSION}</span>
                     </div>
                     <nav className="space-y-1.5">
                         {domains.map((d, idx) => {
-                            const isComplete = d.questions.every(q => q.response !== -1)
+                            const answeredCount = d.questions.filter(q => q.response !== -1).length
+                            const totalCount = d.questions.length
+                            const isComplete = answeredCount === totalCount
+                            const progress = totalCount > 0 ? (answeredCount / totalCount) * 100 : 0
                             const isActive = expandedDomains.has(d.id)
 
                             return (
@@ -503,27 +548,40 @@ export default function AssessmentPage() {
                                             document.getElementById(`domain-${d.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                         }, 0)
                                     }}
-                                    className={`w-full text-left px-5 py-4 rounded-xl flex items-center justify-between group transition-all duration-300 ease-out border ${isActive
+                                    className={`w-full text-left px-5 py-4 rounded-xl flex flex-col gap-3 group transition-all duration-300 ease-out border ${isActive
                                         ? 'bg-si-blue-primary/5 border-si-blue-primary/20 shadow-[0_0_20px_rgba(45,169,255,0.15)] scale-[1.02]'
                                         : 'border-transparent hover:bg-white/50 hover:border-white/40 text-slate-500 hover:shadow-sm'
                                         }`}
                                 >
-                                    <div className="flex flex-col gap-1">
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-si-blue-primary' : isComplete ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                            Domain {String(idx + 1).padStart(2, '0')}
-                                        </span>
-                                        <span className={`text-xs font-bold font-outfit ${isActive ? 'text-si-navy' : 'text-slate-600'}`}>
-                                            {d.name}
-                                        </span>
+                                    <div className="w-full flex items-center justify-between">
+                                        <div className="flex flex-col gap-1 min-w-0">
+                                            <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-si-blue-primary' : isComplete ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                                {answeredCount}/{totalCount} COMPLETED
+                                            </span>
+                                            <span className={`text-xs font-bold font-outfit truncate ${isActive ? 'text-si-navy' : 'text-slate-600'}`}>
+                                                {d.name}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {isComplete ? (
+                                                <div className="w-5 h-5 bg-emerald-50 rounded-full flex items-center justify-center">
+                                                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                                </div>
+                                            ) : (
+                                                <div className="text-[10px] font-black font-mono text-slate-300">
+                                                    {Math.round(progress)}%
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {isComplete ? (
-                                            <div className="w-5 h-5 bg-emerald-50 rounded-full flex items-center justify-center">
-                                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                            </div>
-                                        ) : (
-                                            <Circle className={`w-4 h-4 shrink-0 transition-colors duration-300 ${isActive ? 'text-si-blue-primary' : 'text-slate-200'}`} />
-                                        )}
+
+                                    {/* Mini Progress Bar */}
+                                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${progress}%` }}
+                                            className={`h-full transition-all duration-500 ${isComplete ? 'bg-emerald-500' : 'bg-si-blue-primary'}`}
+                                        />
                                     </div>
                                 </button>
                             )

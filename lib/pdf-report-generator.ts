@@ -16,7 +16,9 @@ export async function downloadPDFSummary(
     industryName: string = '',
     clientEmail: string = '',
     submissionDate: string = '',
-    protocolId: string = ''
+    protocolId: string = '',
+    modelVersion: string = '1.0.0',
+    timestamp: string = new Date().toISOString()
 ) {
     const doc = new jsPDF()
 
@@ -147,7 +149,7 @@ export async function downloadPDFSummary(
 
     // Assessment Summary Box
     doc.setFillColor(...LIGHT_GRAY)
-    doc.roundedRect(15, yPosition, 180, 60, 3, 3, 'F')
+    doc.roundedRect(15, yPosition, 180, 52, 3, 3, 'F')
 
     yPosition += 8
     doc.setFontSize(11)
@@ -181,16 +183,7 @@ export async function downloadPDFSummary(
     doc.setFontSize(12)
     doc.text(result.riskTier, 70, yPosition)
     doc.setFontSize(9)
-    yPosition += 6
-
-    // Premium Loading
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...NAVY)
-    doc.text('Premium Loading:', 20, yPosition)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...DARK_GRAY)
-    doc.text(getCurrentPremiumLoading(result.riskTier), 70, yPosition)
-    yPosition += 6
+    yPosition += 8
 
     // Auto-Decline Status
     doc.setFont('helvetica', 'bold')
@@ -224,6 +217,27 @@ export async function downloadPDFSummary(
 
     yPosition += 15
 
+    // Risk Executive Summary
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...NAVY)
+    doc.text('RISK EXECUTIVE SUMMARY', 15, yPosition)
+    yPosition += 6
+
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...DARK_GRAY)
+
+    const summaryText = result.autoDeclined
+        ? "The assessment has identified critical control failures. Underwriting is currently declined pending remediation of 'Killer' controls. The overall risk posture is High (Tier D)."
+        : `Based on the evaluated controls, the organization demonstrates a ${result.riskTier === 'A' ? 'Superior' : result.riskTier === 'B' ? 'Good' : 'Moderate'} risk profile. The calculated risk tier is ${result.riskTier} with a normalized score of ${result.normalizedScore.toFixed(2)}.`
+
+    const summaryLines = doc.splitTextToSize(summaryText, 180)
+    doc.text(summaryLines, 15, yPosition)
+    yPosition += (summaryLines.length * 5) + 5
+
+    yPosition += 15
+
     // Domain Scores Table
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
@@ -249,11 +263,13 @@ export async function downloadPDFSummary(
             fillColor: NAVY,
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 8
+            fontSize: 8,
+            font: 'helvetica'
         },
         bodyStyles: {
             fontSize: 7,
-            textColor: DARK_GRAY
+            textColor: DARK_GRAY,
+            font: 'helvetica'
         },
         alternateRowStyles: {
             fillColor: LIGHT_GRAY
@@ -300,11 +316,13 @@ export async function downloadPDFSummary(
                 fillColor: [239, 68, 68], // Red
                 textColor: [255, 255, 255],
                 fontStyle: 'bold',
-                fontSize: 8
+                fontSize: 8,
+                font: 'helvetica'
             },
             bodyStyles: {
                 fontSize: 7,
-                textColor: DARK_GRAY
+                textColor: DARK_GRAY,
+                font: 'helvetica'
             },
             columnStyles: {
                 0: { cellWidth: 20 },
@@ -329,20 +347,24 @@ export async function downloadPDFSummary(
         doc.setFont('helvetica', 'bold')
         doc.setTextColor(...NAVY)
         doc.text('UNDERWRITING NARRATIVE', 15, yPosition)
-        yPosition += 7
+        yPosition += 8
 
-        doc.setFontSize(8)
+        doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
         doc.setTextColor(...DARK_GRAY)
 
-        const narrativeLines = doc.splitTextToSize(result.declineNarrative, 180)
-        narrativeLines.forEach((line: string) => {
-            if (yPosition > 280) {
-                doc.addPage()
-                yPosition = 20
-            }
-            doc.text(line, 15, yPosition)
-            yPosition += 5
+        const paragraphs = result.declineNarrative.split('\n\n')
+        paragraphs.forEach((paragraph: string) => {
+            const lines = doc.splitTextToSize(paragraph, 180)
+            lines.forEach((line: string) => {
+                if (yPosition > 275) {
+                    doc.addPage()
+                    yPosition = 20
+                }
+                doc.text(line, 15, yPosition)
+                yPosition += 6
+            })
+            yPosition += 4 // Extra space between paragraphs
         })
     }
 
@@ -367,12 +389,15 @@ export async function downloadPDFSummary(
 
         // Page number and date
         doc.setFont('helvetica', 'normal')
-        const date = new Date().toLocaleDateString('en-IN', {
+        const formattedTimestamp = new Date(timestamp).toLocaleString('en-IN', {
             year: 'numeric',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
         })
-        doc.text(`Generated: ${date}`, 15, 294)
+        doc.text(`Generated: ${formattedTimestamp} | System v${modelVersion}`, 15, 294)
         doc.text(`Page ${i} of ${pageCount}`, 180, 294)
     }
 

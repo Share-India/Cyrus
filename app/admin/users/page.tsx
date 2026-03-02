@@ -13,7 +13,8 @@ import {
     ExternalLink,
     Clock,
     UserCheck,
-    UserMinus
+    UserMinus,
+    Globe
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -28,6 +29,7 @@ interface Profile {
     created_at: string
     last_audit_at?: string
     audit_count: number
+    organization_website?: string
 }
 
 export default function UserManagementPage() {
@@ -140,7 +142,14 @@ export default function UserManagementPage() {
                             <div className="space-y-4 mb-8 relative z-10">
                                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     <span>Organization</span>
-                                    <span className="text-si-navy">{user.organization_name || "N/A"}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-si-navy">{user.organization_name || "N/A"}</span>
+                                        {user.organization_website && (
+                                            <a href={user.organization_website} target="_blank" rel="noopener noreferrer" className="text-si-blue-primary hover:text-si-navy transition-colors">
+                                                <Globe className="w-3.5 h-3.5" />
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     <span>Sector</span>

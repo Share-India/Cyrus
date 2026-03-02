@@ -93,12 +93,12 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
 
         <div className="flex items-center justify-between pt-8 border-t border-white/5 relative z-10">
           <div>
-            <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Institutional Premium Load</span>
-            <span className={`text-5xl font-black font-outfit ${config.textColor}`}>{getCurrentPremiumLoading(result.riskTier)}</span>
+            <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Technical Risk Score</span>
+            <span className={`text-4xl font-black font-outfit ${config.textColor}`}>{result.totalScore.toFixed(2)}%</span>
           </div>
           <div className="text-right">
-            <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Final Risk Tier</span>
-            <span className={`text-3xl font-black italic font-outfit ${config.textColor}`}>{result.riskTier}</span>
+            <span className="block text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Determined Risk Tier</span>
+            <span className={`text-4xl font-black italic font-outfit ${config.textColor}`}>{result.riskTier}</span>
           </div>
         </div>
 

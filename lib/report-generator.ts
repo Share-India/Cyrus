@@ -48,7 +48,6 @@ export function downloadAssessmentReport(
         ["-------------------------------------------------"],
         ["OVERALL RISK SCORE", result.totalScore.toFixed(2) + "%"],
         ["ASSIGNED RISK TIER", result.riskTier],
-        ["PREMIUM LOADING", result.premiumLoading],
         ["AUTO-DECLINE STATUS", result.autoDeclined ? "TRIGGERED (POLICY INELIGIBLE)" : "CLEAR"],
         ["NORMALIZED SCORE", result.normalizedScore.toFixed(2)],
         ["VOLATILITY SCORE", result.volatilityScore.toFixed(2)],

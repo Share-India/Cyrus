@@ -71,6 +71,8 @@ interface DetailedSubmission {
     premium_loading: string
     auto_declined: boolean
     created_at: string
+    model_version?: string
+    schema_version?: string
     submission_data: {
         domains: Array<{
             id: string
@@ -86,6 +88,7 @@ interface DetailedSubmission {
         result: any
         clientName?: string
         selectedIndustry?: string
+        model_version?: string
     }
     profiles: {
         email: string
@@ -317,19 +320,14 @@ export default function SubmissionDetails() {
                                             <!-- Key Stats Grid -->
                                             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
                                                 <tr>
-                                                    <td width="33%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
+                                                    <td width="49%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
                                                         <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Risk Score</div>
                                                         <div style="font-size: 24px; font-weight: 900; color: #0f172a;">${submission.total_score}%</div>
                                                     </td>
                                                     <td width="2%" style="font-size: 0;">&nbsp;</td>
-                                                    <td width="30%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
-                                                        <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Tier</div>
+                                                    <td width="49%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
+                                                        <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Risk Tier</div>
                                                         <div style="font-size: 24px; font-weight: 900; color: #0f172a;">${submission.risk_tier}</div>
-                                                    </td>
-                                                    <td width="2%" style="font-size: 0;">&nbsp;</td>
-                                                    <td width="33%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
-                                                        <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Loading</div>
-                                                        <div style="font-size: 24px; font-weight: 900; color: #0f172a;">${getCurrentPremiumLoading(submission.risk_tier)}</div>
                                                     </td>
                                                 </tr>
                                             </table>
@@ -466,7 +464,7 @@ export default function SubmissionDetails() {
 
                             <div className="flex flex-col items-center md:items-end text-center md:text-right gap-4">
                                 <div className="bg-slate-50 px-6 py-5 rounded-2xl border border-slate-100 w-full md:w-auto">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Premium Loading</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Determined Outcome</span>
                                     <span className="text-2xl font-black text-si-navy font-outfit tracking-tight">{getCurrentPremiumLoading(submission.risk_tier)}</span>
                                 </div>
                                 <div className="bg-slate-50 px-6 py-5 rounded-2xl border border-slate-100 w-full md:w-auto">
@@ -806,7 +804,9 @@ export default function SubmissionDetails() {
                                                     industryName,
                                                     submission.profiles?.email || '',
                                                     submission.created_at,
-                                                    submission.id
+                                                    submission.id,
+                                                    submission_data.model_version || submission.model_version || '1.0.0',
+                                                    submission.created_at
                                                 )
                                             }}
                                             className="w-full group flex items-center justify-between p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all"

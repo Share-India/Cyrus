@@ -1,0 +1,792 @@
+{
+  "domains": [
+    {
+      "id": "active_directory_configuration",
+      "name": "Active Directory Configuration",
+      "weight": 3,
+      "explanation": "This evaluates the security of your central user and computer management."
+    },
+    {
+      "id": "asset_management",
+      "name": "Asset Management",
+      "weight": 6,
+      "explanation": "This evaluates how you track and manage your IT assets."
+    },
+    {
+      "id": "background_verification_and_employee_awareness",
+      "name": "Background Verification and Employee Awareness",
+      "weight": 4,
+      "explanation": "This assesses your personnel security and insider threat mitigation."
+    },
+    {
+      "id": "certifications",
+      "name": "Certifications",
+      "weight": 4,
+      "explanation": "This validates your commitment to industry-standard security practices."
+    },
+    {
+      "id": "change_patch_cadence",
+      "name": "Change/Patch Cadence",
+      "weight": 5,
+      "explanation": "This evaluates how quickly you update systems to fix vulnerabilities."
+    },
+    {
+      "id": "dark_web_exposure",
+      "name": "Dark Web Exposure",
+      "weight": 2,
+      "explanation": "This checks for leaked credentials or data on the dark web."
+    },
+    {
+      "id": "data_backup_and_recovery",
+      "name": "Data Backup and Recovery",
+      "weight": 7,
+      "explanation": "This helps us understand recovery capability after an attack."
+    },
+    {
+      "id": "dlp_and_dspm",
+      "name": "DLP and DSPM",
+      "weight": 4,
+      "explanation": "This assesses measures to prevent sensitive data loss."
+    },
+    {
+      "id": "endpoint_security",
+      "name": "Endpoint Security",
+      "weight": 6,
+      "explanation": "This evaluates protection of individual devices connecting to your network."
+    },
+    {
+      "id": "identity_and_access_management",
+      "name": "Identity and Access Management",
+      "weight": 6,
+      "explanation": "This assesses how you control user access to systems and data."
+    },
+    {
+      "id": "incident_management_and_response",
+      "name": "Incident Management and Response",
+      "weight": 6,
+      "explanation": "This assesses your readiness to respond to security incidents."
+    },
+    {
+      "id": "iot_and_ot_network",
+      "name": "IoT and OT Network",
+      "weight": 9,
+      "explanation": "This assesses security of connected devices and operational technology."
+    },
+    {
+      "id": "network_security",
+      "name": "Network Security",
+      "weight": 7,
+      "explanation": "This section assesses your first line of defense against external threats."
+    },
+    {
+      "id": "organizational_policies_and_procedures",
+      "name": "Organizational Policies and Procedures",
+      "weight": 5,
+      "explanation": "This checks for established rules and procedures governing security."
+    },
+    {
+      "id": "physical_perimeter_security",
+      "name": "Physical Perimeter Security",
+      "weight": 7,
+      "explanation": "This assesses protection of physical assets and facilities."
+    },
+    {
+      "id": "ransomware_supplemental",
+      "name": "Ransomware Supplemental",
+      "weight": 5,
+      "explanation": "This section helps assess protection against ransomware."
+    },
+    {
+      "id": "regulatory_compliance",
+      "name": "Regulatory Compliance",
+      "weight": 5,
+      "explanation": "This evaluates adherence to legal and regulatory security requirements."
+    },
+    {
+      "id": "soc_and_soar_capabilities",
+      "name": "SOC and SOAR Capabilities",
+      "weight": 4,
+      "explanation": "This evaluates your real-time threat monitoring and automated response capabilities."
+    },
+    {
+      "id": "vulnerability_assessment_and_penetration_test",
+      "name": "Vulnerability Assessment and Penetration Test",
+      "weight": 5,
+      "explanation": "This evaluates your proactive identification of security weaknesses."
+    }
+  ],
+  "questions": [
+    {
+      "id": "ADC-001",
+      "domain_id": "active_directory_configuration",
+      "text": "Is Active Directory (AD) auditing enabled?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "ADC-002",
+      "domain_id": "active_directory_configuration",
+      "text": "Are service accounts managed with least privilege?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "AM-001",
+      "domain_id": "asset_management",
+      "text": "Do you maintain a comprehensive inventory of all assets?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "AM-002",
+      "domain_id": "asset_management",
+      "text": "Do you maintain Asset Criticality in inventory?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "AM-003",
+      "domain_id": "asset_management",
+      "text": "Do you maintain Asset Owner in inventory?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "AM-004",
+      "domain_id": "asset_management",
+      "text": "Do you maintain Asset Provisioning and EOL dates?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "AM-005",
+      "domain_id": "asset_management",
+      "text": "Do you follow a step-by-step approach for asset provisioning/deprovisioning?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-001",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Do you perform background verification of employees/subcontractors before onboarding?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-002",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "How often are security awareness trainings conducted?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "BV-003",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Is Password Management and MFA covered in training?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-004",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Is Social Media security covered in training?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-005",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Is Data Classification covered in training?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-006",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Is Phishing, Vishing, SMiShing covered in training?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-007",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Does applicant provide security awareness training to employees annually?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "BV-008",
+      "domain_id": "background_verification_and_employee_awareness",
+      "text": "Does applicant use simulated phishing attacks to test employees?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "CERT-001",
+      "domain_id": "certifications",
+      "text": "Is your organization certified for ISO/IEC 27001?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "CERT-002",
+      "domain_id": "certifications",
+      "text": "Is your organization certified for NIST?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "CERT-003",
+      "domain_id": "certifications",
+      "text": "Is your organization certified for SOC 2?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "CERT-004",
+      "domain_id": "certifications",
+      "text": "Is your organization certified for HIPAA?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "CERT-005",
+      "domain_id": "certifications",
+      "text": "Is your organization certified for PCI DSS?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-001",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Are regular backups performed on critical systems?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-002",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Are backups encrypted during storage and transmission?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-003",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Are backup procedures tested regularly for recovery?",
+      "is_killer": true,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-004",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Is there a defined Recovery Point Objective (RPO) and Recovery Time Objective (RTO)?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-005",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Are cloud-based backups in place?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-006",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Are backups stored in geographically separate locations?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-007",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Is there a disaster recovery plan in place?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-008",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Are offline backups stored off-site in place?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DBR-009",
+      "domain_id": "data_backup_and_recovery",
+      "text": "Is RTO for critical systems <24 hours?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DLP-001",
+      "domain_id": "dlp_and_dspm",
+      "text": "Is there a DLP solution implemented to monitor sensitive data?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DLP-002",
+      "domain_id": "dlp_and_dspm",
+      "text": "How often is DLP policy reviewed and updated?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "DW-001",
+      "domain_id": "dark_web_exposure",
+      "text": "How frequently are dark web scans conducted?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "DW-002",
+      "domain_id": "dark_web_exposure",
+      "text": "Are dark web monitoring alerts reviewed regularly?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "DW-003",
+      "domain_id": "dark_web_exposure",
+      "text": "Is there a process to respond to dark web exposure?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "ES-001",
+      "domain_id": "endpoint_security",
+      "text": "Are endpoint devices configured with encryption?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "ES-002",
+      "domain_id": "endpoint_security",
+      "text": "How often are patches reviewed for endpoint devices?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "ES-003",
+      "domain_id": "endpoint_security",
+      "text": "Are mobile devices enrolled in a Mobile Device Management (MDM) solution?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "ES-004",
+      "domain_id": "endpoint_security",
+      "text": "Is there a process for securing and wiping lost/stolen devices?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "ES-005",
+      "domain_id": "endpoint_security",
+      "text": "Do all workstations have antivirus with heuristic capabilities?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "ES-006",
+      "domain_id": "endpoint_security",
+      "text": "Are endpoint security tools with behavioral detection deployed?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IAM-001",
+      "domain_id": "identity_and_access_management",
+      "text": "Is multi-factor authentication implemented for all critical systems?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IAM-002",
+      "domain_id": "identity_and_access_management",
+      "text": "How often are access rights reviewed?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "IAM-003",
+      "domain_id": "identity_and_access_management",
+      "text": "Are privileged access accounts monitored using PAM solution?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IAM-004",
+      "domain_id": "identity_and_access_management",
+      "text": "Is there an account lockout policy for failed login attempts?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IAM-005",
+      "domain_id": "identity_and_access_management",
+      "text": "Are access permissions revoked immediately upon employee termination?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IOT-001",
+      "domain_id": "iot_and_ot_network",
+      "text": "Is there an inventory of all IoT and OT devices connected to the network?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IOT-002",
+      "domain_id": "iot_and_ot_network",
+      "text": "How often are IoT and OT network security assessments conducted?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "IOT-003",
+      "domain_id": "iot_and_ot_network",
+      "text": "Are there network segmentation strategies to isolate IoT and OT devices?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IOT-004",
+      "domain_id": "iot_and_ot_network",
+      "text": "Is there monitoring of IoT/OT device communications?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IOT-005",
+      "domain_id": "iot_and_ot_network",
+      "text": "Are default credentials changed on all IoT devices?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "IR-001",
+      "domain_id": "incident_management_and_response",
+      "text": "How is incident management and response process executed?",
+      "is_killer": false,
+      "type": "multiple"
+    },
+    {
+      "id": "IR-002",
+      "domain_id": "incident_management_and_response",
+      "text": "Are historical incident statistics maintained?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "NS-001",
+      "domain_id": "network_security",
+      "text": "Is Firewall implemented?",
+      "is_killer": true,
+      "type": "binary"
+    },
+    {
+      "id": "NS-002",
+      "domain_id": "network_security",
+      "text": "Is DDoS Protection implemented?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "NS-003",
+      "domain_id": "network_security",
+      "text": "Is WAF (Web Application Firewall) implemented?",
+      "is_killer": true,
+      "type": "binary"
+    },
+    {
+      "id": "NS-004",
+      "domain_id": "network_security",
+      "text": "Is IDS/IPS implemented?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "NS-005",
+      "domain_id": "network_security",
+      "text": "Is NGFW (Next-Gen Firewall) implemented?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "NS-006",
+      "domain_id": "network_security",
+      "text": "Are network segmentation and VLANs used to limit access?",
+      "is_killer": true,
+      "type": "binary"
+    },
+    {
+      "id": "NS-007",
+      "domain_id": "network_security",
+      "text": "Are VPNs used for secure remote access?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "NS-008",
+      "domain_id": "network_security",
+      "text": "Is wireless network security implemented with encryption?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "NS-009",
+      "domain_id": "network_security",
+      "text": "Is there a process to review the firewall rules?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "NS-010",
+      "domain_id": "network_security",
+      "text": "How often do you perform review of network architecture?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "OP-001",
+      "domain_id": "organizational_policies_and_procedures",
+      "text": "Do you have a Cyber Crisis Management Plan?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "OP-002",
+      "domain_id": "organizational_policies_and_procedures",
+      "text": "Do you have an Information Technology Policy?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "OP-003",
+      "domain_id": "organizational_policies_and_procedures",
+      "text": "Do you have an Information Security Policy?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "OP-004",
+      "domain_id": "organizational_policies_and_procedures",
+      "text": "Do you have an Incident Management Policy?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "OP-005",
+      "domain_id": "organizational_policies_and_procedures",
+      "text": "Do you have a Data Protection & Privacy Policy?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "OP-006",
+      "domain_id": "organizational_policies_and_procedures",
+      "text": "Do you have a Business Continuity Plan (BCP)?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PC-001",
+      "domain_id": "change_patch_cadence",
+      "text": "Is there a documented change/patch management policy?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PC-002",
+      "domain_id": "change_patch_cadence",
+      "text": "Is target time to deploy critical patches <24 hours?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PC-003",
+      "domain_id": "change_patch_cadence",
+      "text": "Is year-to-date critical patch compliance >90%?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PPS-001",
+      "domain_id": "physical_perimeter_security",
+      "text": "Are physical security measures in place to protect data centers?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PPS-002",
+      "domain_id": "physical_perimeter_security",
+      "text": "Are access control systems (keycards, biometrics, CCTV) implemented for secure areas?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PPS-003",
+      "domain_id": "physical_perimeter_security",
+      "text": "Is there a policy for securing physical network ports?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PPS-004",
+      "domain_id": "physical_perimeter_security",
+      "text": "Are intrusion detection systems in place for physical premises?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "PPS-005",
+      "domain_id": "physical_perimeter_security",
+      "text": "Are periodic physical security audits conducted?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RC-001",
+      "domain_id": "regulatory_compliance",
+      "text": "Do you comply with applicable regulatory guidelines?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RC-002",
+      "domain_id": "regulatory_compliance",
+      "text": "Are data protection laws (GDPR, DPDP) implemented?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RC-003",
+      "domain_id": "regulatory_compliance",
+      "text": "Is there a documented data retention policy?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RC-004",
+      "domain_id": "regulatory_compliance",
+      "text": "Are regulatory audit reports current?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RS-001",
+      "domain_id": "ransomware_supplemental",
+      "text": "Is phishing success ratio less than 15% on last test?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RS-002",
+      "domain_id": "ransomware_supplemental",
+      "text": "Does applicant tag/mark e-mails from outside the organization?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RS-003",
+      "domain_id": "ransomware_supplemental",
+      "text": "Is there a process to report suspicious e-mails to security team?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RS-004",
+      "domain_id": "ransomware_supplemental",
+      "text": "Is there a documented process to respond to phishing campaigns?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "RS-005",
+      "domain_id": "ransomware_supplemental",
+      "text": "Does email filtering block known malicious attachments?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "SOC-001",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "What is SOC monitoring capability?",
+      "is_killer": false,
+      "type": "multiple"
+    },
+    {
+      "id": "SOC-002",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "Is there a mechanism for real-time alerting and escalation?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "SOC-003",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "Is external reporting responsibility defined?",
+      "is_killer": false,
+      "type": "governance"
+    },
+    {
+      "id": "SOC-004",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "Is log monitoring conducted 24×7?",
+      "is_killer": false,
+      "type": "coverage"
+    },
+    {
+      "id": "SOC-005",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "Are OT logs integrated where feasible?",
+      "is_killer": false,
+      "type": "coverage"
+    },
+    {
+      "id": "SOC-006",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "Are alerts triaged with defined SLAs?",
+      "is_killer": false,
+      "type": "governance"
+    },
+    {
+      "id": "SOC-007",
+      "domain_id": "soc_and_soar_capabilities",
+      "text": "Is incident automation or playbooks used?",
+      "is_killer": false,
+      "type": "coverage"
+    },
+    {
+      "id": "VA-001",
+      "domain_id": "vulnerability_assessment_and_penetration_test",
+      "text": "Do you have automated tools for periodic scanning of network components?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "VA-002",
+      "domain_id": "vulnerability_assessment_and_penetration_test",
+      "text": "How often do you perform VA-PT assessment through external auditor?",
+      "is_killer": false,
+      "type": "frequency"
+    },
+    {
+      "id": "VA-003",
+      "domain_id": "vulnerability_assessment_and_penetration_test",
+      "text": "Are identified vulnerabilities mitigated in a defined timeframe?",
+      "is_killer": false,
+      "type": "binary"
+    },
+    {
+      "id": "VA-004",
+      "domain_id": "vulnerability_assessment_and_penetration_test",
+      "text": "Is there a risk-based prioritization for vulnerability remediation?",
+      "is_killer": false,
+      "type": "binary"
+    }
+  ]
+}

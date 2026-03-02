@@ -201,7 +201,7 @@ export default function SubmissionsDashboard() {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => {
-                                const headers = ["ID", "Organization", "User", "Sector", "Score", "Tier", "Premium Loading", "Auto Declined", "Date"]
+                                const headers = ["ID", "Organization", "User", "Sector", "Score", "Tier", "Auto Declined", "Date"]
                                 const rows = filteredSubmissions.map(s => [
                                     s.id,
                                     (s.profiles as any)?.organization_name || "Individual",
@@ -209,7 +209,6 @@ export default function SubmissionsDashboard() {
                                     resolveIndustryName((s.profiles as any)?.industry || s.industry_id),
                                     `${s.total_score}%`,
                                     s.risk_tier,
-                                    s.premium_loading,
                                     s.auto_declined ? "YES" : "NO",
                                     new Date(s.created_at).toLocaleDateString()
                                 ])
@@ -363,11 +362,13 @@ export default function SubmissionsDashboard() {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-center">
-                                            <div className={`inline-block px-3 py-1 rounded-lg ${sub.risk_tier.includes('A') ? 'bg-emerald-100 text-emerald-700' :
-                                                sub.risk_tier.includes('B') ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-si-red/10 text-si-red'
-                                                }`}>
-                                                <span className="text-[10px] font-black uppercase tracking-widest">{sub.risk_tier}</span>
+                                            <div className="flex justify-center">
+                                                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${sub.risk_tier.includes('A') ? 'bg-emerald-100/80 text-emerald-700' :
+                                                    sub.risk_tier.includes('B') ? 'bg-amber-100/80 text-amber-700' :
+                                                        'bg-si-red/10 text-si-red'
+                                                    }`}>
+                                                    <span className="text-[12px] font-black uppercase tracking-widest">{sub.risk_tier.split(' ')[1] || sub.risk_tier}</span>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">

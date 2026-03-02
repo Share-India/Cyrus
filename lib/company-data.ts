@@ -39,7 +39,7 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
         description: "An IRDA-licensed broker providing comprehensive risk management solutions with nearly 3 decades of group financial heritage.",
         website: "https://shareindiainsurance.com"
     },
-    "Alpha Industries": {
+    "Alphalogic Industries": {
         name: "ALPHALOGIC INDUSTRIES",
         founded: "2020",
         hq: "Pune, India",

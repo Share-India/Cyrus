@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "framer-motion"
-import { Loader2, Mail, Phone, ShieldCheck, ArrowRight, CheckCircle2, ShieldAlert, Lock, User, Shield, ChevronRight, Building2, Briefcase } from "lucide-react"
+import { Loader2, Mail, Phone, ShieldCheck, ArrowRight, CheckCircle2, ShieldAlert, Lock, User, Shield, ChevronRight, Building2, Briefcase, Globe } from "lucide-react"
 import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
 
 type AuthStep = "identifier" | "verification"
@@ -21,9 +21,12 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isIdentifierEmail, setIsIdentifierEmail] = useState(true)
+    const [isResetMode, setIsResetMode] = useState(false)
+    const [resetSent, setResetSent] = useState(false)
 
     // New State for Client Details
     const [organizationName, setOrganizationName] = useState("")
+    const [organizationWebsite, setOrganizationWebsite] = useState("")
     const [industry, setIndustry] = useState("")
     const [name, setName] = useState("")
     const [username, setUsername] = useState("")
@@ -55,6 +58,7 @@ export default function LoginPage() {
                     data: {
                         role: selectedRole,
                         organization_name: organizationName,
+                        organization_website: organizationWebsite,
                         industry: industry,
                         name: name,
                         username: username,
@@ -74,7 +78,7 @@ export default function LoginPage() {
             if (error) {
                 // Check for existing user error
                 if (error.message.includes("already registered") || error.message.includes("User already exists")) {
-                    alert("This identifier is already registered. Switching you to Login mode.")
+                    setError("Account already exists. Kindly log in.")
                     setIsSignUp(false)
                     setAuthMode('password')
                 } else {
@@ -128,7 +132,18 @@ export default function LoginPage() {
                 if (error) {
                     // Improved error feedback
                     if (error.message.toLowerCase().includes("invalid login credentials")) {
-                        setError("Invalid credentials. If you just signed up, ensure you have confirmed your identity via the link sent to your identifier.")
+                        // Check if user exists to provide better feedback
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('id')
+                            .eq(isIdentifierEmail ? 'email' : 'phone', normalizedIdentifier)
+                            .single()
+
+                        if (!profile) {
+                            setError("No account found with this identifier. Please sign up first.")
+                        } else {
+                            setError("Invalid credentials. If you just signed up, ensure you have confirmed your identity via the link sent to your identifier.")
+                        }
                     } else {
                         setError(error.message)
                     }
@@ -147,6 +162,30 @@ export default function LoginPage() {
                 }
             }
         }
+    }
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError(null)
+
+        if (!identifier || !isIdentifierEmail) {
+            setError("Please enter a valid email address to reset your password.")
+            setIsLoading(false)
+            return
+        }
+
+        const supabase = createClient()
+        const { error } = await supabase.auth.resetPasswordForEmail(identifier, {
+            redirectTo: `${window.location.origin}/auth/reset-password`,
+        })
+
+        if (error) {
+            setError(error.message)
+        } else {
+            setResetSent(true)
+        }
+        setIsLoading(false)
     }
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -282,205 +321,286 @@ export default function LoginPage() {
                             </div>
 
 
-                            <form onSubmit={handleInitiate} className="space-y-8">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Operational Mode</label>
-                                    <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={isResetMode ? handleForgotPassword : handleInitiate} className="space-y-8">
+                                {isResetMode ? (
+                                    <div className="space-y-8">
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Reset Password</label>
+                                            <div className="relative group">
+                                                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                <input
+                                                    type="email"
+                                                    value={identifier}
+                                                    onChange={(e) => setIdentifier(e.target.value)}
+                                                    placeholder="Enter your email"
+                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-lg font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {resetSent ? (
+                                            <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[32px] flex items-center gap-4 text-emerald-700">
+                                                <CheckCircle2 className="w-8 h-8 shrink-0" />
+                                                <p className="text-sm font-black uppercase tracking-tight leading-tight">
+                                                    Authorization override link transmitted. Please check your email.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="w-full py-7 bg-si-navy text-white rounded-3xl font-black uppercase tracking-[0.4em] text-[11px] hover:bg-si-blue-primary transition-all duration-700 shadow-xl disabled:opacity-70 flex items-center justify-center gap-4 group"
+                                            >
+                                                {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                                                    <>
+                                                        Transmit Reset Link
+                                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedRole("client")}
-                                            className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 ${selectedRole === "client" ? "border-si-blue-primary bg-si-blue-primary/5 text-si-navy shadow-inner" : "border-slate-100 text-slate-300 hover:border-slate-200"}`}
+                                            onClick={() => {
+                                                setIsResetMode(false)
+                                                setResetSent(false)
+                                                setError(null)
+                                            }}
+                                            className="w-full text-center text-[10px] font-black text-slate-300 hover:text-si-navy uppercase tracking-[0.3em] transition-colors"
                                         >
-                                            <User className={`w-6 h-6 ${selectedRole === "client" ? "text-si-blue-primary" : "text-slate-200"}`} />
-                                            <span className="text-xs font-black uppercase tracking-widest">Client</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedRole("admin")}
-                                            className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 ${selectedRole === "admin" ? "border-si-blue-primary bg-si-blue-primary/5 text-si-navy shadow-inner" : "border-slate-100 text-slate-300 hover:border-slate-200"}`}
-                                        >
-                                            <Shield className={`w-6 h-6 ${selectedRole === "admin" ? "text-si-blue-primary" : "text-slate-200"}`} />
-                                            <span className="text-xs font-black uppercase tracking-widest">Admin</span>
+                                            Return to Login
                                         </button>
                                     </div>
-                                </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Operational Mode</label>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRole("client")}
+                                                    className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 ${selectedRole === "client" ? "border-si-blue-primary bg-si-blue-primary/5 text-si-navy shadow-inner" : "border-slate-100 text-slate-300 hover:border-slate-200"}`}
+                                                >
+                                                    <User className={`w-6 h-6 ${selectedRole === "client" ? "text-si-blue-primary" : "text-slate-200"}`} />
+                                                    <span className="text-xs font-black uppercase tracking-widest">Client</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRole("admin")}
+                                                    className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 ${selectedRole === "admin" ? "border-si-blue-primary bg-si-blue-primary/5 text-si-navy shadow-inner" : "border-slate-100 text-slate-300 hover:border-slate-200"}`}
+                                                >
+                                                    <Shield className={`w-6 h-6 ${selectedRole === "admin" ? "text-si-blue-primary" : "text-slate-200"}`} />
+                                                    <span className="text-xs font-black uppercase tracking-widest">Admin</span>
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between px-2">
-                                        <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em]">
-                                            {isIdentifierEmail ? "Email Address" : "Phone Number"}
-                                        </label>
-                                        <div className="flex gap-4">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsIdentifierEmail(true)}
-                                                className={`text-[9px] font-black uppercase tracking-widest transition-colors ${isIdentifierEmail ? 'text-si-blue-primary' : 'text-slate-300'}`}
-                                            >Email</button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsIdentifierEmail(false)}
-                                                className={`text-[9px] font-black uppercase tracking-widest transition-colors ${!isIdentifierEmail ? 'text-si-blue-primary' : 'text-slate-300'}`}
-                                            >Phone</button>
-                                            <div className="w-[1px] h-3 bg-slate-100 mx-1 self-center" />
-                                            {!isSignUp && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between px-2">
+                                                <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em]">
+                                                    {isIdentifierEmail ? "Email Address" : "Phone Number"}
+                                                </label>
+                                                <div className="flex gap-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsIdentifierEmail(true)}
+                                                        className={`text-[9px] font-black uppercase tracking-widest transition-colors ${isIdentifierEmail ? 'text-si-blue-primary' : 'text-slate-300'}`}
+                                                    >Email</button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsIdentifierEmail(false)}
+                                                        className={`text-[9px] font-black uppercase tracking-widest transition-colors ${!isIdentifierEmail ? 'text-si-blue-primary' : 'text-slate-300'}`}
+                                                    >Phone</button>
+                                                    <div className="w-[1px] h-3 bg-slate-100 mx-1 self-center" />
+                                                    {!isSignUp && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAuthMode('otp')}
+                                                                className={`text-[9px] font-black uppercase tracking-widest transition-colors ${authMode === 'otp' ? 'text-si-blue-primary' : 'text-slate-300'}`}
+                                                            >OTP</button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAuthMode('password')}
+                                                                className={`text-[9px] font-black uppercase tracking-widest transition-colors ${authMode === 'password' ? 'text-si-blue-primary' : 'text-slate-300'}`}
+                                                            >Password</button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="relative group">
+                                                {isIdentifierEmail ? (
+                                                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                ) : (
+                                                    <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                )}
+                                                <input
+                                                    type={isIdentifierEmail ? "email" : "tel"}
+                                                    value={identifier}
+                                                    onChange={(e) => setIdentifier(e.target.value)}
+                                                    placeholder=""
+                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-lg font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {isSignUp && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="space-y-4 overflow-hidden"
+                                                >
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Full Name</label>
+                                                            <div className="relative group">
+                                                                <User className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={name}
+                                                                    onChange={(e) => setName(e.target.value)}
+                                                                    placeholder=""
+                                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                                    required={isSignUp}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Username</label>
+                                                            <div className="relative group">
+                                                                <ShieldCheck className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={username}
+                                                                    onChange={(e) => setUsername(e.target.value)}
+                                                                    placeholder=""
+                                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                                    required={isSignUp}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        <AnimatePresence>
+                                            {isSignUp && selectedRole === 'client' && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="space-y-4 overflow-hidden"
+                                                >
+                                                    <div className="grid gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Organization</label>
+                                                            <div className="relative group">
+                                                                <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={organizationName}
+                                                                    onChange={(e) => setOrganizationName(e.target.value)}
+                                                                    placeholder=""
+                                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                                    required={isSignUp && selectedRole === 'client'}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Organization Website</label>
+                                                            <div className="relative group">
+                                                                <Globe className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                                <input
+                                                                    type="url"
+                                                                    value={organizationWebsite}
+                                                                    onChange={(e) => setOrganizationWebsite(e.target.value)}
+                                                                    placeholder="https://example.com"
+                                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Industry Sector</label>
+                                                            <div className="relative group">
+                                                                <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors pointer-events-none" />
+                                                                <select
+                                                                    value={industry}
+                                                                    onChange={(e) => setIndustry(e.target.value)}
+                                                                    className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500 appearance-none cursor-pointer"
+                                                                    required={isSignUp && selectedRole === 'client'}
+                                                                >
+                                                                    <option value="" disabled>Select Sector</option>
+                                                                    {INDUSTRY_PROFILES.map((p) => (
+                                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 rotate-90 pointer-events-none" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        {(authMode === "password" || isSignUp) && (
+                                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
+                                                <div className="px-2">
+                                                    <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em]">Enter Password</label>
+                                                </div>
+                                                <div className="relative group">
+                                                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
+                                                    <input
+                                                        type="password"
+                                                        value={password}
+                                                        onChange={(e) => setPassword(e.target.value)}
+                                                        placeholder=""
+                                                        className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-lg font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
+                                                        required
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {authMode === "password" && !isSignUp && isIdentifierEmail && (
+                                            <div className="flex justify-end px-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsResetMode(true)}
+                                                    className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest hover:text-si-navy transition-colors"
+                                                >
+                                                    Forgot Password?
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {error && (
+                                            <p className="text-xs font-bold text-si-red bg-red-50 p-4 rounded-xl border border-red-100 flex items-center gap-3">
+                                                <ShieldAlert className="w-4 h-4" /> {error}
+                                            </p>
+                                        )}
+
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="w-full py-7 bg-si-navy text-white rounded-3xl font-black uppercase tracking-[0.4em] text-[11px] hover:bg-si-blue-primary transition-all duration-700 shadow-xl disabled:opacity-70 flex items-center justify-center gap-4 group"
+                                        >
+                                            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
                                                 <>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setAuthMode('otp')}
-                                                        className={`text-[9px] font-black uppercase tracking-widest transition-colors ${authMode === 'otp' ? 'text-si-blue-primary' : 'text-slate-300'}`}
-                                                    >OTP</button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setAuthMode('password')}
-                                                        className={`text-[9px] font-black uppercase tracking-widest transition-colors ${authMode === 'password' ? 'text-si-blue-primary' : 'text-slate-300'}`}
-                                                    >Password</button>
+                                                    {isSignUp ? 'Initialize Node' : (authMode === 'otp' ? 'Transmit OTP' : (selectedRole === 'admin' ? 'Elevate Auth' : 'Authorize Node'))}
+                                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                                                 </>
                                             )}
-                                        </div>
-                                    </div>
-                                    <div className="relative group">
-                                        {isIdentifierEmail ? (
-                                            <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
-                                        ) : (
-                                            <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
-                                        )}
-                                        <input
-                                            type={isIdentifierEmail ? "email" : "tel"}
-                                            value={identifier}
-                                            onChange={(e) => setIdentifier(e.target.value)}
-                                            placeholder=""
-                                            className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-lg font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <AnimatePresence>
-                                    {isSignUp && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="space-y-4 overflow-hidden"
-                                        >
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Full Name</label>
-                                                    <div className="relative group">
-                                                        <User className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
-                                                        <input
-                                                            type="text"
-                                                            value={name}
-                                                            onChange={(e) => setName(e.target.value)}
-                                                            placeholder=""
-                                                            className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
-                                                            required={isSignUp}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Username</label>
-                                                    <div className="relative group">
-                                                        <ShieldCheck className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
-                                                        <input
-                                                            type="text"
-                                                            value={username}
-                                                            onChange={(e) => setUsername(e.target.value)}
-                                                            placeholder=""
-                                                            className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
-                                                            required={isSignUp}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <AnimatePresence>
-                                    {isSignUp && selectedRole === 'client' && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="space-y-4 overflow-hidden"
-                                        >
-                                            <div className="grid gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Organization</label>
-                                                    <div className="relative group">
-                                                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
-                                                        <input
-                                                            type="text"
-                                                            value={organizationName}
-                                                            onChange={(e) => setOrganizationName(e.target.value)}
-                                                            placeholder=""
-                                                            className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
-                                                            required={isSignUp && selectedRole === 'client'}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em] px-2">Industry Sector</label>
-                                                    <div className="relative group">
-                                                        <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors pointer-events-none" />
-                                                        <select
-                                                            value={industry}
-                                                            onChange={(e) => setIndustry(e.target.value)}
-                                                            className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500 appearance-none cursor-pointer"
-                                                            required={isSignUp && selectedRole === 'client'}
-                                                        >
-                                                            <option value="" disabled>Select Sector</option>
-                                                            {INDUSTRY_PROFILES.map((p) => (
-                                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                                            ))}
-                                                        </select>
-                                                        <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 rotate-90 pointer-events-none" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                {(authMode === "password" || isSignUp) && (
-                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
-                                        <div className="px-2">
-                                            <label className="text-[10px] font-black text-si-navy/40 uppercase tracking-[0.4em]">Enter Password</label>
-                                        </div>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-si-blue-primary transition-colors" />
-                                            <input
-                                                type="password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                placeholder=""
-                                                className="w-full pl-16 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-3xl text-lg font-black text-si-navy focus:ring-8 focus:ring-si-blue-primary/5 focus:border-si-blue-primary focus:bg-white transition-all duration-500"
-                                                required
-                                            />
-                                        </div>
-                                    </motion.div>
+                                        </button>
+                                    </>
                                 )}
-
-                                {error && (
-                                    <p className="text-xs font-bold text-si-red bg-red-50 p-4 rounded-xl border border-red-100 flex items-center gap-3">
-                                        <ShieldAlert className="w-4 h-4" /> {error}
-                                    </p>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full py-7 bg-si-navy text-white rounded-3xl font-black uppercase tracking-[0.4em] text-[11px] hover:bg-si-blue-primary transition-all duration-700 shadow-xl disabled:opacity-70 flex items-center justify-center gap-4 group"
-                                >
-                                    {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
-                                        <>
-                                            {isSignUp ? 'Initialize Node' : (authMode === 'otp' ? 'Transmit OTP' : (selectedRole === 'admin' ? 'Elevate Auth' : 'Authorize Node'))}
-                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
                             </form>
                         </motion.div>
                     ) : (

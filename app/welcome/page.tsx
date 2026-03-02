@@ -13,6 +13,7 @@ export default function WelcomePage() {
     const {
         completionStats,
         clientName,
+        organizationWebsite,
         userProfile,
         isAdmin,
         updateProfile,
@@ -113,7 +114,7 @@ export default function WelcomePage() {
                             </h1>
 
                             <p className="text-lg md:text-xl text-slate-600 max-w-xl leading-relaxed mb-10">
-                                This audit assesses your organization's cybersecurity posture across 19 critical infrastructure domains. The output is a definitive risk tier rating and premium loading determination.
+                                This audit assesses your organization's cybersecurity posture across 19 critical infrastructure domains. The output is a definitive risk tier rating and risk profiling evaluation.
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-6 items-start">
@@ -260,9 +261,9 @@ export default function WelcomePage() {
                                                             </div>
                                                         </div>
 
-                                                        {dossier.website && (
+                                                        {(dossier.website || organizationWebsite) && (
                                                             <a
-                                                                href={dossier.website}
+                                                                href={dossier.website || organizationWebsite}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="ml-4 p-3 bg-white/5 hover:bg-si-blue-primary/20 rounded-xl border border-white/5 transition-colors group/link"
@@ -279,46 +280,75 @@ export default function WelcomePage() {
                                         /* Fallback for completely unknown future clients */
                                         return (
                                             <>
-                                                <div>
-                                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Organizational Identity</span>
-                                                    <div className="flex items-start gap-5">
-                                                        <div className="w-16 h-16 bg-white/5 rounded-[24px] border border-white/10 flex items-center justify-center text-si-blue-primary group-hover:bg-si-blue-primary group-hover:text-white transition-all duration-500">
-                                                            <Building2 className="w-8 h-8" />
-                                                        </div>
-                                                        <div>
-                                                            <h2 className="text-2xl font-black font-outfit tracking-tight mb-1 italic">
-                                                                {userProfile?.organization_name || "Unidentified Client"}
-                                                            </h2>
-                                                            <div className="flex items-center gap-2">
-                                                                <Globe className="w-3 h-3 text-si-blue-primary" />
-                                                                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-outfit">
-                                                                    {INDUSTRY_PROFILES.find(p => p.id === userProfile?.industry || p.name === userProfile?.industry)?.name || "General Risk Profile"}
-                                                                </span>
+                                                <div className="space-y-10">
+                                                    <div>
+                                                        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Organizational Legacy</span>
+                                                        <div className="flex items-start gap-5">
+                                                            <div className="w-16 h-16 bg-white/5 rounded-[24px] border border-white/10 flex items-center justify-center text-si-blue-primary group-hover:bg-si-blue-primary group-hover:text-white transition-all duration-500">
+                                                                <Building2 className="w-8 h-8" />
+                                                            </div>
+                                                            <div>
+                                                                <h2 className="text-2xl font-black font-outfit tracking-tight mb-1 italic">
+                                                                    {userProfile?.organization_name || "Unidentified Client"}
+                                                                </h2>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-si-blue-primary" />
+                                                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">
+                                                                        Verified Node • {INDUSTRY_PROFILES.find(p => p.id === userProfile?.industry || p.name === userProfile?.industry)?.name || "General Risk Profile"}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div className="bg-white/5 rounded-3xl p-6 border border-white/5 flex items-center gap-5 group-hover:bg-white/10 transition-colors">
-                                                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
-                                                        <User className="w-6 h-6" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
+                                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-2">Leadership</span>
+                                                            <p className="text-[11px] font-bold text-white/70 truncate">Authorized Signatory</p>
+                                                            <p className="text-[9px] text-white/40 mt-1 uppercase">Corporate Control</p>
+                                                        </div>
+                                                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
+                                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-2">Capabilities</span>
+                                                            <p className="text-[11px] font-bold text-white/70 truncate">Tier 1 Infrastructure</p>
+                                                            <p className="text-[9px] text-white/40 mt-1 uppercase">Market Position</p>
+                                                        </div>
                                                     </div>
+
                                                     <div>
-                                                        <span className="text-sm font-bold block">{userProfile?.name || "Member Profile"}</span>
-                                                        <span className="text-[10px] font-mono text-white/20 select-all block mt-0.5">{userProfile?.email || userProfile?.username || "authenticated_node"}</span>
+                                                        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Core Portfolio</span>
+                                                        <div className="space-y-3">
+                                                            {["Standardized Infrastructure", "Secure Network Ops", "Enterprise Data Integrity"].map((item: string, idx: number) => (
+                                                                <div key={idx} className="flex items-center gap-3 text-white/60">
+                                                                    <div className="w-1 h-1 rounded-full bg-si-blue-primary" />
+                                                                    <span className="text-[10px] font-medium tracking-tight">{item}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <div className="pt-8 border-t border-white/5">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="w-10 h-10 bg-si-blue-primary/10 rounded-xl flex items-center justify-center text-si-blue-primary border border-si-blue-primary/20">
-                                                            <Lock className="w-5 h-5" />
+                                                    <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="w-10 h-10 bg-si-blue-primary/10 rounded-xl flex items-center justify-center text-si-blue-primary border border-si-blue-primary/20">
+                                                                <Globe className="w-5 h-5" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-[11px] font-medium text-white/60 leading-relaxed italic">
+                                                                    "Verified organizational profile being evaluated against the highest cybersecurity benchmarks for {userProfile?.organization_name || 'this entity'}."
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-xs font-medium text-white/60 leading-relaxed italic">
-                                                                "This session is protected by end-to-end encryption. All credentials for {userProfile?.organization_name || 'this organization'} are being cross-referenced with active threat databases."
-                                                            </p>
-                                                        </div>
+
+                                                        {(userProfile?.organization_website || organizationWebsite) && (
+                                                            <a
+                                                                href={userProfile?.organization_website || organizationWebsite}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="ml-4 p-3 bg-white/5 hover:bg-si-blue-primary/20 rounded-xl border border-white/5 transition-colors group/link"
+                                                                title="Visit Official Website"
+                                                            >
+                                                                <ExternalLink className="w-4 h-4 text-white/40 group-hover/link:text-si-blue-primary transition-colors" />
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </>
@@ -367,7 +397,7 @@ export default function WelcomePage() {
                         </div>
                         <h3 className="font-outfit font-bold text-lg text-si-navy">Instant Analytics</h3>
                         <p className="text-sm text-slate-500 leading-relaxed">
-                            Get immediate feedback on risk drivers, control gaps, and estimated premium loading.
+                            Get immediate feedback on risk drivers, control gaps, and risk profiling results.
                         </p>
                     </div>
                 </motion.div>

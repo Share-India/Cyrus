@@ -16,7 +16,9 @@ import {
     AlertCircle,
     Globe,
     Trash2,
-    AlertTriangle
+    AlertTriangle,
+    Lock,
+    ShieldAlert
 } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -42,16 +44,19 @@ export default function SettingsPage() {
     const [formData, setFormData] = useState({
         name: "",
         organization_name: "",
+        organization_website: "",
         phone: "",
         industry: "",
         username: ""
     })
+
 
     useEffect(() => {
         if (userProfile) {
             setFormData({
                 name: userProfile.name || "",
                 organization_name: userProfile.organization_name || "",
+                organization_website: userProfile.organization_website || "",
                 phone: userProfile.phone || "",
                 industry: userProfile.industry || "",
                 username: userProfile.username || ""
@@ -107,6 +112,7 @@ export default function SettingsPage() {
             setIsDeleting(false)
         }
     }
+
 
     if (contextLoading) {
         return (
@@ -228,6 +234,16 @@ export default function SettingsPage() {
                                             />
                                         </div>
                                         <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Organization Website</label>
+                                            <input
+                                                type="url"
+                                                value={formData.organization_website}
+                                                onChange={(e) => setFormData({ ...formData, organization_website: e.target.value })}
+                                                placeholder="https://example.com"
+                                                className="w-full bg-slate-50 border-2 border-slate-50 rounded-[20px] px-6 py-4 outline-none focus:border-si-blue-primary/20 focus:bg-white transition-all font-bold text-slate-700 placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Phone Number</label>
                                             <input
                                                 type="tel"
@@ -284,6 +300,34 @@ export default function SettingsPage() {
                                             {!isSaving && <Save className="w-5 h-5 relative z-10 group-hover:scale-110 transition-transform" />}
                                             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                         </button>
+                                    </div>
+                                </div>
+
+                                {/* Security & Password */}
+                                <div className="bg-white border border-slate-200 rounded-[48px] p-10 md:p-14 shadow-2xl shadow-slate-200/50 space-y-8">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-si-blue-primary/10 text-si-blue-primary flex items-center justify-center shrink-0">
+                                                <Lock className="w-5 h-5" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h3 className="text-lg font-black text-si-navy font-outfit uppercase tracking-tight">Security & Credentials</h3>
+                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Manage your authorization phase</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 flex items-center justify-between group">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Status</p>
+                                            <p className="text-xs font-bold text-si-navy uppercase tracking-tight">Standard Encryption Enabled</p>
+                                        </div>
+                                        <Link
+                                            href="/settings/security"
+                                            className="px-6 py-3 bg-white border border-slate-200 text-si-navy rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-si-navy hover:text-white hover:border-si-navy transition-all shadow-sm active:scale-95"
+                                        >
+                                            Update Credentials
+                                        </Link>
                                     </div>
                                 </div>
 

@@ -1,6 +1,8 @@
 // SHARE INDIA CYBER INSURANCE - UNIFIED UNDERWRITING MODEL
 // Matching exact Excel structure with 96 questions and killer logic
 
+export const MODEL_VERSION = "2.1.0";
+
 export type QuestionType = "binary" | "frequency" | "multiple" | "coverage" | "governance"
 
 export interface UnderwritingQuestion {
@@ -369,7 +371,7 @@ export const CERT_RELEVANCY_MAP: CertRelevancy[] = [
       }
 ]
 
-const ALL_QUESTIONS: UnderwritingQuestion[] = [
+export const ALL_QUESTIONS: UnderwritingQuestion[] = [
       {
             id: "NS-001",
             domain: "Network Security",
@@ -2438,6 +2440,12 @@ export function calculateScore(domains: Domain[]): ScoringResult {
       const isAutoDeclined = failedKillers.length >= 2
       const { tier, premium } = getRiskTier(roundedScore, isAutoDeclined)
 
+      // Identify gaps for narrative
+      const industryId = domains[0]?.questions[0] ? (domains.flatMap(d => d.questions).find(q => q.response !== -1)?.id ? "default" : "default") : "default";
+      // Note: We don't easily have industryId here, but we can pass it if we update the signature.
+      // However, getRecommendations is exported and used elsewhere. 
+      // Let's refine getDeclineNarrative to generateUnderwritingNarrative and take more context.
+
       return {
             totalScore: roundedScore,
             domainScores,
@@ -2447,7 +2455,7 @@ export function calculateScore(domains: Domain[]): ScoringResult {
             failedKillers,
             volatilityScore,
             normalizedScore,
-            declineNarrative: getDeclineNarrative(tier, failedKillers),
+            declineNarrative: generateUnderwritingNarrative(tier, failedKillers, domainScores, domains),
       }
 }
 
@@ -2460,41 +2468,99 @@ function getRiskTier(
       }
 
       if (score >= 90) {
-            return { tier: "A", premium: "Base Rate" }
+            return { tier: "A", premium: "Standard" }
       }
       if (score >= 75) {
-            return { tier: "B", premium: "+40% Loading" }
+            return { tier: "B", premium: "Substandard" }
       }
-      return { tier: "C", premium: "+80% Loading" }
+      return { tier: "C", premium: "Review Required" }
 }
 
-function getDeclineNarrative(
+function generateUnderwritingNarrative(
       riskTier: "A" | "B" | "C" | "D",
-      failedKillers: Array<{ id: string; text: string }>,
+      failedKillers: Array<{ id: string; text: string; domain: string }>,
+      domainScores: ScoringResult["domainScores"],
+      domains: Domain[]
 ): string {
-      if (failedKillers.length >= 2) {
-            return `Risk posture fell below structural underwriting requirements due to multiple control gaps. (Ref: SEC-AUTO-DECLINE)`
-      }
+      let narrative = "";
 
+      // 1. Summary Statement & Strategic Context
       switch (riskTier) {
             case "A":
-                  return `Excellent cyber maturity. Tier A approved at Base Rate.`
+                  narrative = "EXECUTIVE SUMMARY: The organization demonstrates an exemplary cyber security maturity level, characterized by robust controls and proactive risk management practices that align with international standards. This superior risk profile suggests a resilient infrastructure capable of defending against complex threat vectors, which is reflected in the 'Tier A' status. ";
+                  break;
             case "B":
-                  return `Good controls detected. Tier B approved with +40% premium loading.`
+                  narrative = "EXECUTIVE SUMMARY: The organization exhibits a strong control environment with most critical security measures effectively implemented. While the core infrastructure is sound, the 'Tier B' designation indicates that certain optimization opportunities exist to further harden the perimeter and enhance internal visibility. ";
+                  break;
             case "C":
-                  return `Fair controls detected. Tier C approved with +80% premium loading.`
+                  narrative = "EXECUTIVE SUMMARY: The current assessment reveals a fair yet developing control maturity level. While foundational security protocols are active, significant variances in performance across different domains contribute to a higher risk volatility. The 'Tier C' status necessitates a focused effort on closing identified gaps to maintain corporate resilience. ";
+                  break;
             case "D":
-                  return `Declined due to poor control maturity (score < 60%).`
-            default:
-                  return ""
+                  if (failedKillers.length >= 2) {
+                        narrative = "EXECUTIVE SUMMARY: The risk posture has fallen below the structural underwriting requirements due to multiple failures in baseline security inhibitors. This 'Tier D' status indicates that the current control environment does not meet the minimum safety thresholds required for standard protocol adherence. ";
+                  } else {
+                        narrative = "EXECUTIVE SUMMARY: The organization shows a limited control maturity level with an aggregate score below the minimum underwriting threshold. The 'Tier D' classification reflects a need for a comprehensive systemic overhaul of various security domains to align with industry best practices. ";
+                  }
+                  break;
       }
+
+      narrative += "This assessment serves as a point-in-time diagnostic of the organization's defensive capabilities against modern cyber-attacks.\n\n";
+
+      // 2. Detailed Analysis of Critical Concerns
+      const concerns: string[] = [];
+
+      if (failedKillers.length > 0) {
+            const killerTexts = failedKillers.map(k => k.text.replace(/\?$/, "")).join(", ");
+            concerns.push(`DETAILED ANALYSIS: Critical architectural concerns were identified regarding the absence or inadequacy of ${killerTexts}. These 'Killer' controls are essential for structural integrity.`);
+      }
+
+      const lowMaturityDomains = domainScores
+            .filter(ds => ds.score < 60 && ds.activeWeight > 0)
+            .sort((a, b) => b.activeWeight - a.activeWeight)
+            .slice(0, 3);
+
+      if (lowMaturityDomains.length > 0) {
+            const domainNames = lowMaturityDomains.map(d => d.domain).join(", ");
+            concerns.push(`Furthermore, sub-optimal maturity levels observed in ${domainNames} present potential entry points for lateral movement or data exfiltration, significantly impacting the overall security posture.`);
+      }
+
+      if (concerns.length > 0) {
+            narrative += concerns.join(" ") + "\n\n";
+      } else {
+            narrative += "DETAILED ANALYSIS: The assessment did not identify any critical inhibitor failures or high-volatility domain gaps. The existing control framework appears to be balanced across the evaluated infrastructure domains, providing a stable foundation for the organization's cyber defense strategy.\n\n";
+      }
+
+      // 3. Strategic Roadmap & Actionable Improvements
+      const allFailedQuestions = domains.flatMap(d => d.questions).filter(q => q.response < 1 && !failedKillers.some(fk => fk.id === q.id));
+
+      // Prioritize by domain weight
+      allFailedQuestions.sort((a, b) => {
+            const weightA = domainScores.find(ds => ds.domain === a.domain)?.activeWeight || 0;
+            const weightB = domainScores.find(ds => ds.domain === b.domain)?.activeWeight || 0;
+            return weightB - weightA;
+      });
+
+      const improvements = allFailedQuestions.slice(0, 3).map(q => q.text.replace(/\?$/, ""));
+      if (improvements.length > 0) {
+            narrative += `STRATEGIC ROADMAP: To significantly strengthen the security posture and potentially move to a more favorable risk tier, immediate attention should be directed towards the implementation or refinement of ${improvements.join(", ")}. `;
+      }
+
+      if (riskTier === "D") {
+            narrative += "Successful remediation and re-evaluation of these critical gaps are essential prerequisites before the risk can be reconsidered for standard underwriting protocols. (Ref: SEC-AUTO-DECLINE)";
+      } else if (riskTier === "C") {
+            narrative += "Addressing these improvements systematically will not only qualify the organization for more favorable terms but also substantially reduce the potential for operational disruption.";
+      } else {
+            narrative += "Continuous monitoring, periodic red-teaming, and consistent updates to these specific controls will ensure sustained resilience against evolving threat vectors and zero-day vulnerabilities.";
+      }
+
+      return narrative;
 }
 
 export function getCurrentPremiumLoading(riskTier: string): string {
       switch (riskTier) {
-            case "A": return "Base Rate"
-            case "B": return "+40% Loading"
-            case "C": return "+80% Loading"
+            case "A": return "Standard"
+            case "B": return "Substandard"
+            case "C": return "Review Required"
             case "D": return "Decline"
             default: return "Pending"
       }

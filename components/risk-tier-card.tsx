@@ -135,9 +135,9 @@ export function RiskTierCard({ result }: RiskTierCardProps) {
             </div>
           </div>
 
-          {/* Dynamically Styled Policy Load Card */}
+          {/* Dynamically Styled Risk Profile Card */}
           <div className={`p-4 rounded-2xl border ${config.policyCard.bg} ${config.policyCard.border}`}>
-            <span className={`block text-[9px] font-black uppercase tracking-[0.2em] mb-2 ${config.policyCard.title}`}>Policy Load</span>
+            <span className={`block text-[9px] font-black uppercase tracking-[0.2em] mb-2 ${config.policyCard.title}`}>Determined Outcome</span>
             <div className="flex items-baseline gap-1.5">
               <span className={`font-black font-outfit ${config.policyCard.value} ${getLoadFontSize(getCurrentPremiumLoading(result.riskTier))}`}>
                 {getCurrentPremiumLoading(result.riskTier)}
