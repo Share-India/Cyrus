@@ -62,6 +62,25 @@ export default function AdminContentPage() {
         setHasUnsavedChanges(true)
     }
 
+    const handleResetAllKillers = () => {
+        const newStagedKillers = { ...stagedKillers }
+        domains.forEach(domain => {
+            domain.questions.forEach(q => {
+                // If it's currently a killer, stage it to be false
+                if (q.isKiller && stagedKillers[q.id] !== false) {
+                    newStagedKillers[q.id] = false
+                }
+            })
+        })
+
+        // If there were any killers to reset, set the changes
+        if (Object.keys(newStagedKillers).length > Object.keys(stagedKillers).length) {
+            setStagedKillers(newStagedKillers)
+            setHasUnsavedChanges(true)
+        }
+    }
+
+
     const handleSaveRiskConfiguration = async () => {
         setIsSaving(true)
         const supabase = createClient()
@@ -88,6 +107,9 @@ export default function AdminContentPage() {
             setIsSaving(false)
         }
     }
+
+    const totalWeight = domains.reduce((sum, d) => sum + (d.defaultWeight || 0), 0)
+    const isWeightBalanced = Math.abs(totalWeight - 100) < 0.01 // Handle floating point math
 
     return (
         <div className="min-h-screen bg-white font-inter pb-20">
@@ -123,6 +145,13 @@ export default function AdminContentPage() {
                             <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest">Processing...</span>
                         </div>
                     )}
+                    <button
+                        onClick={handleResetAllKillers}
+                        className="px-6 py-3 bg-white text-si-navy border border-slate-200 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl hover:bg-slate-50 transition-all duration-500 flex items-center gap-2"
+                    >
+                        <Zap className="w-4 h-4 text-si-red/50" />
+                        Reset Killers
+                    </button>
                     <button className="px-6 py-3 bg-white text-si-navy text-[10px] font-black uppercase tracking-[0.3em] rounded-xl hover:bg-si-blue-primary hover:text-white transition-all duration-500 shadow-xl shadow-white/5">
                         <Plus className="w-4 h-4 inline-block mr-2 mt-[-2px]" />
                         Deploy New Domain
@@ -131,6 +160,21 @@ export default function AdminContentPage() {
             </header>
 
             <main className="max-w-7xl mx-auto p-12">
+                {!isWeightBalanced && (
+                    <div className="mb-10 bg-si-red/10 border-2 border-si-red/20 rounded-3xl p-6 flex items-start gap-6 animate-in fade-in slide-in-from-top-4">
+                        <div className="w-12 h-12 bg-si-red text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-si-red/20">
+                            <ShieldAlert className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-si-red tracking-tight font-outfit">Critical Weight Imbalance</h3>
+                            <p className="text-si-navy/70 mt-1 max-w-2xl">
+                                The total mathematical weight of all domains must equal exactly 100% for the scoring engine to function correctly.
+                                Currently, the sum is <span className="font-black text-si-navy">{totalWeight.toFixed(1)}%</span>.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-12">
                     {domains.map((domain) => (
                         <motion.div
@@ -145,12 +189,9 @@ export default function AdminContentPage() {
                                         <Layers className="w-8 h-8" />
                                     </div>
                                     <div className="flex-1">
-                                        <input
-                                            type="text"
-                                            defaultValue={domain.name}
-                                            onBlur={(e) => handleUpdateDomain(domain.id, { name: e.target.value })}
-                                            className="w-full font-black text-2xl text-si-navy bg-transparent border-none focus:ring-0 p-0 font-outfit italic tracking-tight hover:bg-slate-200/50 rounded-xl px-4 py-1 transition-all"
-                                        />
+                                        <h2 className="w-full font-black text-2xl text-si-navy bg-transparent border-none p-0 font-outfit italic tracking-tight break-words px-4 py-1">
+                                            {domain.name}
+                                        </h2>
                                         <div className="flex items-center gap-4 mt-2 px-4">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Reference ID:</span>
                                             <span className="text-[10px] font-bold text-si-navy font-mono opacity-50">{domain.id}</span>

@@ -12,7 +12,7 @@ export function PageLoader() {
     // Trigger loading on route change
     useEffect(() => {
         setLoading(true)
-        const timeout = setTimeout(() => setLoading(false), 800) // Simulate transition
+        const timeout = setTimeout(() => setLoading(false), 300) // Reduced from 800ms for faster transitions
         return () => clearTimeout(timeout)
     }, [pathname, searchParams])
 

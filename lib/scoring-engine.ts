@@ -59,231 +59,233 @@ export interface ScoringResult {
 
 export const INDUSTRY_PROFILES: IndustryProfile[] = [
       {
-            "id": "cyber_security",
-            "name": "Cyber Security",
-            "domainWeights": {
-                  "Network Security": 7.0,
-                  "Data Backup and Recovery": 7.0,
-                  "Certifications": 4.0,
-                  "Background Verification and Employee Awareness": 4.0,
-                  "Regulatory Compliance": 5.0,
-                  "Organization Policies and Procedures": 5.0,
-                  "Physical Perimeter Security": 7.0,
-                  "Endpoint Security": 6.0,
-                  "IoT and OT Network": 9.0,
-                  "Asset Management": 6.0,
-                  "Identity and Access Management": 6.0,
-                  "Vulnerability Assessment and Penetration Test": 5.0,
-                  "Ransomware Supplemental": 5.0,
-                  "Dark Web Exposure": 2.0,
-                  "Change / Patch Cadence": 5.0,
-                  "DLP and DSPM": 4.0,
-                  "Active Directory Configuration": 3.0,
-                  "Incident Management Response": 6.0,
-                  "SOC and SOAR": 4.0
+            id: "cyber_security",
+            name: "Cyber Security",
+            domainWeights: {
+                  "Network Security": 7,
+                  "Data Backup and Recovery": 7,
+                  "Certifications": 4,
+                  "Background Verification and Employee Awareness": 4,
+                  "Regulatory Compliance": 5,
+                  "Organization Policies and Procedures": 5,
+                  "Physical Perimeter Security": 7,
+                  "Endpoint Security": 6,
+                  "IoT and OT Network": 9,
+                  "Asset Management": 6,
+                  "Identity and Access Management": 6,
+                  "Vulnerability Assessment and Penetration Test": 5,
+                  "Ransomware Supplemental": 5,
+                  "Dark Web Exposure": 2,
+                  "Change / Patch Cadence": 5,
+                  "DLP and DSPM": 4,
+                  "Active Directory Configuration": 3,
+                  "Incident Management Response": 6,
+                  "SOC and SOAR": 4
             }
       },
       {
-            "id": "manufacturing_and_engineering",
-            "name": "Manufacturing and Engineering",
-            "domainWeights": {
-                  "Network Security": 7.0,
-                  "Data Backup and Recovery": 8.0,
-                  "Certifications": 3.0,
-                  "Background Verification and Employee Awareness": 4.0,
-                  "Regulatory Compliance": 5.0,
-                  "Organization Policies and Procedures": 3.0,
-                  "Physical Perimeter Security": 7.0,
-                  "Endpoint Security": 6.0,
-                  "IoT and OT Network": 10.0,
-                  "Asset Management": 5.0,
-                  "Identity and Access Management": 5.0,
-                  "Vulnerability Assessment and Penetration Test": 6.0,
-                  "Ransomware Supplemental": 7.0,
-                  "Dark Web Exposure": 2.0,
-                  "Change / Patch Cadence": 5.0,
-                  "DLP and DSPM": 4.0,
-                  "Active Directory Configuration": 4.0,
-                  "Incident Management Response": 5.0,
-                  "SOC and SOAR": 4.0
+            id: "manufacturing_and_engineering",
+            name: "Manufacturing and Engineering",
+            domainWeights: {
+                  "Network Security": 7,
+                  "Data Backup and Recovery": 8,
+                  "Certifications": 3,
+                  "Background Verification and Employee Awareness": 4,
+                  "Regulatory Compliance": 5,
+                  "Organization Policies and Procedures": 3,
+                  "Physical Perimeter Security": 7,
+                  "Endpoint Security": 6,
+                  "IoT and OT Network": 10,
+                  "Asset Management": 5,
+                  "Identity and Access Management": 5,
+                  "Vulnerability Assessment and Penetration Test": 6,
+                  "Ransomware Supplemental": 7,
+                  "Dark Web Exposure": 2,
+                  "Change / Patch Cadence": 5,
+                  "DLP and DSPM": 4,
+                  "Active Directory Configuration": 4,
+                  "Incident Management Response": 5,
+                  "SOC and SOAR": 4
             }
       },
       {
-            "id": "construction_and_infrastructure",
-            "name": "Construction and Infrastructure",
-            "domainWeights": {
-                  "Network Security": 6.0,
-                  "Data Backup and Recovery": 7.0,
-                  "Certifications": 3.0,
-                  "Background Verification and Employee Awareness": 5.0,
-                  "Regulatory Compliance": 6.0,
-                  "Organization Policies and Procedures": 4.0,
-                  "Physical Perimeter Security": 9.0,
-                  "Endpoint Security": 5.0,
-                  "IoT and OT Network": 9.0,
-                  "Asset Management": 6.0,
-                  "Identity and Access Management": 5.0,
-                  "Vulnerability Assessment and Penetration Test": 5.0,
-                  "Ransomware Supplemental": 6.0,
-                  "Dark Web Exposure": 2.0,
-                  "Change / Patch Cadence": 4.0,
-                  "DLP and DSPM": 3.0,
-                  "Active Directory Configuration": 4.0,
-                  "Incident Management Response": 6.0,
-                  "SOC and SOAR": 5.0
+            id: "construction_and_infrastructure",
+            name: "Construction and Infrastructure",
+            domainWeights: {
+                  "Network Security": 6,
+                  "Data Backup and Recovery": 7,
+                  "Certifications": 3,
+                  "Background Verification and Employee Awareness": 5,
+                  "Regulatory Compliance": 6,
+                  "Organization Policies and Procedures": 4,
+                  "Physical Perimeter Security": 9,
+                  "Endpoint Security": 5,
+                  "IoT and OT Network": 9,
+                  "Asset Management": 6,
+                  "Identity and Access Management": 5,
+                  "Vulnerability Assessment and Penetration Test": 5,
+                  "Ransomware Supplemental": 6,
+                  "Dark Web Exposure": 2,
+                  "Change / Patch Cadence": 4,
+                  "DLP and DSPM": 3,
+                  "Active Directory Configuration": 4,
+                  "Incident Management Response": 6,
+                  "SOC and SOAR": 5
             }
       },
       {
-            "id": "it_and_technology_services",
-            "name": "IT and Technology Services",
-            "domainWeights": {
-                  "Network Security": 8.0,
-                  "Data Backup and Recovery": 6.0,
-                  "Certifications": 4.0,
-                  "Background Verification and Employee Awareness": 5.0,
-                  "Regulatory Compliance": 6.0,
-                  "Organization Policies and Procedures": 4.0,
-                  "Physical Perimeter Security": 2.0,
-                  "Endpoint Security": 7.0,
-                  "IoT and OT Network": 2.0,
-                  "Asset Management": 5.0,
-                  "Identity and Access Management": 9.0,
-                  "Vulnerability Assessment and Penetration Test": 7.0,
-                  "Ransomware Supplemental": 6.0,
-                  "Dark Web Exposure": 4.0,
-                  "Change / Patch Cadence": 6.0,
-                  "DLP and DSPM": 8.0,
-                  "Active Directory Configuration": 6.0,
-                  "Incident Management Response": 5.0,
-                  "SOC and SOAR": 0.0
+            id: "it_and_technology_services",
+            name: "IT and Technology Services",
+            domainWeights: {
+                  "Network Security": 8,
+                  "Data Backup and Recovery": 6,
+                  "Certifications": 4,
+                  "Background Verification and Employee Awareness": 5,
+                  "Regulatory Compliance": 6,
+                  "Organization Policies and Procedures": 4,
+                  "Physical Perimeter Security": 2,
+                  "Endpoint Security": 7,
+                  "IoT and OT Network": 2,
+                  "Asset Management": 5,
+                  "Identity and Access Management": 9,
+                  "Vulnerability Assessment and Penetration Test": 7,
+                  "Ransomware Supplemental": 6,
+                  "Dark Web Exposure": 4,
+                  "Change / Patch Cadence": 6,
+                  "DLP and DSPM": 8,
+                  "Active Directory Configuration": 6,
+                  "Incident Management Response": 5,
+                  "SOC and SOAR": 0
             }
       },
       {
-            "id": "healthcare_and_pharmaceuticals",
-            "name": "Healthcare and Pharmaceuticals",
-            "domainWeights": {
-                  "Network Security": 7.0,
-                  "Data Backup and Recovery": 9.0,
-                  "Certifications": 4.0,
-                  "Background Verification and Employee Awareness": 5.0,
-                  "Regulatory Compliance": 9.0,
-                  "Organization Policies and Procedures": 4.0,
-                  "Physical Perimeter Security": 5.0,
-                  "Endpoint Security": 6.0,
-                  "IoT and OT Network": 5.0,
-                  "Asset Management": 5.0,
-                  "Identity and Access Management": 7.0,
-                  "Vulnerability Assessment and Penetration Test": 5.0,
-                  "Ransomware Supplemental": 8.0,
-                  "Dark Web Exposure": 4.0,
-                  "Change / Patch Cadence": 4.0,
-                  "DLP and DSPM": 7.0,
-                  "Active Directory Configuration": 3.0,
-                  "Incident Management Response": 2.0,
-                  "SOC and SOAR": 1.0
+            id: "healthcare_and_pharmaceuticals",
+            name: "Healthcare and Pharmaceuticals",
+            domainWeights: {
+                  "Network Security": 7,
+                  "Data Backup and Recovery": 9,
+                  "Certifications": 4,
+                  "Background Verification and Employee Awareness": 5,
+                  "Regulatory Compliance": 9,
+                  "Organization Policies and Procedures": 4,
+                  "Physical Perimeter Security": 5,
+                  "Endpoint Security": 6,
+                  "IoT and OT Network": 5,
+                  "Asset Management": 5,
+                  "Identity and Access Management": 7,
+                  "Vulnerability Assessment and Penetration Test": 5,
+                  "Ransomware Supplemental": 8,
+                  "Dark Web Exposure": 4,
+                  "Change / Patch Cadence": 4,
+                  "DLP and DSPM": 7,
+                  "Active Directory Configuration": 3,
+                  "Incident Management Response": 2,
+                  "SOC and SOAR": 1
             }
       },
       {
-            "id": "retail_and_e-commerce",
-            "name": "Retail and E-Commerce",
-            "domainWeights": {
-                  "Network Security": 7.0,
-                  "Data Backup and Recovery": 6.0,
-                  "Certifications": 3.0,
-                  "Background Verification and Employee Awareness": 4.0,
-                  "Regulatory Compliance": 6.0,
-                  "Organization Policies and Procedures": 4.0,
-                  "Physical Perimeter Security": 4.0,
-                  "Endpoint Security": 6.0,
-                  "IoT and OT Network": 3.0,
-                  "Asset Management": 5.0,
-                  "Identity and Access Management": 8.0,
-                  "Vulnerability Assessment and Penetration Test": 6.0,
-                  "Ransomware Supplemental": 6.0,
-                  "Dark Web Exposure": 7.0,
-                  "Change / Patch Cadence": 6.0,
-                  "DLP and DSPM": 7.0,
-                  "Active Directory Configuration": 5.0,
-                  "Incident Management Response": 5.0,
-                  "SOC and SOAR": 2.0
+            id: "retail_and_e-commerce",
+            name: "Retail and E-Commerce",
+            domainWeights: {
+                  "Network Security": 7,
+                  "Data Backup and Recovery": 6,
+                  "Certifications": 3,
+                  "Background Verification and Employee Awareness": 4,
+                  "Regulatory Compliance": 6,
+                  "Organization Policies and Procedures": 4,
+                  "Physical Perimeter Security": 4,
+                  "Endpoint Security": 6,
+                  "IoT and OT Network": 3,
+                  "Asset Management": 5,
+                  "Identity and Access Management": 8,
+                  "Vulnerability Assessment and Penetration Test": 6,
+                  "Ransomware Supplemental": 6,
+                  "Dark Web Exposure": 7,
+                  "Change / Patch Cadence": 6,
+                  "DLP and DSPM": 7,
+                  "Active Directory Configuration": 5,
+                  "Incident Management Response": 5,
+                  "SOC and SOAR": 2
             }
       },
       {
-            "id": "hospitality_and_tourism",
-            "name": "Hospitality and Tourism",
-            "domainWeights": {
-                  "Network Security": 6.0,
-                  "Data Backup and Recovery": 6.0,
-                  "Certifications": 3.0,
-                  "Background Verification and Employee Awareness": 6.0,
-                  "Regulatory Compliance": 5.0,
-                  "Organization Policies and Procedures": 4.0,
-                  "Physical Perimeter Security": 7.0,
-                  "Endpoint Security": 8.0,
-                  "IoT and OT Network": 4.0,
-                  "Asset Management": 5.0,
-                  "Identity and Access Management": 7.0,
-                  "Vulnerability Assessment and Penetration Test": 5.0,
-                  "Ransomware Supplemental": 6.0,
-                  "Dark Web Exposure": 6.0,
-                  "Change / Patch Cadence": 5.0,
-                  "DLP and DSPM": 6.0,
-                  "Active Directory Configuration": 4.0,
-                  "Incident Management Response": 4.0,
-                  "SOC and SOAR": 3.0
+            id: "hospitality_and_tourism",
+            name: "Hospitality and Tourism",
+            domainWeights: {
+                  "Network Security": 6,
+                  "Data Backup and Recovery": 6,
+                  "Certifications": 3,
+                  "Background Verification and Employee Awareness": 6,
+                  "Regulatory Compliance": 5,
+                  "Organization Policies and Procedures": 4,
+                  "Physical Perimeter Security": 7,
+                  "Endpoint Security": 8,
+                  "IoT and OT Network": 4,
+                  "Asset Management": 5,
+                  "Identity and Access Management": 7,
+                  "Vulnerability Assessment and Penetration Test": 5,
+                  "Ransomware Supplemental": 6,
+                  "Dark Web Exposure": 6,
+                  "Change / Patch Cadence": 5,
+                  "DLP and DSPM": 6,
+                  "Active Directory Configuration": 4,
+                  "Incident Management Response": 4,
+                  "SOC and SOAR": 3
             }
       },
       {
-            "id": "logistics_and_transportation",
-            "name": "Logistics and Transportation",
-            "domainWeights": {
-                  "Network Security": 6.0,
-                  "Data Backup and Recovery": 7.0,
-                  "Certifications": 3.0,
-                  "Background Verification and Employee Awareness": 5.0,
-                  "Regulatory Compliance": 6.0,
-                  "Organization Policies and Procedures": 4.0,
-                  "Physical Perimeter Security": 7.0,
-                  "Endpoint Security": 5.0,
-                  "IoT and OT Network": 8.0,
-                  "Asset Management": 7.0,
-                  "Identity and Access Management": 5.0,
-                  "Vulnerability Assessment and Penetration Test": 5.0,
-                  "Ransomware Supplemental": 6.0,
-                  "Dark Web Exposure": 3.0,
-                  "Change / Patch Cadence": 5.0,
-                  "DLP and DSPM": 4.0,
-                  "Active Directory Configuration": 4.0,
-                  "Incident Management Response": 6.0,
-                  "SOC and SOAR": 4.0
+            id: "logistics_and_transportation",
+            name: "Logistics and Transportation",
+            domainWeights: {
+                  "Network Security": 6,
+                  "Data Backup and Recovery": 7,
+                  "Certifications": 3,
+                  "Background Verification and Employee Awareness": 5,
+                  "Regulatory Compliance": 6,
+                  "Organization Policies and Procedures": 4,
+                  "Physical Perimeter Security": 7,
+                  "Endpoint Security": 5,
+                  "IoT and OT Network": 8,
+                  "Asset Management": 7,
+                  "Identity and Access Management": 5,
+                  "Vulnerability Assessment and Penetration Test": 5,
+                  "Ransomware Supplemental": 6,
+                  "Dark Web Exposure": 3,
+                  "Change / Patch Cadence": 5,
+                  "DLP and DSPM": 4,
+                  "Active Directory Configuration": 4,
+                  "Incident Management Response": 6,
+                  "SOC and SOAR": 4
             }
       },
       {
-            "id": "financial_services_and_banking",
-            "name": "Financial Services and Banking",
-            "domainWeights": {
-                  "Network Security": 8.0,
-                  "Data Backup and Recovery": 6.0,
-                  "Certifications": 4.0,
-                  "Background Verification and Employee Awareness": 6.0,
-                  "Regulatory Compliance": 10.0,
-                  "Organization Policies and Procedures": 5.0,
-                  "Physical Perimeter Security": 3.0,
-                  "Endpoint Security": 6.0,
-                  "IoT and OT Network": 1.0,
-                  "Asset Management": 4.0,
-                  "Identity and Access Management": 10.0,
-                  "Vulnerability Assessment and Penetration Test": 7.0,
-                  "Ransomware Supplemental": 6.0,
-                  "Dark Web Exposure": 7.0,
-                  "Change / Patch Cadence": 5.0,
-                  "DLP and DSPM": 8.0,
-                  "Active Directory Configuration": 2.0,
-                  "Incident Management Response": 1.0,
-                  "SOC and SOAR": 1.0
+            id: "financial_services_and_banking",
+            name: "Financial Services and Banking",
+            domainWeights: {
+                  "Network Security": 8,
+                  "Data Backup and Recovery": 6,
+                  "Certifications": 4,
+                  "Background Verification and Employee Awareness": 6,
+                  "Regulatory Compliance": 10,
+                  "Organization Policies and Procedures": 5,
+                  "Physical Perimeter Security": 3,
+                  "Endpoint Security": 6,
+                  "IoT and OT Network": 1,
+                  "Asset Management": 4,
+                  "Identity and Access Management": 10,
+                  "Vulnerability Assessment and Penetration Test": 7,
+                  "Ransomware Supplemental": 6,
+                  "Dark Web Exposure": 7,
+                  "Change / Patch Cadence": 5,
+                  "DLP and DSPM": 8,
+                  "Active Directory Configuration": 2,
+                  "Incident Management Response": 1,
+                  "SOC and SOAR": 1
             }
       }
 ]
+
+
 
 export type RelevancyLevel = "critical" | "standard" | "niche" | "not_required"
 
@@ -2067,6 +2069,19 @@ export const ALL_QUESTIONS: UnderwritingQuestion[] = [
             ],
       },
       {
+            id: "IR-005",
+            domain: "Incident Management Response",
+            text: "Is external reporting responsibility defined?",
+            type: "governance",
+            response: -1,
+            isKiller: false,
+            options: [
+                  { label: "Formal", value: 1.0 },
+                  { label: "Informal", value: 0.5 },
+                  { label: "Not defined", value: 0.0 }
+            ],
+      },
+      {
             id: "SOC-001",
             domain: "SOC and SOAR",
             text: "What is SOC monitoring capability?",
@@ -2074,22 +2089,10 @@ export const ALL_QUESTIONS: UnderwritingQuestion[] = [
             response: -1,
             isKiller: false,
             options: [
-                  {
-                        "label": "Internal_24x7",
-                        "value": 1.0
-                  },
-                  {
-                        "label": "3rd_party_24x7",
-                        "value": 0.75
-                  },
-                  {
-                        "label": "Partial_24x7",
-                        "value": 0.5
-                  },
-                  {
-                        "label": "No_SOC",
-                        "value": 0.0
-                  }
+                  { label: "Internal_24x7", value: 1.0 },
+                  { label: "3rd_party_24x7", value: 0.75 },
+                  { label: "Partial_24x7", value: 0.5 },
+                  { label: "No_SOC", value: 0.0 }
             ],
       },
       {
@@ -2100,124 +2103,60 @@ export const ALL_QUESTIONS: UnderwritingQuestion[] = [
             response: -1,
             isKiller: false,
             options: [
-                  {
-                        "label": "Yes",
-                        "value": 1.0
-                  },
-                  {
-                        "label": "No",
-                        "value": 0.0
-                  }
+                  { label: "Yes", value: 1.0 },
+                  { label: "No", value: 0.0 }
             ],
       },
       {
             id: "SOC-003",
             domain: "SOC and SOAR",
-            text: "Is external reporting responsibility defined?",
-            type: "governance",
-            response: -1,
-            isKiller: false,
-            options: [
-                  {
-                        "label": "Not defined",
-                        "value": 0.0
-                  },
-                  {
-                        "label": "Informal",
-                        "value": 0.5
-                  },
-                  {
-                        "label": "Formal",
-                        "value": 1.0
-                  }
-            ],
-      },
-      {
-            id: "SOC-004",
-            domain: "SOC and SOAR",
-            text: "Is log monitoring conducted 24\u00d77?",
+            text: "Is log monitoring conducted 24×7?",
             type: "coverage",
             response: -1,
             isKiller: false,
             options: [
-                  {
-                        "label": "None",
-                        "value": 0.0
-                  },
-                  {
-                        "label": "Partial",
-                        "value": 0.5
-                  },
-                  {
-                        "label": "Full",
-                        "value": 1.0
-                  }
+                  { label: "Full", value: 1.0 },
+                  { label: "Partial", value: 0.5 },
+                  { label: "None", value: 0.0 }
             ],
       },
       {
-            id: "SOC-005",
+            id: "SOC-004",
             domain: "SOC and SOAR",
             text: "Are OT logs integrated where feasible?",
             type: "coverage",
             response: -1,
             isKiller: false,
             options: [
-                  {
-                        "label": "None",
-                        "value": 0.0
-                  },
-                  {
-                        "label": "Partial",
-                        "value": 0.5
-                  },
-                  {
-                        "label": "Full",
-                        "value": 1.0
-                  }
+                  { label: "Full", value: 1.0 },
+                  { label: "Partial", value: 0.5 },
+                  { label: "None", value: 0.0 }
             ],
       },
       {
-            id: "SOC-006",
+            id: "SOC-005",
             domain: "SOC and SOAR",
             text: "Are alerts triaged with defined SLAs?",
             type: "governance",
             response: -1,
             isKiller: false,
             options: [
-                  {
-                        "label": "Not defined",
-                        "value": 0.0
-                  },
-                  {
-                        "label": "Informal",
-                        "value": 0.5
-                  },
-                  {
-                        "label": "Formal",
-                        "value": 1.0
-                  }
+                  { label: "Formal", value: 1.0 },
+                  { label: "Informal", value: 0.5 },
+                  { label: "Not defined", value: 0.0 }
             ],
       },
       {
-            id: "SOC-007",
+            id: "SOC-006",
             domain: "SOC and SOAR",
             text: "Is incident automation or playbooks used?",
             type: "coverage",
             response: -1,
             isKiller: false,
             options: [
-                  {
-                        "label": "None",
-                        "value": 0.0
-                  },
-                  {
-                        "label": "Partial",
-                        "value": 0.5
-                  },
-                  {
-                        "label": "Full",
-                        "value": 1.0
-                  }
+                  { label: "Full", value: 1.0 },
+                  { label: "Partial", value: 0.5 },
+                  { label: "None", value: 0.0 }
             ],
       },
 ]
@@ -2388,7 +2327,7 @@ export function calculateScore(domains: Domain[]): ScoringResult {
             let domainMaxPossibleWeightedScore = 0
 
             for (const question of domain.questions) {
-                  const questionWeight = question.isKiller ? 5 : 1
+                  const questionWeight = question.isKiller ? 3 : 1
                   const maxValue = 1.0 // Standardized max base score in Excel is 1
 
                   // Treat -1 (Unanswered) as 0 for scoring purposes
@@ -2425,7 +2364,8 @@ export function calculateScore(domains: Domain[]): ScoringResult {
             totalContribution += contribution
       }
 
-      const roundedScore = Math.min(Math.round(totalContribution * 100) / 100, 100)
+      // Match Excel exactly: ROUND(SUM(I105:I123), 1)
+      const roundedScore = Math.min(Math.round(totalContribution * 10) / 10, 100)
 
       // Calculate Volatility Score (Sensitivity to top 3 domains)
       const sortedDomains = [...domainScores].sort((a, b) => b.score - a.score)
@@ -2468,12 +2408,12 @@ function getRiskTier(
       }
 
       if (score >= 90) {
-            return { tier: "A", premium: "Standard" }
+            return { tier: "A", premium: "Base Rate" }
       }
       if (score >= 75) {
-            return { tier: "B", premium: "Substandard" }
+            return { tier: "B", premium: "+20%" }
       }
-      return { tier: "C", premium: "Review Required" }
+      return { tier: "C", premium: "+50%" }
 }
 
 function generateUnderwritingNarrative(
@@ -2558,9 +2498,9 @@ function generateUnderwritingNarrative(
 
 export function getCurrentPremiumLoading(riskTier: string): string {
       switch (riskTier) {
-            case "A": return "Standard"
-            case "B": return "Substandard"
-            case "C": return "Review Required"
+            case "A": return "Base Rate"
+            case "B": return "+20%"
+            case "C": return "+50%"
             case "D": return "Decline"
             default: return "Pending"
       }

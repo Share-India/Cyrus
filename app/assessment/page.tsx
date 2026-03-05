@@ -116,10 +116,11 @@ export default function AssessmentPage() {
         })
     }, [])
 
-    const onResetClick = () => {
-        if (window.confirm("Are you sure you want to reset the assessment? All answers will be cleared.")) {
-            handleReset()
-            window.location.reload()
+    const onResetClick = async () => {
+        if (window.confirm("Are you sure you want to reset the assessment? All progress will be lost and answers will be cleared.")) {
+            await handleReset()
+            // Force a hard navigation to bypass any cached memory state
+            window.location.href = '/assessment?reset=true';
         }
     }
 

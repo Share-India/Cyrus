@@ -139,6 +139,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                         response: -1,
                         isKiller: q.is_killer
                     }))
+                    .sort((a: any, b: any) => a.id.localeCompare(b.id))
             }))
 
             setDomains(stitchedDomains)
@@ -157,17 +158,22 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             setIsLoading(true)
             const supabase = createClient()
 
-            // 1. Get User Session
-            const { data: { session } } = await supabase.auth.getSession()
+            // 1. Parallelize initial fetching (Session, Questionnaire)
+            const [sessionRes, domainsData] = await Promise.all([
+                supabase.auth.getSession(),
+                fetchQuestionnaire()
+            ])
+
+            let finalDomains: Domain[] = domainsData || JSON.parse(JSON.stringify(DOMAINS))
+            const session = sessionRes.data.session
             console.log("🔍 Session Check:", session ? `Active: ${session.user.id}` : "No Session")
 
             let cloudDraftData: any = null
             let profileIndustry: string | null = null
 
-            // Wait for DB Questionnaire to get UUIDs, fallback to DOMAINS if failed
-            let finalDomains: Domain[] = await fetchQuestionnaire() || JSON.parse(JSON.stringify(DOMAINS))
-
+            // 2. Conditional fetching for User-specific data
             if (session?.user) {
+                // Fetch Profile and draft in parallel if possible (though profile contains draft)
                 // 2. Fetch Profile Role & Draft
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -182,22 +188,30 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                     setClientName(profile.organization_name || "")
                     setOrganizationWebsite(profile.organization_website || "")
 
-                    if (profile.draft_data) {
-                        cloudDraftData = profile.draft_data
-                    } else {
-                        // If no draft, try to load latest submitted assessment for viewing
-                        const { data: latestAssessment } = await supabase
-                            .from('assessments')
-                            .select('*')
-                            .eq('user_id', session.user.id)
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .single()
+                    // Disable ALL draft loading if a reset was just performed
+                    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+                    const isResetting = sessionStorage.getItem("cyrus_reset_active") || urlParams?.get('reset') === 'true'
 
-                        if (latestAssessment && latestAssessment.submission_data) {
-                            console.log("📄 Found Latest Submission - loading for view")
-                            cloudDraftData = latestAssessment.submission_data
+                    if (!isResetting) {
+                        if (profile.draft_data) {
+                            cloudDraftData = profile.draft_data
+                        } else {
+                            // If no draft, try to load latest submitted assessment for viewing
+                            const { data: latestAssessment } = await supabase
+                                .from('assessments')
+                                .select('*')
+                                .eq('user_id', session.user.id)
+                                .order('created_at', { ascending: false })
+                                .limit(1)
+                                .maybeSingle()
+
+                            if (latestAssessment && latestAssessment.submission_data) {
+                                console.log("📄 Found Latest Submission - loading for view")
+                                cloudDraftData = latestAssessment.submission_data
+                            }
                         }
+                    } else {
+                        console.log("🔥 RESET ACTIVE: Skipping all historical data and drafts")
                     }
 
                     if (profile.industry) {
@@ -217,8 +231,10 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             let draftToLoad = cloudDraftData
             const userId = session?.user?.id
             const storageKey = userId ? `cyrus_draft_v2_${userId}` : "cyrus_draft_v2_guest"
+            const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+            const isResettingLocal = sessionStorage.getItem("cyrus_reset_active") || urlParams?.get('reset') === 'true'
 
-            if (!draftToLoad) {
+            if (!draftToLoad && !isResettingLocal) {
                 const localSaved = localStorage.getItem(storageKey)
                 if (localSaved) {
                     try {
@@ -275,9 +291,15 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 setHasDraft(false)
             }
 
-            console.log('📦 Initialized domains')
-            setDomains(finalDomains)
+            setDomains(finalDomains || JSON.parse(JSON.stringify(DOMAINS)))
             setIsLoading(false)
+            sessionStorage.removeItem("cyrus_reset_active")
+
+            // Clean up the URL to prevent subsequent resets on manual reloads
+            if (typeof window !== 'undefined' && window.location.search.includes('reset=true')) {
+                const newUrl = window.location.pathname
+                window.history.replaceState({ path: newUrl }, '', newUrl)
+            }
         }
 
         init()
@@ -412,13 +434,32 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     }, [])
 
     const handleReset = useCallback(async () => {
-        localStorage.removeItem("cyrus_draft_v2")
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        // Disable historical fallback for the next reload
+        sessionStorage.setItem("cyrus_reset_active", "true")
+
+        // Identify and clear all possible storage keys
+        const storageKeys = [
+            user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest",
+            "cyrus_draft_v2",
+            "cyrus_draft_v2_guest",
+            "cyrus_client_name",
+            "cyrus_selected_industry",
+            "reassurance_dismissed",
+            "cyrus_current_step",
+            "cyrus_last_saved",
+            "cyrus_assessment_in_progress"
+        ]
+        storageKeys.forEach(k => {
+            localStorage.removeItem(k)
+            sessionStorage.removeItem(k)
+        })
 
         try {
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-
             if (user) {
+                // Clear the cloud draft permanently
                 await supabase
                     .from('profiles')
                     .update({ draft_data: null })
@@ -428,9 +469,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             console.error("Error clearing cloud draft", e)
         }
 
+        // Reset local in-memory state
         await fetchQuestionnaire()
         setSelectedIndustry("")
         setClientName("")
+        setOrganizationWebsite("")
         setManualOverrideEnabled(false)
         setCurrentDomainIndex(0)
         setCurrentQuestionIndex(0)
