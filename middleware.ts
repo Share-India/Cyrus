@@ -73,6 +73,33 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
+    // Role-based route enforcement
+    if (session) {
+        // Fetch user role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+
+        const userRole = profile?.role || 'client'
+
+        const isAdminRoute = path.startsWith('/admin')
+        const isClientRoute = path === '/assessment' || path === '/welcome' || path.startsWith('/submission')
+
+        if (userRole === 'client' && isAdminRoute) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/welcome'
+            return NextResponse.redirect(url)
+        }
+
+        if (userRole === 'admin' && isClientRoute) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/admin'
+            return NextResponse.redirect(url)
+        }
+    }
+
     /* 
     if (session && path === '/login') {
         const url = request.nextUrl.clone()

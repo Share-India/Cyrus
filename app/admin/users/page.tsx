@@ -14,7 +14,8 @@ import {
     Clock,
     UserCheck,
     UserMinus,
-    Globe
+    Globe,
+    UserCog
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -36,6 +37,8 @@ export default function UserManagementPage() {
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
+    const [roleFilter, setRoleFilter] = useState<"all" | "client" | "admin">("all")
+    const [togglingRoleId, setTogglingRoleId] = useState<string | null>(null)
     const supabase = createClient()
 
     useEffect(() => {
@@ -65,14 +68,46 @@ export default function UserManagementPage() {
     }, [supabase])
 
     const filteredUsers = useMemo(() => {
-        if (!searchTerm) return profiles
+        let result = profiles
+        if (roleFilter !== "all") {
+            result = result.filter(p => (p.role || 'client') === roleFilter)
+        }
+        if (!searchTerm) return result
+
         const lowTerm = searchTerm.toLowerCase()
-        return profiles.filter(p =>
+        return result.filter(p =>
             p.email?.toLowerCase().includes(lowTerm) ||
             p.name?.toLowerCase().includes(lowTerm) ||
             p.organization_name?.toLowerCase().includes(lowTerm)
         )
-    }, [profiles, searchTerm])
+    }, [profiles, searchTerm, roleFilter])
+
+    const toggleRole = async (userId: string, currentRole: string) => {
+        const newRole = currentRole === 'admin' ? 'client' : 'admin'
+
+        if (!window.confirm(`Are you sure you want to change this user's role to ${newRole.toUpperCase()}?`)) {
+            return
+        }
+
+        setTogglingRoleId(userId)
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ role: newRole })
+                .eq('id', userId)
+
+            if (error) throw error
+
+            setProfiles(prev => prev.map(p =>
+                p.id === userId ? { ...p, role: newRole } : p
+            ))
+        } catch (error) {
+            console.error('Error updating role:', error)
+            alert('Failed to update user role')
+        } finally {
+            setTogglingRoleId(null)
+        }
+    }
 
     if (isLoading) {
         return (
@@ -100,20 +135,31 @@ export default function UserManagementPage() {
             </header>
 
             <main className="max-w-7xl mx-auto p-12">
-                <div className="mb-12 flex items-center justify-between">
+                <div className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 className="text-4xl font-black text-si-navy font-outfit tracking-tighter italic mb-2 uppercase">Participant Registry</h2>
                         <p className="text-slate-500 font-medium">Monitor and manage all clients authorized within the audit framework.</p>
                     </div>
-                    <div className="relative w-96">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search by Name, Email or Org..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-si-blue-primary/10 transition-all shadow-sm"
-                        />
+                    <div className="flex items-center gap-4">
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value as any)}
+                            className="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-si-blue-primary/10 transition-all shadow-sm"
+                        >
+                            <option value="all">All Roles</option>
+                            <option value="client">Clients Only</option>
+                            <option value="admin">Admins Only</option>
+                        </select>
+                        <div className="relative w-72">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Email or Org..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-si-blue-primary/10 transition-all shadow-sm"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -126,16 +172,22 @@ export default function UserManagementPage() {
                             transition={{ delay: idx * 0.05 }}
                             className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
                         >
-                            <div className="flex items-center gap-4 mb-6 relative z-10">
-                                <div className="w-14 h-14 bg-si-navy text-white rounded-2xl flex items-center justify-center font-bold text-lg uppercase shadow-lg shadow-si-navy/20 group-hover:bg-si-blue-primary transition-colors">
+                            <div className="flex items-start gap-4 mb-6 relative z-10">
+                                <div className="w-14 h-14 bg-si-navy text-white rounded-2xl flex items-center justify-center font-bold text-lg uppercase shadow-lg shadow-si-navy/20 group-hover:bg-si-blue-primary transition-colors flex-shrink-0">
                                     {user.name?.substring(0, 2) || user.email?.substring(0, 2)}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-lg font-black text-si-navy truncate">{user.name || user.email}</h3>
-                                    <div className="flex items-center gap-2">
+                                <div className="flex-1 min-w-0 pt-1">
+                                    <h3 className="text-lg font-black text-si-navy truncate leading-tight mb-1">{user.name || user.email}</h3>
+                                    <div className="flex items-center gap-2 mb-2">
                                         <Mail className="w-3 h-3 text-slate-400" />
                                         <span className="text-[10px] font-bold text-slate-400 truncate">{user.email}</span>
                                     </div>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${user.role === 'admin'
+                                            ? 'bg-si-blue-primary/10 text-si-blue-primary'
+                                            : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                        {user.role === 'admin' ? 'Administrator' : 'Client Profile'}
+                                    </span>
                                 </div>
                             </div>
 
@@ -171,10 +223,25 @@ export default function UserManagementPage() {
                             </div>
 
                             <div className="flex items-center gap-3 relative z-10">
-                                <button className="flex-1 px-4 py-2.5 bg-slate-50 hover:bg-si-navy hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100">
+                                <button className="flex-1 px-4 py-2.5 bg-slate-50 hover:bg-si-navy hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 flex justify-center items-center">
                                     View Activity
                                 </button>
-                                <button className="p-2.5 bg-slate-50 hover:bg-si-red hover:text-white rounded-xl text-slate-400 transition-all border border-slate-100">
+                                <button
+                                    onClick={() => toggleRole(user.id, user.role || 'client')}
+                                    disabled={togglingRoleId === user.id}
+                                    className="p-2.5 bg-slate-50 hover:bg-si-blue-primary hover:text-white rounded-xl text-slate-400 transition-all border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed group relative"
+                                    title={`Change to ${user.role === 'admin' ? 'Client' : 'Admin'}`}
+                                >
+                                    {togglingRoleId === user.id ? (
+                                        <div className="w-4 h-4 border-2 border-slate-300 border-t-si-blue-primary rounded-full animate-spin" />
+                                    ) : (
+                                        <UserCog className="w-4 h-4" />
+                                    )}
+                                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-si-navy text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                        Change Role
+                                    </span>
+                                </button>
+                                <button className="p-2.5 bg-slate-50 hover:bg-si-red hover:text-white rounded-xl text-slate-400 transition-all border border-slate-100" title="Revoke Access">
                                     <UserMinus className="w-4 h-4" />
                                 </button>
                             </div>

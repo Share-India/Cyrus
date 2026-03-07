@@ -72,6 +72,7 @@ export default function AdminPage() {
 
     const [stats, setStats] = useState({
         clients: 0,
+        admins: 0,
         reports: 0,
         killerFailures: 0
     })
@@ -90,8 +91,9 @@ export default function AdminPage() {
         const fetchDashboardData = async () => {
             try {
                 setIsLoading(true)
-                const [profilesRes, assessRes, allAssessRes] = await Promise.all([
+                const [profilesClientRes, profilesAdminRes, assessRes, allAssessRes] = await Promise.all([
                     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'client'),
+                    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin'),
                     supabase.from('assessments').select('*').order('created_at', { ascending: false }).limit(50),
                     supabase.from('assessments').select('total_score, auto_declined, created_at, submission_data, industry_id, risk_tier, user_id')
                 ])
@@ -116,7 +118,8 @@ export default function AdminPage() {
                 const killerFailures = allAssess.filter(a => a.auto_declined).length
 
                 setStats({
-                    clients: profilesRes.count || 0,
+                    clients: profilesClientRes.count || 0,
+                    admins: profilesAdminRes.count || 0,
                     reports: allAssess.length,
                     killerFailures
                 })
@@ -275,11 +278,19 @@ export default function AdminPage() {
                 {/* Stats Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
                     {[
-                        { label: 'Active Nodes', val: stats.clients, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'group-hover:border-blue-200' },
+                        {
+                            label: 'Active Nodes',
+                            val: `${stats.clients + stats.admins}`,
+                            subtext: `${stats.clients} Clients · ${stats.admins} Admins`,
+                            icon: Users,
+                            color: 'text-blue-500',
+                            bg: 'bg-blue-500/10',
+                            border: 'group-hover:border-blue-200'
+                        },
                         { label: 'Audit Reports', val: stats.reports, icon: FileText, color: 'text-emerald-600', bg: 'bg-emerald-500/10', border: 'group-hover:border-emerald-200' },
                         { label: 'Killer Failures', val: stats.killerFailures, icon: Zap, color: 'text-si-red', bg: 'bg-si-red/10', border: 'group-hover:border-red-200' },
                     ].map((s, i) => (
-                        <div key={i} className={`bg-white p-8 rounded-[28px] border border-slate-100 ${s.border} relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-0.5`}>
+                        <div key={i} className={`bg-white p-8 rounded-[28px] border border-slate-100 ${s.border} relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-0.5 flex flex-col justify-between`}>
                             <div className="relative z-10">
                                 <div className="flex items-center gap-4 mb-5">
                                     <div className={`w-11 h-11 ${s.bg} ${s.color} rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
@@ -287,7 +298,12 @@ export default function AdminPage() {
                                     </div>
                                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none">{s.label}</span>
                                 </div>
-                                <p className="text-4xl font-black text-si-navy font-outfit tracking-tighter">{s.val}</p>
+                                <div className="flex flex-col">
+                                    <p className="text-4xl font-black text-si-navy font-outfit tracking-tighter">{s.val}</p>
+                                    {s.subtext && (
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{s.subtext}</p>
+                                    )}
+                                </div>
                             </div>
                             <div className="absolute -bottom-4 -right-4 opacity-[0.04] group-hover:opacity-[0.07] group-hover:scale-110 transition-all duration-500">
                                 <s.icon className="w-24 h-24" />
