@@ -12,10 +12,11 @@ import {
     CERT_RELEVANCY_MAP
 } from '../lib/scoring-engine'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+// Prefer service role key to bypass RLS for seeding, fallback to anon key
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 async function seed() {
     console.log("🚀 Starting Model Seeding...")

@@ -32,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} font-inter antialiased bg-slate-50`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${outfit.variable} font-inter antialiased bg-slate-50`} suppressHydrationWarning>
         {/* Premium Background Mesh */}
         <div className="fixed inset-0 min-h-screen w-full -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-si-blue-primary/5 via-transparent to-transparent opacity-60"></div>
         <div className="fixed inset-0 min-h-screen w-full -z-10 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-si-blue-secondary/5 via-transparent to-transparent opacity-60"></div>

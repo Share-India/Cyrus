@@ -94,12 +94,14 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
 
-    const fetchQuestionnaire = useCallback(async (): Promise<Domain[] | null> => {
+    const fetchQuestionnaire = useCallback(async (retryCount = 0): Promise<Domain[] | null> => {
         const supabase = createClient()
 
         try {
+            console.log(`📡 Fetching questionnaire (Attempt ${retryCount + 1})...`)
+            
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Database timeout after 5s')), 5000)
+                setTimeout(() => reject(new Error(`Database timeout after 12s (Attempt ${retryCount + 1})`)), 12000)
             )
 
             const fetchPromise = Promise.all([
@@ -113,10 +115,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             ]) as any
 
             if (domainsRes.error || questionsRes.error) {
-                console.error("Error fetching questionnaire", domainsRes.error || questionsRes.error)
-                const fallback = JSON.parse(JSON.stringify(DOMAINS))
-                setDomains(fallback)
-                return fallback
+                throw new Error(domainsRes.error?.message || questionsRes.error?.message || "DB Response Error")
             }
 
             const rawDomains = domainsRes.data || []
@@ -143,9 +142,18 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             }))
 
             setDomains(stitchedDomains)
+            console.log("✅ Questionnaire fetched and stitched successfully")
             return stitchedDomains
-        } catch (error) {
-            console.error("❌ Failed to fetch questionnaire:", error)
+        } catch (error: any) {
+            console.error(`❌ Fetch attempt ${retryCount + 1} failed:`, error.message)
+
+            if (retryCount < 1) {
+                console.log("🔄 Retrying fetch in 2 seconds...")
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                return fetchQuestionnaire(retryCount + 1)
+            }
+
+            console.warn("⚠️ Both fetch attempts failed. Falling back to local/static data.")
             const fallback = JSON.parse(JSON.stringify(DOMAINS))
             setDomains(fallback)
             return fallback
