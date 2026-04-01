@@ -1,6 +1,7 @@
 "use client"
 
 import { getCurrentPremiumLoading, getRecommendations, Recommendation, INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+import type { RemediationPlan } from "@/lib/recommendation-engine"
 
 const LEGACY_INDUSTRY_MAP: Record<string, string> = {
     "it_and_tehnology_services": "IT and Technology Services",
@@ -105,6 +106,8 @@ export default function SubmissionDetails() {
     const [auditDoc, setAuditDoc] = useState<{ file_name: string; file_path: string; uploaded_at: string; download_url?: string } | null>(null)
     const [isPolicyLoading, setIsPolicyLoading] = useState(false)
     const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+    const [aiRemediationPlan, setAiRemediationPlan] = useState<RemediationPlan | null>(null)
+    const [isGeneratingRemediation, setIsGeneratingRemediation] = useState(false)
     const supabase = createClient()
 
     useEffect(() => {
@@ -218,6 +221,33 @@ export default function SubmissionDetails() {
 
     const [isFinalizing, setIsFinalizing] = useState(false)
     const [isFinalized, setIsFinalized] = useState(false)
+
+    const generateAiRemediation = async () => {
+        setIsGeneratingRemediation(true);
+        try {
+            const response = await fetch('/api/intelligence/recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    result: submission?.submission_data.result, 
+                    dossier: { 
+                        name: (submission?.profiles as any)?.organization_name || (submission?.profiles as any)?.name, 
+                        industriesServed: [resolveIndustryName(submission?.industry_id)] 
+                    } 
+                }),
+            });
+            
+            if (!response.ok) throw new Error('Failed to generate remediation plan');
+            const data = await response.json();
+            setAiRemediationPlan(data);
+            toast.success("AI Remediation Plan generated successfully");
+        } catch (e) {
+            console.error(e);
+            toast.error("Generation failed. Please try again.");
+        } finally {
+            setIsGeneratingRemediation(false);
+        }
+    };
 
     if (isLoading) {
 
@@ -557,12 +587,51 @@ export default function SubmissionDetails() {
                                         </div>
                                         <div>
                                             <h4 className="text-2xl font-black text-si-navy font-outfit tracking-tighter leading-none">AI Risk Remediation</h4>
-                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-2">Top 5 Actionable Improvements</p>
+                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-2">{aiRemediationPlan ? "Actionable structural roadmap" : "Top 5 Static Improvements"}</p>
                                         </div>
+                                        {!aiRemediationPlan && (
+                                            <button 
+                                                onClick={generateAiRemediation}
+                                                disabled={isGeneratingRemediation}
+                                                className="ml-auto px-5 py-3 bg-si-navy text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-si-navy/90 transition-all disabled:opacity-50"
+                                            >
+                                                {isGeneratingRemediation ? "Generating..." : "Auto-Generate AI Plan"}
+                                            </button>
+                                        )}
                                     </div>
 
+                                    {aiRemediationPlan && (
+                                        <div className="mb-6 bg-white/50 p-6 rounded-2xl border border-amber-200/50">
+                                            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Executive Summary</h5>
+                                            <p className="text-sm font-medium text-slate-700 leading-relaxed">{aiRemediationPlan.executiveSummary}</p>
+                                        </div>
+                                    )}
+
                                     <div className="space-y-4">
-                                        {recommendations.length > 0 ? recommendations.map((rec, idx) => (
+                                        {aiRemediationPlan ? aiRemediationPlan.steps.map((rec, idx) => (
+                                            <motion.div
+                                                initial={{ x: -20, opacity: 0 }}
+                                                animate={{ x: 0, opacity: 1 }}
+                                                transition={{ delay: idx * 0.1 }}
+                                                key={`ai-${idx}`}
+                                                className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm flex items-center gap-6 group hover:border-amber-500 transition-all"
+                                            >
+                                                <div className={`w-2 h-16 rounded-full ${rec.impact === 'Critical' ? 'bg-si-red' : rec.impact === 'High' ? 'bg-amber-500' : 'bg-si-blue-primary'}`} />
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{rec.domain}</span>
+                                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${rec.impact === 'Critical' ? 'bg-si-red/10 text-si-red' :
+                                                            rec.impact === 'High' ? 'bg-amber-100 text-amber-700' :
+                                                                'bg-si-blue-primary/10 text-si-blue-primary'
+                                                            }`}>
+                                                            {rec.impact} Impact
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-si-navy group-hover:text-amber-600 transition-colors mb-1">{rec.action}</p>
+                                                    <p className="text-xs font-medium text-slate-500 leading-snug">{rec.rationale}</p>
+                                                </div>
+                                            </motion.div>
+                                        )) : recommendations.length > 0 ? recommendations.map((rec, idx) => (
                                             <motion.div
                                                 initial={{ x: -20, opacity: 0 }}
                                                 animate={{ x: 0, opacity: 1 }}
@@ -805,6 +874,7 @@ export default function SubmissionDetails() {
                                                     submission.profiles?.email || '',
                                                     submission.created_at,
                                                     submission.id,
+                                                    aiRemediationPlan,
                                                     submission_data.model_version || submission.model_version || '1.0.0',
                                                     submission.created_at
                                                 )

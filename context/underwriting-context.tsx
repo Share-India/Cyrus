@@ -458,7 +458,8 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             "reassurance_dismissed",
             "cyrus_current_step",
             "cyrus_last_saved",
-            "cyrus_assessment_in_progress"
+            "cyrus_assessment_in_progress",
+            user?.id ? `cyrus_cached_dossier_${user.id}` : "cyrus_cached_dossier_undefined"
         ]
         storageKeys.forEach(k => {
             localStorage.removeItem(k)
@@ -640,6 +641,36 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             console.error("Error clearing cloud draft after submission", e)
         }
 
+        // ==========================================
+        // n8n / AUTOMATION DISPATCHER (Fire-and-forget)
+        // ==========================================
+        const n8nWebhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
+        const n8nSecret = process.env.NEXT_PUBLIC_N8N_WEBHOOK_SECRET;
+        
+        if (n8nWebhookUrl && insertedData?.id) {
+            // We do NOT await this. If n8n is down or slow, the user still proceeds instantly.
+            fetch(n8nWebhookUrl, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "X-Cyrus-Event-Secret": n8nSecret || "unsecured_dev_mode"
+                },
+                body: JSON.stringify({
+                    event_type: "assessment_finalized",
+                    assessment_id: insertedData.id,
+                    user_id: user.id,
+                    client_name: clientName,
+                    industry_id: selectedIndustry || 'standard',
+                    risk_tier: result.riskTier,
+                    total_score: result.totalScore,
+                    premium_loading: result.premiumLoading,
+                    auto_declined: result.autoDeclined,
+                    failed_killers: result.failedKillers, // Passes the exact text and domain of any critical failures
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(e => console.error("[n8n Dispatch Failed]:", e));
+        }
+
         return { success: true, assessmentId: insertedData?.id }
     }, [domains, selectedIndustry, result, clientName])
 
@@ -679,7 +710,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
         if (user) {
             const storageKey = `cyrus_draft_v2_${user.id}`
+            const cacheKey = `cyrus_cached_dossier_${user.id}`
             localStorage.removeItem(storageKey)
+            localStorage.removeItem(cacheKey)
         }
 
         localStorage.removeItem("cyrus_draft_v2")

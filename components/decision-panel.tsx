@@ -16,7 +16,7 @@ interface DecisionPanelProps {
 }
 
 export function DecisionPanel({ result, domains, completionPercentage, onNavigateToDomain }: DecisionPanelProps) {
-  const { isAdmin } = useUnderwriting()
+  const { isAdmin, selectedIndustry, clientName, userProfile } = useUnderwriting()
   const [expandedReasons, setExpandedReasons] = useState<boolean>(true)
   const isProvisional = completionPercentage < 100
 
@@ -172,6 +172,45 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
                 </motion.button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Export Actions (End User Download) */}
+        {!isProvisional && (
+          <div className="space-y-3">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Export Risk Profile</h4>
+            <button
+              onClick={async () => {
+                const { downloadPDFSummary } = await import('@/lib/pdf-report-generator');
+                const { INDUSTRY_PROFILES } = await import('@/lib/scoring-engine');
+                const industryName = INDUSTRY_PROFILES.find(p => p.id === selectedIndustry)?.name || selectedIndustry;
+                
+                downloadPDFSummary(
+                  result,
+                  domains,
+                  clientName || userProfile?.organization_name || userProfile?.name || 'Unknown Client',
+                  industryName,
+                  userProfile?.email || '',
+                  new Date().toISOString(), // Submission Date (approximate for end user view if not fetched)
+                  'CYRUS-' + Date.now().toString().slice(-6), // Dummy ID since we don't have submission ID here
+                  null, // No AI Remediation Plan for End User generated dynamically
+                  '2.0.0', // Model version
+                  new Date().toISOString()
+                );
+              }}
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-si-navy to-si-blue-primary text-white hover:from-si-blue-primary hover:to-cyan-500 rounded-xl transition-all shadow-md group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-black uppercase tracking-widest text-white">Download Risk Binder</p>
+                  <p className="text-[9px] font-medium text-white/70 uppercase tracking-widest">Official PDF Summary</p>
+                </div>
+              </div>
+              <ChevronDown className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" />
+            </button>
           </div>
         )}
 

@@ -69,40 +69,63 @@ export default function WelcomePage() {
         if (!contextLoading && userProfile && !hasSeenModal) {
             const orgName = userProfile.organization_name
             const websiteUrl = userProfile.organization_website || userProfile.website || ""
+            const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
 
-            // Check hardcoded first for instant load on known orgs
+            // 1. Check hardcoded first for instant load on known orgs
             const staticDossier = getDossier(orgName)
 
             if (staticDossier) {
                 setDossier(staticDossier)
                 setShowDossierModal(true)
-            } else {
-                // Unknown org → call Gemini API
-                setIsDossierLoading(true)
-                setShowDossierModal(true)
-
-                fetch("/api/generate-dossier", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ organizationName: orgName, websiteUrl })
-                })
-                    .then(res => {
-                        if (!res.ok) throw new Error("Generation failed")
-                        return res.json()
-                    })
-                    .then((data: CompanyDossier) => {
-                        setDossier(data)
-                    })
-                    .catch(err => {
-                        console.error("[Dossier Fetch Error]", err)
-                        setDossierError("Intelligence synthesis failed. Please try again.")
-                    })
-                    .finally(() => setIsDossierLoading(false))
+                return
             }
+
+            // 2. Check LocalStorage Cache to save API Tokens
+            const cachedData = localStorage.getItem(localCacheKey)
+            if (cachedData) {
+                try {
+                    const parsedCache = JSON.parse(cachedData)
+                    if (parsedCache && parsedCache.name) {
+                        setDossier(parsedCache)
+                        setShowDossierModal(true)
+                        return
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached dossier", e)
+                }
+            }
+
+            // 3. Unknown org + No Cache → Call Gemini & Shodan API
+            setIsDossierLoading(true)
+            setShowDossierModal(true)
+
+            fetch("/api/generate-dossier", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ organizationName: orgName, websiteUrl })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error("Generation failed")
+                    return res.json()
+                })
+                .then((data: CompanyDossier) => {
+                    setDossier(data)
+                    // We DO NOT save to localStorage here, we wait for user confirmation
+                })
+                .catch(err => {
+                    console.error("[Dossier Fetch Error]", err)
+                    setDossierError("Intelligence synthesis failed. Please try again.")
+                })
+                .finally(() => setIsDossierLoading(false))
         }
     }, [contextLoading, userProfile, hasSeenModal])
 
     const handleConfirmDossier = () => {
+        // Only trigger cache save when the user explicitly confirms the intel is correct
+        if (dossier && userProfile?.id) {
+            const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
+            localStorage.setItem(localCacheKey, JSON.stringify(dossier))
+        }
         setShowDossierModal(false)
         setHasSeenModal(true)
     }
@@ -203,10 +226,15 @@ export default function WelcomePage() {
                                                     💰 {dossier.annualRevenue}
                                                 </span>
                                             )}
-                                            {dossier?.website && (
-                                                <a href={dossier.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-si-blue-primary bg-si-blue-primary/10 px-3 py-1.5 rounded-full border border-si-blue-primary/20 hover:bg-si-blue-primary/20 transition-colors">
+                                            {dossier?.website && !dossier.website.toLowerCase().includes("n/a") && (
+                                                <a href={dossier.website.startsWith('http') ? dossier.website : `https://${dossier.website}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-si-blue-primary bg-si-blue-primary/10 px-3 py-1.5 rounded-full border border-si-blue-primary/20 hover:bg-si-blue-primary/20 transition-colors">
                                                     <ExternalLink className="w-3 h-3" /> {dossier.website.replace(/https?:\/\//, '')}
                                                 </a>
+                                            )}
+                                            {dossier?.shodanIntelligence && (
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200" title="Technical OSINT performed via Shodan">
+                                                    <ShieldCheck className="w-3 h-3" /> Shodan OSINT Verified
+                                                </span>
                                             )}
                                         </div>
                                         <p className="text-sm text-slate-700 leading-relaxed">{dossier?.description}</p>
@@ -349,6 +377,54 @@ export default function WelcomePage() {
                                         <div className="bg-rose-50 p-6 rounded-2xl border border-rose-200">
                                             <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest block mb-2">⑫ Why Cyber Insurance is Critical</span>
                                             <p className="text-sm text-slate-700 leading-relaxed font-medium">{dossier.cyberThreatNarrative}</p>
+                                        </div>
+                                    )}
+
+                                    {/* 12.5 EXTERNAL TECHNICAL VERIFICATION (SHODAN) */}
+                                    {dossier?.shodanIntelligence && (
+                                        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-700 relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-emerald-500/20 transition-colors" />
+                                            <div className="relative z-10">
+                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-4 flex items-center gap-2">
+                                                    <ShieldCheck className="w-4 h-4" /> Technical OSINT Surface Scan
+                                                </span>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Exposed Assets</p>
+                                                        <p className="text-2xl font-black text-white">{dossier.shodanIntelligence.assetCount}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Open Ports</p>
+                                                        <p className="text-2xl font-black text-amber-400">{dossier.shodanIntelligence.openPorts?.length || 0}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">CVEs Detected</p>
+                                                        <p className={`text-2xl font-black ${(dossier.shodanIntelligence.vulnerabilities?.length || 0) > 0 ? "text-rose-500" : "text-emerald-400"}`}>
+                                                            {dossier.shodanIntelligence.vulnerabilities?.length || 0}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {dossier.shodanIntelligence.openPorts && dossier.shodanIntelligence.openPorts.length > 0 && (
+                                                    <div className="mb-3">
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Exposed Services</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {dossier.shodanIntelligence.openPorts.slice(0, 10).map((port, idx) => (
+                                                                <span key={idx} className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded border border-slate-700 font-mono">Port {port}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {dossier.shodanIntelligence.techStack && dossier.shodanIntelligence.techStack.length > 0 && (
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Passive Stack Identification</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {dossier.shodanIntelligence.techStack.slice(0, 8).map((tech, idx) => (
+                                                                <span key={idx} className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded border border-slate-700 font-mono">{tech}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
@@ -705,9 +781,9 @@ export default function WelcomePage() {
                                                         </div>
                                                     </div>
 
-                                                    {(activeDossier.website || userProfile?.organization_website) && (
+                                                    {((activeDossier.website && !activeDossier.website.toLowerCase().includes("n/a")) || userProfile?.organization_website) && (
                                                         <a
-                                                            href={activeDossier.website || userProfile?.organization_website || "#"}
+                                                            href={(activeDossier.website && !activeDossier.website.toLowerCase().includes("n/a") ? activeDossier.website : userProfile?.organization_website) || "#"}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="p-2.5 bg-white/5 hover:bg-si-blue-primary/20 rounded-xl border border-white/5 transition-colors group/link"

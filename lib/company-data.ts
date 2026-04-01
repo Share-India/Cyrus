@@ -23,6 +23,15 @@ export interface CompanyDossier {
     supplyChainExposure?: string;
     regulatoryEnvironment?: string;
     cyberThreatNarrative?: string;
+    
+    // External OSINT Verification
+    shodanIntelligence?: {
+        assetCount: number;
+        openPorts: number[];
+        vulnerabilities: string[];
+        techStack: string[];
+        lastScanDate: string;
+    };
 }
 
 export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {

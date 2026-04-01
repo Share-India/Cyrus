@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 import { type Domain, type ScoringResult, getCurrentPremiumLoading } from "./scoring-engine"
+import type { RemediationPlan } from "./recommendation-engine"
 
 // Extend jsPDF type to include autoTable
 declare module "jspdf" {
@@ -17,6 +18,7 @@ export async function downloadPDFSummary(
     clientEmail: string = '',
     submissionDate: string = '',
     protocolId: string = '',
+    remediationPlan: RemediationPlan | null = null,
     modelVersion: string = '1.0.0',
     timestamp: string = new Date().toISOString()
 ) {
@@ -366,6 +368,86 @@ export async function downloadPDFSummary(
             })
             yPosition += 4 // Extra space between paragraphs
         })
+    }
+
+    // AI Remediation Plan (if available)
+    if (remediationPlan) {
+        doc.addPage()
+        yPosition = 20
+
+        doc.setFontSize(16)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...BLUE)
+        doc.text('AI-DRIVEN REMEDIATION ROADMAP', 15, yPosition)
+        yPosition += 8
+
+        // Exec Summary
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...NAVY)
+        doc.text('EXECUTIVE SUMMARY', 15, yPosition)
+        yPosition += 6
+
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(...DARK_GRAY)
+        
+        const execLines = doc.splitTextToSize(remediationPlan.executiveSummary, 180)
+        doc.text(execLines, 15, yPosition)
+        yPosition += (execLines.length * 5) + 8
+
+        // Steps Table
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...NAVY)
+        doc.text('ACTIONABLE STEPS', 15, yPosition)
+        yPosition += 5
+
+        const planData = remediationPlan.steps.map(step => [
+            step.domain,
+            step.impact.toUpperCase(),
+            step.action,
+            step.rationale
+        ])
+
+        autoTable(doc, {
+            startY: yPosition,
+            head: [['Domain', 'Priority', 'Action Required', 'Risk Rationale']],
+            body: planData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: NAVY,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 8,
+                font: 'helvetica'
+            },
+            bodyStyles: {
+                fontSize: 7,
+                textColor: DARK_GRAY,
+                font: 'helvetica'
+            },
+            columnStyles: {
+                0: { cellWidth: 35, fontStyle: 'bold' },
+                1: { cellWidth: 20, fontStyle: 'bold' },
+                2: { cellWidth: 60 },
+                3: { cellWidth: 65 }
+            },
+            margin: { left: 15, right: 15 },
+            didParseCell: function (data) {
+                if (data.section === 'body' && data.column.index === 1) {
+                    if (data.cell.raw === 'CRITICAL') {
+                        data.cell.styles.textColor = [239, 68, 68]
+                    } else if (data.cell.raw === 'HIGH') {
+                        data.cell.styles.textColor = [245, 158, 11]
+                    } else {
+                        data.cell.styles.textColor = BLUE
+                    }
+                }
+            }
+        })
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 10
     }
 
     // Footer - Disclaimer
