@@ -1,0 +1,73 @@
+{
+  "name": "CYRUS - AI Dossier Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-dossier",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.shodan.io/shodan/host/search?key={{ $env.SHODAN_API_KEY }}&query=hostname:{{ $json.body.websiteUrl.replace(/^https?:\\/\\//, '').replace(/^www\\./, '') }}",
+        "options": {}
+      },
+      "id": "shodan-recon",
+      "name": "Shodan Recon",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.0-flash",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Generate a comprehensive Cyber Risk Dossier for the organization: {{ $node[\"webhook-trigger\"].json.body.organizationName }}. \n\nTechnical Intelligence Found:\n{{ JSON.stringify($json) }}\n\nInclude: Headquarters, Leadership, Business Model, and a realistic Cyber Threat Narrative."
+          }
+        ],
+        "options": {
+          "responseMimeType": "application/json"
+        }
+      },
+      "id": "gemini-dossier-builder",
+      "name": "Gemini Dossier Builder",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseBody": "={{ $json.text }}"
+        }
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": { "main": [[{ "node": "shodan-recon", "type": "main", "index": 0 }]] },
+    "shodan-recon": { "main": [[{ "node": "gemini-dossier-builder", "type": "main", "index": 0 }]] },
+    "gemini-dossier-builder": { "main": [[{ "node": "respond-to-webhook", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "2",
+  "meta": { "templateId": "cyrus-dossier-generation" }
+}

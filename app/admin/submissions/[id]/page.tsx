@@ -224,6 +224,40 @@ export default function SubmissionDetails() {
 
     const [isFinalizing, setIsFinalizing] = useState(false)
     const [isFinalized, setIsFinalized] = useState(false)
+    const [isAnalyzingPolicy, setIsAnalyzingPolicy] = useState(false)
+
+    const runPolicyAnalysis = async () => {
+        if (!policyDoc?.id) return;
+        setIsAnalyzingPolicy(true);
+        // Optimistically set status to processing
+        setPolicyDoc(prev => prev ? { ...prev, analysis_status: 'processing' } : null);
+        
+        try {
+            const response = await fetch('/api/analyze-policy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ documentId: policyDoc.id }),
+            });
+            
+            if (!response.ok) throw new Error('Failed to analyze policy');
+            const data = await response.json();
+            
+            // Update local state with analysis results
+            setPolicyDoc(prev => prev ? { 
+                ...prev, 
+                analysis_status: 'completed', 
+                analysis_result: data.analysis 
+            } : null);
+            
+            toast.success("AI Policy Analysis completed successfully!");
+        } catch (e: any) {
+            console.error(e);
+            toast.error(e.message || "Analysis failed. Please try again.");
+            setPolicyDoc(prev => prev ? { ...prev, analysis_status: 'failed' } : null);
+        } finally {
+            setIsAnalyzingPolicy(false);
+        }
+    };
 
     const generateAiRemediation = async () => {
         setIsGeneratingRemediation(true);
@@ -311,119 +345,33 @@ export default function SubmissionDetails() {
 
                     {/* Finalize Protocol Button */}
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             if (isFinalizing) return;
                             setIsFinalizing(true);
 
-                            // Generate Rich HTML Email Table
-                            const clientEmail = submission.profiles?.email || "";
-                            const subject = `Cyber Insurance Audit Finalized - ${submission.id.substring(0, 8)}`;
-
-                            // Domain Rows for HTML
-                            const domainRows = submission_data.domains.map(d => {
-                                const score = Math.round((d.questions.reduce((acc, q) => acc + q.response, 0) / d.questions.length) * 100);
-                                const color = score >= 80 ? '#34d399' : score >= 50 ? '#fbbf24' : '#ef4444';
-                                return `
-                                    <tr>
-                                        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-family: sans-serif; font-size: 14px; font-weight: 600; color: #1e293b;">${d.name}</td>
-                                        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-family: sans-serif; font-size: 14px; font-weight: 700; color: ${color}; text-align: right;">${score}%</td>
-                                    </tr>
-                                `;
-                            }).join('');
-
-                            const htmlBody = `
-                                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                                    
-                                    <!-- Header -->
-                                    <tr style="background-color: #1e293b;">
-                                        <td style="padding: 30px; text-align: center;">
-                                            <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-style:;">ASSESSMENT FINALIZED</h2>
-                                            <p style="color: #94a3b8; margin: 10px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Audit ID: ${submission.id.substring(0, 8)}</p>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Main Content -->
-                                    <tr>
-                                        <td style="padding: 30px;">
-                                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #334155;">
-                                                Dear Client,<br><br>
-                                                Our team has finalized your insurance audit. Your verified risk profile and premium determination are detailed below.
-                                            </p>
-
-                                            <!-- Key Stats Grid -->
-                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-                                                <tr>
-                                                    <td width="49%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
-                                                        <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Risk Score</div>
-                                                        <div style="font-size: 24px; font-weight: 900; color: #0f172a;">${submission.total_score}%</div>
-                                                    </td>
-                                                    <td width="2%" style="font-size: 0;">&nbsp;</td>
-                                                    <td width="49%" style="padding: 15px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
-                                                        <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Risk Tier</div>
-                                                        <div style="font-size: 24px; font-weight: 900; color: #0f172a;">${submission.risk_tier}</div>
-                                                    </td>
-                                                </tr>
-                                            </table>
-
-                                            <!-- Domain Breakdown -->
-                                            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Domain Performance</div>
-                                            
-                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-                                                ${domainRows}
-                                            </table>
-                                            
-                                            ${submission.auto_declined ? `
-                                            <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                                                <p style="color: #b91c1c; font-weight: 700; font-size: 12px; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">⚠️ CRITICAL: AUDIT FAILED</p>
-                                                <p style="color: #7f1d1d; font-size: 13px; margin: 5px 0 0;">System Security Parameters were breached.</p>
-                                            </div>
-                                            ` : ''}
-
-                                            <div style="text-align: center; margin-top: 40px; border-top: 1px solid #e2e8f0; pt: 20px;">
-                                                <p style="font-size: 10px; color: #94a3b8; margin: 0 0 10px; line-height: 1.4;">
-                                                    This communication is privileged and confidential. <strong>Share India Insurance Brokers Pvt. Ltd.</strong> is a licensed Direct Insurance Broker (IRDAI License No. 466). The risk assessment provided herein is based on the data submitted and is subject to final policy issuance terms.
-                                                </p>
-                                                <p style="font-size: 12px; color: #64748b; margin: 10px 0 0;">Underwriting Governance Team<br><strong>Share India Insurance Brokers</strong></p>
-                                                <a href="https://shareindia.com" style="display: inline-block; margin-top: 5px; font-size: 11px; text-decoration: none; color: #2563eb;">shareindia.com</a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            `;
-
-                            // Copy to clipboard as rich text asynchronously (so it doesn't block window.open)
                             try {
-                                const blob = new Blob([htmlBody], { type: 'text/html' });
-                                const plainTextBlob = new Blob(["Risk Report Summary\n\nScore: " + submission.total_score], { type: 'text/plain' });
-
-                                navigator.clipboard.write([
-                                    new ClipboardItem({
-                                        'text/html': blob,
-                                        'text/plain': plainTextBlob
-                                    })
-                                ]).then(() => {
-                                    toast.success("Report copied to clipboard!", {
-                                        description: "Paste (Ctrl+V) into the email body after your client opens.",
-                                        duration: 5000,
-                                    });
-                                }).catch((err) => {
-                                    console.error('Failed to copy html: ', err);
-                                    toast.error("Could not copy table automatically.");
+                                const response = await fetch('/api/finalize-audit', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        assessmentId: submission.id,
+                                        clientEmail: submission.profiles?.email 
+                                    }),
                                 });
-                            } catch (err) {
-                                console.error('Failed to copy html: ', err);
-                                toast.error("Could not copy table automatically.");
-                            }
 
-                            // Trigger Gmail IMMDEDIATELY (synchronously with click to prevent popup blockers)
-                            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(clientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(">> PASTE REPORT TABLE HERE <<")}`;
-                            window.open(gmailUrl, '_blank');
-
-                            // Simulate database update
-                            setTimeout(() => {
+                                if (!response.ok) throw new Error('Finalization trigger failed');
+                                
+                                toast.success("Audit Finalization Protocol Initiated!", {
+                                    description: "n8n is now generating reports and notifying stakeholders.",
+                                });
+                                
                                 setIsFinalized(true);
+                            } catch (e: any) {
+                                console.error(e);
+                                toast.error("Finalization failed. Please check the n8n logs.");
+                            } finally {
                                 setIsFinalizing(false);
-                            }, 1500);
+                            }
                         }}
                         disabled={isFinalized || isFinalizing}
                         className={`group flex items-center gap-3 px-8 py-4 font-black text-[11px] uppercase tracking-[0.15em] rounded-2xl transition-all duration-500 shadow-xl ${isFinalized
@@ -592,15 +540,27 @@ export default function SubmissionDetails() {
                                             <h4 className="text-2xl font-black text-si-navy font-outfit tracking-tighter leading-none">AI Risk Remediation</h4>
                                             <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-2">{aiRemediationPlan ? "Actionable structural roadmap" : "Top 5 Static Improvements"}</p>
                                         </div>
-                                        {!aiRemediationPlan && (
-                                            <button 
-                                                onClick={generateAiRemediation}
-                                                disabled={isGeneratingRemediation}
-                                                className="ml-auto px-5 py-3 bg-si-navy text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-si-navy/90 transition-all disabled:opacity-50"
-                                            >
-                                                {isGeneratingRemediation ? "Generating..." : "Auto-Generate AI Plan"}
-                                            </button>
-                                        )}
+                                        <AnimatePresence mode="wait">
+                                            {!aiRemediationPlan && (
+                                                <motion.button 
+                                                    key={isGeneratingRemediation ? "generating" : "idle"}
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    onClick={generateAiRemediation}
+                                                    disabled={isGeneratingRemediation}
+                                                    className="ml-auto px-5 py-3 bg-si-navy text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-si-navy/90 transition-all disabled:opacity-50"
+                                                >
+                                                    {isGeneratingRemediation ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                                                            Generating...
+                                                        </div>
+                                                    ) : "Auto-Generate AI Plan"}
+                                                </motion.button>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
 
                                     {aiRemediationPlan && (
@@ -611,7 +571,7 @@ export default function SubmissionDetails() {
                                     )}
 
                                     <div className="space-y-4">
-                                        {aiRemediationPlan ? aiRemediationPlan.steps.map((rec, idx) => (
+                                        {(aiRemediationPlan && Array.isArray(aiRemediationPlan.steps)) ? aiRemediationPlan.steps.map((rec, idx) => (
                                             <motion.div
                                                 initial={{ x: -20, opacity: 0 }}
                                                 animate={{ x: 0, opacity: 1 }}
@@ -771,7 +731,6 @@ export default function SubmissionDetails() {
                                                     <span className="text-[10px] font-bold text-white/30 block">
                                                         {new Date(policyDoc.uploaded_at).toLocaleDateString()} {new Date(policyDoc.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
-                                                    <div className="flex flex-col gap-2">
                                                         {policyDoc.download_url ? (
                                                             <a
                                                                 href={policyDoc.download_url}
@@ -786,27 +745,51 @@ export default function SubmissionDetails() {
                                                             <span className="text-[10px] font-bold text-white/20 uppercase">Generating link...</span>
                                                         )}
 
-                                                        {policyDoc.analysis_status === 'completed' && policyDoc.analysis_result && (
-                                                            <button
-                                                                onClick={async () => {
-                                                                    const orgName = (submission?.profiles as any)?.organization_name || (submission?.profiles as any)?.name || "The Client";
-                                                                    const doc = await generatePolicyAnalysisPDF(policyDoc.analysis_result as PolicyAnalysisResult, orgName);
-                                                                    doc.save(`Cyber_Policy_Analysis_${orgName.replace(/\s+/g, '_')}.pdf`);
-                                                                    toast.success("AI Analysis report downloaded");
-                                                                }}
-                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-si-red/20 hover:bg-si-red/30 border border-si-red/30 rounded-xl text-[10px] font-black text-si-red uppercase tracking-widest transition-all"
-                                                            >
-                                                                <FileText className="w-3 h-3" />
-                                                                Download AI Analysis (PDF)
-                                                            </button>
-                                                        )}
+                                                        <div className="flex flex-col items-start gap-2 mt-1">
+                                                            {/* AI Analysis Trigger / Status */}
+                                                            {(!policyDoc.analysis_status || 
+                                                              policyDoc.analysis_status === 'pending' || 
+                                                              policyDoc.analysis_status === 'failed') && (
+                                                                <button
+                                                                    onClick={runPolicyAnalysis}
+                                                                    disabled={isAnalyzingPolicy}
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-white/60 hover:text-white uppercase tracking-widest transition-all disabled:opacity-50"
+                                                                >
+                                                                    {isAnalyzingPolicy ? (
+                                                                        <>
+                                                                            <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                                                                            Triggering AI...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Zap className="w-3 h-3 text-amber-400" />
+                                                                            Run AI Analysis
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            )}
 
-                                                        {policyDoc.analysis_status === 'processing' && (
-                                                            <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[10px] font-black text-amber-500 uppercase tracking-widest">
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                                AI Analyzing Policy...
-                                                            </div>
-                                                        )}
+                                                            {policyDoc.analysis_status === 'completed' && policyDoc.analysis_result && (
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        const orgName = (submission?.profiles as any)?.organization_name || (submission?.profiles as any)?.name || "The Client";
+                                                                        const doc = await generatePolicyAnalysisPDF(policyDoc.analysis_result as PolicyAnalysisResult, orgName);
+                                                                        doc.save(`Cyber_Policy_Analysis_${orgName.replace(/\s+/g, '_')}.pdf`);
+                                                                        toast.success("AI Analysis report downloaded");
+                                                                    }}
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-[10px] font-black text-emerald-400 uppercase tracking-widest transition-all"
+                                                                >
+                                                                    <FileText className="w-3 h-3" />
+                                                                    Download AI Analysis (PDF)
+                                                                </button>
+                                                            )}
+
+                                                            {policyDoc.analysis_status === 'processing' && (
+                                                                <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                    AI Analyzing Policy...
+                                                                </div>
+                                                            )}
                                                     </div>
                                                 </div>
                                             ) : (

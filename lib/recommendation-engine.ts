@@ -99,9 +99,21 @@ export async function generateRemediationPlan(result: ScoringResult, dossier?: C
             throw new Error("Gemini returned an empty response.");
         }
 
-        return JSON.parse(text) as RemediationPlan;
+        const parsed = JSON.parse(text);
+        
+        // Robust validation for RemediationPlan
+        const plan: RemediationPlan = {
+            executiveSummary: parsed.executiveSummary || "Underwriting review recommended based on identified risks.",
+            steps: Array.isArray(parsed.steps) ? parsed.steps : []
+        };
+
+        return plan;
     } catch (error) {
         console.error("Error generating Remediation Plan:", error);
-        throw error;
+        // Return a basic plan instead of crashing
+        return {
+            executiveSummary: "Strategic remediation needed. Manual review of failed controls and low-scoring domains is advised.",
+            steps: []
+        };
     }
 }

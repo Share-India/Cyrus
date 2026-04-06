@@ -26,38 +26,34 @@ export async function POST(req: Request) {
             .update({ analysis_status: "processing" })
             .eq("id", documentId);
 
-        // 3. Download file from storage
-        const { data: fileData, error: storageError } = await supabase.storage
-            .from("policy-documents")
-            .download(document.file_path);
-
-        if (storageError || !fileData) throw new Error(storageError?.message || "Failed to download file");
-
-        const buffer = Buffer.from(await fileData.arrayBuffer());
-
-        // 4. Mime type determination (can refine this based on extension)
+        // Compute mimeType based on extension for n8n
         let mimeType = "application/pdf";
         if (document.file_name.endsWith(".docx")) mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
         else if (document.file_name.endsWith(".png")) mimeType = "image/png";
         else if (document.file_name.endsWith(".jpg") || document.file_name.endsWith(".jpeg")) mimeType = "image/jpeg";
 
-        // 5. Run AI Analysis
-        console.log(`[AI Analysis] Starting analysis for: ${document.file_name}`);
-        const analysis = await analyzePolicyDocument(buffer, mimeType);
+        // 3. Trigger n8n Workflow
+        console.log(`[n8n Analysis] Triggering specialized workflow for: ${document.file_name}`);
+        
+        // Use internal Docker network URL 'n8n:5678' for server-to-server communication
+        const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || "http://n8n:5678/webhook/analyze-policy";
 
-        // 6. Save results to database
-        const { error: updateError } = await supabase
-            .from("policy_documents")
-            .update({
-                analysis_result: analysis,
-                analysis_status: "completed"
+        const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                documentId,
+                file_path: document.file_path,
+                mimeType: mimeType 
             })
-            .eq("id", documentId);
+        });
 
-        if (updateError) throw new Error(updateError.message);
+        if (!n8nResponse.ok) {
+            throw new Error(`n8n Trigger Failed: ${n8nResponse.statusText}`);
+        }
 
-        console.log(`[AI Analysis] Completed analysis for: ${document.file_name}`);
-        return NextResponse.json({ success: true, analysis });
+        console.log(`[n8n Analysis] Workflow triggered successfully for: ${document.file_name}`);
+        return NextResponse.json({ success: true, message: "Analysis initiated via n8n" });
 
     } catch (err: any) {
         console.error("[AI Analysis Error]", err);

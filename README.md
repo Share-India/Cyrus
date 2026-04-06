@@ -56,29 +56,18 @@ CYRUS.PRO is designed for technical underwriters and risk analysts handling comp
 | **Forms** | React Hook Form + Zod |
 | **Reporting** | jsPDF + jsPDF-AutoTable, ExcelJS / xlsx |
 | **Charts** | Recharts |
-| **Analytics** | Vercel Analytics |
+| **Automation** | n8n (Asynchronous Workflow Engine) |
+| **Containerization**| Docker & Docker Compose |
+| **OSINT** | Shodan API |
 
 ---
 
-## 📁 Project Structure
-
-```
-├── app/
-│   ├── api/
-│   │   ├── generate-dossier/   # AI dossier generation endpoint (Gemini)
-│   │   ├── assessments/        # Assessment CRUD API
-│   │   ├── excel/              # Excel report generation
-│   │   ├── intelligence/       # Risk intelligence endpoints
-│   │   ├── industries/         # Industry metadata API
-│   │   ├── health/             # Health check endpoint
-│   │   └── log/                # Server-side logging
-│   ├── admin/                  # Admin command center
-│   ├── assessment/             # Questionnaire flow
-│   ├── dashboard/              # User dashboard
-│   ├── welcome/                # Onboarding + dossier generation
-│   ├── login/                  # Auth pages
-│   ├── auth/                   # Auth callbacks & reset password
-│   └── settings/               # User settings
+├── infrastructure/             # Automation & Docker configuration
+│   ├── n8n/                    # n8n custom data and workflows
+│   ├── start-automation.sh     # One-click docker startup script
+│   └── *_workflow.json         # n8n workflow export files
+├── docker-compose.yml          # Full stack containerization
+├── Dockerfile                  # Next.js production build config
 ├── components/                 # Shared UI components
 ├── context/                    # React context (underwriting state)
 ├── lib/
@@ -90,6 +79,25 @@ CYRUS.PRO is designed for technical underwriters and risk analysts handling comp
 └── styles/
     └── globals.css
 ```
+
+---
+
+## 🛠️ Infrastructure & Automation
+
+CYRUS.PRO uses a self-hosted **n8n** automation engine to offload heavy AI processing and OSINT research. This ensures the frontend remains highly responsive even during complex risk synthesis.
+
+### 🐳 Docker Deployment
+The entire stack (Next.js, n8n, PostgreSQL) is containerized for consistent deployment.
+
+```bash
+# Start the full automation stack
+sh infrastructure/start-automation.sh
+```
+
+### 🤖 n8n Workflows
+- **CYRUS - Dossier Generation**: Triggers on new client onboarding; uses Shodan and Gemini to build intelligence profiles.
+- **CYRUS - AI Policy Analysis**: Triggered from the Admin panel; scans policy documents for risk vectors.
+- **CYRUS - Master Document Management**: Generates final Executive Master Dockets and stores them in Supabase.
 
 ---
 
@@ -144,9 +152,8 @@ npm run seed
 
 ## 🔌 API Reference
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/generate-dossier` | `POST` | Generate an AI org intelligence dossier |
+| `/api/generate-dossier` | `POST` | Trigger AI dossier generation (n8n) |
+| `/api/analyze-policy` | `POST` | Trigger document risk analysis (n8n) |
 | `/api/assessments` | `GET/POST` | List / create assessments |
 | `/api/excel` | `POST` | Export assessment as Excel report |
 | `/api/intelligence` | `GET` | Retrieve risk intelligence data |

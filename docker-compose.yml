@@ -1,6 +1,24 @@
-version: '3.8'
-
 services:
+  # 1. The Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyrus_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}
+      - SHODAN_API_KEY=${SHODAN_API_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    networks:
+      - cyrus_network
+
+  # 2. n8n Database (Postgres)
   db:
     image: postgres:16-alpine
     container_name: cyrus_n8n_db
@@ -12,13 +30,16 @@ services:
     volumes:
       - n8n_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cyrus_admin -d n8n_data"]
+      test: [ "CMD-SHELL", "pg_isready -U cyrus_admin -d n8n_data" ]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - cyrus_network
 
+  # 3. n8n Automation Engine
   n8n:
-    image: docker.n8n.io/n8n/n8n
+    image: n8nio/n8n:latest
     container_name: cyrus_n8n_automation
     restart: always
     ports:
@@ -33,18 +54,25 @@ services:
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=cyrus_admin
       - DB_POSTGRESDB_PASSWORD=cyrus_vault_pass
+
+      - N8N_BLOCK_ENV_ACCESS_IN_EXPRESSIONS=false
       
       - N8N_HOST=localhost
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - NODE_ENV=production
-      
+
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=CyrusAutomation123!
-      
     volumes:
       - n8n_app_data:/home/node/.n8n
+    networks:
+      - cyrus_network
+
+networks:
+  cyrus_network:
+    driver: bridge
 
 volumes:
   n8n_db_data:

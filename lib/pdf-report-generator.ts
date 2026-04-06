@@ -403,9 +403,10 @@ export async function downloadPDFSummary(
         doc.text('ACTIONABLE STEPS', 15, yPosition)
         yPosition += 5
 
-        const planData = remediationPlan.steps.map(step => [
+        const steps = Array.isArray(remediationPlan.steps) ? remediationPlan.steps : []
+        const planData = steps.map(step => [
             step.domain,
-            step.impact.toUpperCase(),
+            step.impact?.toUpperCase() || 'MODERATE',
             step.action,
             step.rationale
         ])

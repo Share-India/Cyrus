@@ -17,8 +17,18 @@ export async function POST(req: Request) {
         console.log(`[Dossier API] Generating dynamic intelligence for: ${organizationName} (${websiteUrl || "No URL"})`);
 
         try {
-            // Attempt to build the dossier dynamically using Gemini + Google Search
-            const dynamicDossier = await buildDynamicDossier(organizationName, websiteUrl);
+            // Trigger n8n Workflow for Dossier Generation
+            const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || "http://n8n:5678/webhook/generate-dossier";
+
+            const response = await fetch(N8N_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ organizationName, websiteUrl }),
+            });
+
+            if (!response.ok) throw new Error('n8n Dossier Generation Failed');
+            
+            const dynamicDossier = await response.json();
             return NextResponse.json(dynamicDossier);
         } catch (geminiError) {
             console.error("[Dossier API] Gemini Generation Failed:", geminiError);

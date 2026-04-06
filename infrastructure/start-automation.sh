@@ -2,16 +2,21 @@
 
 # CYRUS.PRO - n8n Automation Starter
 # This script handles Docker initialization and public HTTPS tunneling 
-# for environments without a dedicated domain name.
 
 echo "🚀 Initializing CYRUS n8n Production-Lite Stack..."
 
-# 1. Start Docker Stack (n8n + Postgres)
-docker-compose -f infrastructure/docker-compose-n8n.yml up -d
+# 1. Load environment variables for Docker
+if [ -f .env.local ]; then
+  export $(grep -v '^#' .env.local | xargs)
+fi
 
-echo "✅ Docker Services are running in the background."
-echo "🔗 Creating a secure HTTPS tunnel via Cloudflare..."
+# 2. Start Unified Docker Stack (App + n8n + Postgres)
+# Removing 'version' attribute warning by using docker-compose natively
+docker compose up -d --build
 
-# 2. Start Cloudflare Quick Tunnel
-# We use 'npx' to run cloudflared without requiring global install
-npx -y @cloudflare/cloudflared tunnel --url http://localhost:5678 
+echo "✅ Docker Services are initializing in the background."
+echo "🔗 Creating a secure HTTPS tunnel via LocalTunnel..."
+
+# 3. Start LocalTunnel for n8n Webhooks (HTTPS)
+# This will output a public URL you can use in your .env.local
+npx -y localtunnel --port 5678
