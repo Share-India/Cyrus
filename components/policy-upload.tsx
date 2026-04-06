@@ -31,6 +31,7 @@ export function PolicyUpload({ assessmentId, userId, documentType = 'policy', on
     const [uploadProgress, setUploadProgress] = useState(0)
     const [uploadedFile, setUploadedFile] = useState<{ name: string; path: string } | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'completed' | 'error'>('idle')
 
     const validateFile = (file: File): string | null => {
         if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -52,6 +53,7 @@ export function PolicyUpload({ assessmentId, userId, documentType = 'policy', on
         setError(null)
         setIsUploading(true)
         setUploadProgress(10)
+        setAnalysisStatus('idle')
 
         try {
             const timestamp = Date.now()
@@ -75,7 +77,7 @@ export function PolicyUpload({ assessmentId, userId, documentType = 'policy', on
             setUploadProgress(70)
 
             // Insert metadata record
-            const { error: dbError } = await supabase
+            const { data: insertedDoc, error: dbError } = await supabase
                 .from("policy_documents")
                 .insert({
                     user_id: userId,
@@ -85,6 +87,8 @@ export function PolicyUpload({ assessmentId, userId, documentType = 'policy', on
                     file_path: filePath,
                     file_size: file.size,
                 })
+                .select()
+                .single()
 
             if (dbError) {
                 throw new Error(dbError.message)
@@ -93,12 +97,34 @@ export function PolicyUpload({ assessmentId, userId, documentType = 'policy', on
             setUploadProgress(100)
             setUploadedFile({ name: file.name, path: filePath })
             onUploadComplete?.(filePath, file.name)
+
+            // Trigger AI Analysis automatically
+            if (documentType === 'policy' && insertedDoc?.id) {
+                setAnalysisStatus('analyzing')
+                try {
+                    const analysisResponse = await fetch('/api/analyze-policy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ documentId: insertedDoc.id })
+                    })
+
+                    if (analysisResponse.ok) {
+                        setAnalysisStatus('completed')
+                    } else {
+                        setAnalysisStatus('error')
+                    }
+                } catch (e) {
+                    console.error("Analysis trigger failed", e)
+                    setAnalysisStatus('error')
+                }
+            }
+
         } catch (err: any) {
             setError(err.message || "Upload failed. Please try again.")
         } finally {
             setIsUploading(false)
         }
-    }, [supabase, userId, assessmentId, onUploadComplete])
+    }, [supabase, userId, assessmentId, documentType, onUploadComplete])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]

@@ -45,13 +45,16 @@ import {
     Scale,
     Activity,
     LayoutDashboard,
-    Upload
+    Upload,
+    Loader2
 } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import { downloadAssessmentReport } from "@/lib/report-generator"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
+import { generatePolicyAnalysisPDF } from "@/lib/policy-report-generator"
+import { PolicyAnalysisResult } from "@/lib/policy-analyzer"
 
 import {
     Radar,
@@ -102,7 +105,7 @@ export default function SubmissionDetails() {
     const [submission, setSubmission] = useState<DetailedSubmission | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [benchmarkData, setBenchmarkData] = useState<any[]>([])
-    const [policyDoc, setPolicyDoc] = useState<{ file_name: string; file_path: string; uploaded_at: string; download_url?: string } | null>(null)
+    const [policyDoc, setPolicyDoc] = useState<{ id: string; file_name: string; file_path: string; uploaded_at: string; download_url?: string; analysis_result?: any; analysis_status?: string } | null>(null)
     const [auditDoc, setAuditDoc] = useState<{ file_name: string; file_path: string; uploaded_at: string; download_url?: string } | null>(null)
     const [isPolicyLoading, setIsPolicyLoading] = useState(false)
     const [recommendations, setRecommendations] = useState<Recommendation[]>([])
@@ -190,7 +193,7 @@ export default function SubmissionDetails() {
             // Fetch all documents for this user/assessment
             const { data } = await supabase
                 .from('policy_documents')
-                .select('file_name, file_path, uploaded_at, document_type')
+                .select('id, file_name, file_path, uploaded_at, document_type, analysis_result, analysis_status')
                 .or(`assessment_id.eq.${params.id},user_id.eq.${submission.user_id}`)
                 .order('uploaded_at', { ascending: false })
 
@@ -768,19 +771,43 @@ export default function SubmissionDetails() {
                                                     <span className="text-[10px] font-bold text-white/30 block">
                                                         {new Date(policyDoc.uploaded_at).toLocaleDateString()} {new Date(policyDoc.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
-                                                    {policyDoc.download_url ? (
-                                                        <a
-                                                            href={policyDoc.download_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-2 mt-1 px-4 py-2 bg-si-blue-primary/20 hover:bg-si-blue-primary/30 border border-si-blue-primary/30 rounded-xl text-[10px] font-black text-si-blue-primary uppercase tracking-widest transition-all"
-                                                        >
-                                                            <Download className="w-3 h-3" />
-                                                            Download Policy
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold text-white/20 uppercase">Generating link...</span>
-                                                    )}
+                                                    <div className="flex flex-col gap-2">
+                                                        {policyDoc.download_url ? (
+                                                            <a
+                                                                href={policyDoc.download_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-2 mt-1 px-4 py-2 bg-si-blue-primary/20 hover:bg-si-blue-primary/30 border border-si-blue-primary/30 rounded-xl text-[10px] font-black text-si-blue-primary uppercase tracking-widest transition-all"
+                                                            >
+                                                                <Download className="w-3 h-3" />
+                                                                Download Policy
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold text-white/20 uppercase">Generating link...</span>
+                                                        )}
+
+                                                        {policyDoc.analysis_status === 'completed' && policyDoc.analysis_result && (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const orgName = (submission?.profiles as any)?.organization_name || (submission?.profiles as any)?.name || "The Client";
+                                                                    const doc = await generatePolicyAnalysisPDF(policyDoc.analysis_result as PolicyAnalysisResult, orgName);
+                                                                    doc.save(`Cyber_Policy_Analysis_${orgName.replace(/\s+/g, '_')}.pdf`);
+                                                                    toast.success("AI Analysis report downloaded");
+                                                                }}
+                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-si-red/20 hover:bg-si-red/30 border border-si-red/30 rounded-xl text-[10px] font-black text-si-red uppercase tracking-widest transition-all"
+                                                            >
+                                                                <FileText className="w-3 h-3" />
+                                                                Download AI Analysis (PDF)
+                                                            </button>
+                                                        )}
+
+                                                        {policyDoc.analysis_status === 'processing' && (
+                                                            <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                AI Analyzing Policy...
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/30 uppercase tracking-widest">
