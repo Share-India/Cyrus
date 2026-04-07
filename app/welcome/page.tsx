@@ -71,14 +71,7 @@ export default function WelcomePage() {
             const websiteUrl = userProfile.organization_website || userProfile.website || ""
             const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
 
-            // 1. Check hardcoded first for instant load on known orgs
-            const staticDossier = getDossier(orgName)
-
-            if (staticDossier) {
-                setDossier(staticDossier)
-                setShowDossierModal(true)
-                return
-            }
+            // 1. Bypass static hardcoded dossiers and immediately check cache or call API
 
             // 2. Check LocalStorage Cache to save API Tokens
             const cachedData = localStorage.getItem(localCacheKey)

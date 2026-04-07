@@ -17,34 +17,16 @@ export async function POST(req: Request) {
         console.log(`[Dossier API] Generating dynamic intelligence for: ${organizationName} (${websiteUrl || "No URL"})`);
 
         try {
-            // Trigger n8n Workflow for Dossier Generation
-            const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || "http://n8n:5678/webhook/generate-dossier";
-
-            const response = await fetch(N8N_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ organizationName, websiteUrl }),
-            });
-
-            if (!response.ok) throw new Error('n8n Dossier Generation Failed');
-            
-            const dynamicDossier = await response.json();
+            // Native Next.js Gemini + Shodan pipeline (from yesterday)
+            const dynamicDossier = await buildDynamicDossier(organizationName, websiteUrl);
             return NextResponse.json(dynamicDossier);
         } catch (geminiError) {
             console.error("[Dossier API] Gemini Generation Failed:", geminiError);
             
-            // Fallback to local hardcoded/generic dossier
-            console.log("[Dossier API] Falling back to static intelligence engine.");
-            const fallbackDossier = getDossier(organizationName);
-            
-            if (fallbackDossier) {
-                return NextResponse.json(fallbackDossier);
-            } else {
-                return NextResponse.json(
-                    { error: "Failed to generate dossier and no fallback available." },
-                    { status: 500 }
-                );
-            }
+            return NextResponse.json(
+                { error: "Failed to generate dossier via AI Search. Please try again." },
+                { status: 500 }
+            );
         }
     } catch (error) {
         console.error("[Dossier API] Request Parsing Error:", error);
