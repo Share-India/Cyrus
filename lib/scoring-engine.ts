@@ -1,5 +1,5 @@
-// SHARE INDIA CYBER INSURANCE - UNIFIED UNDERWRITING MODEL
 // Matching exact Excel structure with 96 questions and killer logic
+import { siteConfig } from "./site-config"
 
 export const MODEL_VERSION = "2.1.0";
 
@@ -2403,17 +2403,19 @@ function getRiskTier(
       score: number,
       isAutoDeclined: boolean,
 ): { tier: "A" | "B" | "C" | "D"; premium: string } {
-      if (isAutoDeclined || score < 60) {
-            return { tier: "D", premium: "Decline" }
+      const { thresholds, labels } = siteConfig.scoring;
+
+      if (isAutoDeclined || score < thresholds.tierC) {
+            return { tier: "D", premium: labels.tierD }
       }
 
-      if (score >= 90) {
-            return { tier: "A", premium: "Base Rate" }
+      if (score >= thresholds.tierA) {
+            return { tier: "A", premium: labels.tierA }
       }
-      if (score >= 75) {
-            return { tier: "B", premium: "+20%" }
+      if (score >= thresholds.tierB) {
+            return { tier: "B", premium: labels.tierB }
       }
-      return { tier: "C", premium: "+50%" }
+      return { tier: "C", premium: labels.tierC }
 }
 
 function generateUnderwritingNarrative(
@@ -2497,11 +2499,12 @@ function generateUnderwritingNarrative(
 }
 
 export function getCurrentPremiumLoading(riskTier: string): string {
+      const { labels } = siteConfig.scoring;
       switch (riskTier) {
-            case "A": return "Base Rate"
-            case "B": return "+20%"
-            case "C": return "+50%"
-            case "D": return "Decline"
+            case "A": return labels.tierA
+            case "B": return labels.tierB
+            case "C": return labels.tierC
+            case "D": return labels.tierD
             default: return "Pending"
       }
 }

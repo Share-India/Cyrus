@@ -137,7 +137,7 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
 
     // Model 1: Search-enabled for unstructured intelligence gathering
     const searchModel = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: process.env.AI_MODEL || "gemini-2.0-flash",
         generationConfig: {
             temperature: 0.2,
         },
@@ -147,7 +147,7 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
 
     // Model 2: Strict JSON schema extraction (no tools)
     const extractionModel = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: process.env.AI_MODEL || "gemini-2.0-flash",
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: dossierSchema,
@@ -160,28 +160,27 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
         : `The organization is "${organizationName}".`;
 
     const researchPrompt = `
-        You are an elite Cyber Threat Intelligence (CTI) and corporate analyst AI.
-        Your task is to gather massive, highly detailed, up-to-date, and accurate intelligence for:
-        
-        ${targetContext}
+        You are a Tier-1 Forensic Cyber Underwriter at a global reinsurance firm.
+        Perform a deep-dive OSINT synthesis for the organization: "${organizationName}".
+        ${websiteUrl ? `Primary URL for reconnaissance: ${websiteUrl}` : ''}
 
         ${shodanPrompt}
 
-        Instructions:
-        1. Use your integrated Google Search tool to find the most recent, real-world information about this company.
-        2. If a website URL is provided, prioritize understanding their operations from there.
-        3. Write a comprehensive, unstructured written briefing covering:
-           - Full Official Name, Headquarters, Year Founded, Leadership (CEO/Founders), Estimated Employees, and Annual Revenue.
-           - A detailed Corporate Legacy (history and market dominance).
-           - Core Product/Service Portfolio and Business Model.
-           - Key Revenue Streams and Notable Clients/Industries Served.
-           - Operational Geographic Reach and Key Corporate Milestones.
-           - A list of Critical Digital Assets (infrastructure, software, and data they hold).
-           - Supply Chain Exposure (deep analysis of vendor dependencies and vulnerabilities).
-           - Regulatory Environment they operate in.
-           - A highly realistic, devastating Cyber Threat Narrative (think like an underwriter: how would a ransomware attack or data breach devastate their specific operations?).
-           - 5 Highly Specific Quantifiable Cyber Risk Factors (with realistic risk scores from 0-100 and deep business reasoning for each).
-        4. Focus on deep specificity. Do NOT use generic statements. Name actual products, real competitors, proper locations, specific laws, and highly tailored attack vectors.
+        REQUIRED STANDARDS (ELITE SPECIFICITY ONLY):
+        1. **Leadership**: Identify the specific CEO, MD, or Authorized Signatory by name (e.g., "M.S. Sreedhar, MD"). NO generic "Management Team".
+        2. **Revenue/Scale**: Hunt for exact annual revenue or valuation (e.g., "INR 3,500 Cr", "USD 450M"). Identify exact employee headcount ranges.
+        3. **Business Model**: Explain the technical nature of their operations (e.g., "Direct-to-consumer digital insurance node with API-led distribution strategy"). 
+        4. **Portfolio**: List 4-6 specific products or service lines (e.g., "Commercial Casualty", "Retail Health", "SME Cyber").
+        5. **Cyber Risk Narrative**: Synthesized as highly technical risk factors with realistic business reasoning referencing specific laws like India's DPDP Act 2023 or IRDAI frameworks. 
+        6. **Digital Asset Inventory**: Be granular. List specific systems they likely use (e.g., "SAP S/4HANA ERP", "Direct API Gateways to HDFC Bank", "PHI Data for 2M+ patients").
+
+        STRICT FORBIDDEN LIST:
+        - NO "N/A" or "Unknown".
+        - NO "Leading service provider".
+        - NO generic "Data security risk".
+        - NO placeholders like "[CEO NAME]".
+
+        Format your research as a dense narrative block of technical intel first, followed by the specific data points requested.
     `;
 
     try {

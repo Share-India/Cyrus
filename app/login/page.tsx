@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "framer-motion"
 import { Loader2, Mail, Phone, ShieldCheck, ArrowRight, CheckCircle2, ShieldAlert, Lock, User, Shield, ChevronRight, Building2, Briefcase, Globe } from "lucide-react"
 import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
+import { siteConfig } from "@/lib/site-config"
 
 type AuthStep = "identifier" | "verification"
 type AuthMode = "otp" | "password"
@@ -261,15 +262,15 @@ export default function LoginPage() {
 
                 <div className="relative z-10 flex flex-col h-full">
                     <div className="flex items-center gap-6 mb-24">
-                        <img src="/share-india-new.png" alt="Share India" className="h-12 w-auto brightness-0 invert" />
+                        <img src="/share-india-new.png" alt={siteConfig.name} className="h-12 w-auto brightness-0 invert" />
                         <div className="h-10 w-[1px] bg-white/10" />
-                        <span className="text-xs font-black text-white/30 uppercase tracking-[0.5em]">Risk Division</span>
+                        <span className="text-xs font-black text-white/30 uppercase tracking-[0.5em]">{siteConfig.tagline.split(' ')[0]} Division</span>
                     </div>
 
                     <div className="flex-1 flex flex-col justify-center">
-                        <h1 className="text-6xl lg:text-8xl font-black text-white font-outfit tracking-tighter leading-[0.9] mb-12 italic">
-                            Cyber Insurance <br />
-                            <span className="text-si-blue-primary not-italic">Audit.</span>
+                        <h1 className="text-5xl lg:text-7xl font-black text-white font-outfit tracking-tighter leading-[0.9] mb-12 italic">
+                            Cyber Risk <br />
+                            <span className="text-si-blue-primary not-italic">Underwriting System.</span>
                         </h1>
                         <p className="text-xl text-white/40 font-medium max-w-md leading-relaxed">
                             Start your audit session. Authorized access only. Securely encrypted.
@@ -284,7 +285,7 @@ export default function LoginPage() {
                                 Secure Login
                             </span>
                         </div>
-                        <img src="/share-india-monogram.png" alt="Share India" className="w-12 h-12 opacity-10" />
+                        <img src="/share-india-monogram.png" alt={siteConfig.name} className="w-12 h-12 opacity-10" />
                     </div>
                 </div>
             </div>

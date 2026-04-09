@@ -46,7 +46,8 @@ import {
     Activity,
     LayoutDashboard,
     Upload,
-    Loader2
+    Loader2,
+    Globe
 } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -225,6 +226,40 @@ export default function SubmissionDetails() {
     const [isFinalizing, setIsFinalizing] = useState(false)
     const [isFinalized, setIsFinalized] = useState(false)
     const [isAnalyzingPolicy, setIsAnalyzingPolicy] = useState(false)
+    const [isEnriching, setIsEnriching] = useState(false)
+
+    const runEnrichment = async () => {
+        if (!submission?.user_id) return;
+        setIsEnriching(true);
+        try {
+            const orgName = (submission.profiles as any)?.organization_name || (submission.profiles as any)?.name;
+            const website = (submission.profiles as any)?.organization_website || (submission.profiles as any)?.website;
+
+            const response = await fetch('/api/generate-dossier', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    organizationName: orgName, 
+                    websiteUrl: website,
+                    userId: submission.user_id
+                }),
+            });
+
+            if (!response.ok) throw new Error('Enrichment failed');
+            
+            toast.success("Intelligence Enrichment Complete!", {
+                description: "The organizational dossier has been refreshed with real-time OSINT data."
+            });
+            
+            // Refresh page to show new data
+            router.refresh();
+        } catch (e: any) {
+            console.error(e);
+            toast.error("Enrichment failed. Please try again.");
+        } finally {
+            setIsEnriching(false);
+        }
+    };
 
     const runPolicyAnalysis = async () => {
         if (!policyDoc?.id) return;
@@ -768,6 +803,25 @@ export default function SubmissionDetails() {
                                                                     )}
                                                                 </button>
                                                             )}
+
+                                                            {/* OSINT Enrichment Trigger */}
+                                                            <button
+                                                                onClick={runEnrichment}
+                                                                disabled={isEnriching}
+                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-si-blue-primary/10 hover:bg-si-blue-primary/20 border border-si-blue-primary/20 rounded-xl text-[10px] font-black text-si-blue-primary uppercase tracking-widest transition-all disabled:opacity-50"
+                                                            >
+                                                                {isEnriching ? (
+                                                                    <>
+                                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        OSINT Scanning...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Globe className="w-3 h-3" />
+                                                                        Enrich Risk Intel
+                                                                    </>
+                                                                )}
+                                                            </button>
 
                                                             {policyDoc.analysis_status === 'completed' && policyDoc.analysis_result && (
                                                                 <button

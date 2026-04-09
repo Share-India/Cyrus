@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "generate-dossier",
+        "responseMode": "responseNode",
         "options": {}
       },
       "id": "webhook-trigger",
@@ -16,24 +17,20 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.shodan.io/shodan/host/search?key={{ $env.SHODAN_API_KEY }}&query=hostname:{{ $json.body.websiteUrl.replace(/^https?:\\/\\//, '').replace(/^www\\./, '') }}",
+        "url": "=https://api.shodan.io/shodan/host/search?key={{ $env.SHODAN_API_KEY }}&query=hostname:{{ $node[\"Webhook\"].json.body.websiteUrl.replace(/^https?:\\/\\//, '').replace(/^www\\./, '') }}",
         "options": {}
       },
       "id": "shodan-recon",
       "name": "Shodan Recon",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [450, 300]
+      "position": [450, 300],
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "model": "gemini-2.0-flash",
-        "messages": [
-          {
-            "role": "user",
-            "content": "Generate a comprehensive Cyber Risk Dossier for the organization: {{ $node[\"webhook-trigger\"].json.body.organizationName }}. \n\nTechnical Intelligence Found:\n{{ JSON.stringify($json) }}\n\nInclude: Headquarters, Leadership, Business Model, and a realistic Cyber Threat Narrative."
-          }
-        ],
+        "model": "={{ $env.AI_MODEL || \"gemini-2.0-flash\" }}",
+        "prompt": "=Generate a comprehensive Cyber Risk Dossier for the organization: {{ $node[\"Webhook\"].json.body.organizationName }}. \n\nTarget Website: {{ $node[\"Webhook\"].json.body.websiteUrl }}\n\nIMPORTANT: You are a professional cyber risk analyst. Synthesize a structured JSON object matching the cyrus_dossier schema. \n\nTECHNICAL CONTEXT (Shodan OSINT):\n{{ JSON.stringify($json) }}\n\nFALLBACK INSTRUCTIONS:\n- If Technical OSINT data is sparse, empty, or unreachable, use your pre-trained general knowledge of this organization to provide a deep threat narrative.\n- Focus on real-world HQ locations, leadership, and revenue scale.\n- Ensure the 'narrative' field is professional, objective, and detailed.\n- Return ONLY the JSON object.",
         "options": {
           "responseMimeType": "application/json"
         }
@@ -42,13 +39,18 @@
       "name": "Gemini Dossier Builder",
       "type": "n8n-nodes-base.googleGemini",
       "typeVersion": 1,
-      "position": [650, 300]
+      "position": [650, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "Google Gemini API"
+        }
+      }
     },
     {
       "parameters": {
         "options": {
           "responseCode": 200,
-          "responseBody": "={{ $json.text }}"
+          "responseBody": "={{ $json }}"
         }
       },
       "id": "respond-to-webhook",
@@ -59,15 +61,15 @@
     }
   ],
   "connections": {
-    "webhook-trigger": { "main": [[{ "node": "shodan-recon", "type": "main", "index": 0 }]] },
+    "Webhook": { "main": [[{ "node": "shodan-recon", "type": "main", "index": 0 }]] },
     "shodan-recon": { "main": [[{ "node": "gemini-dossier-builder", "type": "main", "index": 0 }]] },
     "gemini-dossier-builder": { "main": [[{ "node": "respond-to-webhook", "type": "main", "index": 0 }]] }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1",
+  "versionId": "2",
   "id": "2",
   "meta": { "templateId": "cyrus-dossier-generation" }
 }

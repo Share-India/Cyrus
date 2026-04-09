@@ -8,6 +8,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { INDUSTRY_PROFILES } from "@/lib/scoring-engine"
 import { motion, AnimatePresence } from "framer-motion"
+import { siteConfig } from "@/lib/site-config"
 
 export default function WelcomePage() {
     const {
@@ -154,11 +155,11 @@ export default function WelcomePage() {
                                         </div>
                                         <div>
                                             <h3 className="text-2xl font-black text-si-navy font-outfit tracking-tight">Synthesizing Intelligence</h3>
-                                            <p className="text-sm text-slate-500 font-medium mt-2 max-w-sm mx-auto">CYRUS.PRO is searching the web and analyzing your organization&apos;s digital risk profile. This may take 15–30 seconds.</p>
+                                            <p className="text-sm text-slate-500 font-medium mt-2 max-w-sm mx-auto">CYRUS.PRO is searching the web and performing OSINT scans to analyze your organization&apos;s digital risk profile. This may take 15–30 seconds.</p>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs font-semibold text-si-blue-primary bg-si-blue-primary/10 px-4 py-2 rounded-full border border-si-blue-primary/20">
                                             <Loader2 className="w-3 h-3 animate-spin" />
-                                            Powered by Gemini + Google Search
+                                            Powered by Gemini + Google Search + Shodan
                                         </div>
                                     </div>
                                 )}
@@ -499,8 +500,10 @@ export default function WelcomePage() {
                     <img src="/share-india-new.png" alt="Share India" className="h-9 w-auto" />
                     <div className="h-8 w-[1px] bg-slate-200" />
                     <div>
-                        <h1 className="text-xl font-black text-si-navy font-outfit tracking-tight">CYRUS<span className="text-si-blue-primary">.PRO</span></h1>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Cyber Audit</p>
+                        <h1 className="text-lg font-black text-si-navy font-outfit tracking-tight leading-none">
+                            {siteConfig.name}<span className="text-si-blue-primary">.</span>
+                        </h1>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Elite Audit</p>
                     </div>
                 </div>
 
@@ -679,9 +682,45 @@ export default function WelcomePage() {
                                 </div>
 
                                 {(() => {
-                                    const activeDossier = userProfile?.company_dossier || getDossier(userProfile?.organization_name);
+                                    // PRIORITY 1: Dynamic Dossier from API (Current Session)
+                                    // PRIORITY 2: Persisted Dossier from Profile (Database)
+                                    // PRIORITY 3: Static Template (Hardcoded legacy data)
+                                    const activeDossier = dossier || userProfile?.company_dossier || getDossier(userProfile?.organization_name);
+
+                                    // LOADING STATE: Show high-fidelity skeleton while AI is synthesizing
+                                    if (isDossierLoading) {
+                                        return (
+                                            <div className="space-y-8 animate-pulse">
+                                                <div className="flex items-center gap-5 opacity-50">
+                                                    <div className="w-14 h-14 bg-white/10 rounded-2xl" />
+                                                    <div className="space-y-2">
+                                                        <div className="h-6 w-48 bg-white/10 rounded" />
+                                                        <div className="h-3 w-32 bg-white/10 rounded" />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {[1, 2].map(i => <div key={i} className="h-16 bg-white/5 rounded-2xl border border-white/5" />)}
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="h-3 w-24 bg-white/10 rounded" />
+                                                    <div className="flex gap-2">
+                                                        {[1, 2, 3].map(i => <div key={i} className="h-8 w-20 bg-white/5 rounded-lg" />)}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="h-3 w-32 bg-white/10 rounded" />
+                                                    <div className="h-20 bg-white/5 rounded-2xl" />
+                                                </div>
+                                                <p className="text-[10px] text-si-blue-primary font-black uppercase tracking-widest text-center animate-bounce">
+                                                    Synthesizing OSINT Intelligence...
+                                                </p>
+                                            </div>
+                                        );
+                                    }
 
                                     if (activeDossier) {
+                                        const isGeneric = activeDossier.leadership === "Authorized Signatory" || !activeDossier.revenueStreams;
+
                                         return (
                                             <div className="space-y-8">
                                                 <div>
@@ -690,13 +729,13 @@ export default function WelcomePage() {
                                                         <div className="w-14 h-14 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center text-si-blue-primary group-hover:bg-si-blue-primary group-hover:text-white transition-all duration-500 flex-shrink-0">
                                                             <Building2 className="w-7 h-7" />
                                                         </div>
-                                                        <div>
-                                                            <h2 className="text-xl font-black font-outfit tracking-tight mb-0.5 italic text-white leading-tight underline decoration-si-blue-primary/30">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h2 className="text-xl font-black font-outfit tracking-tight mb-0.5 italic text-white leading-tight underline decoration-si-blue-primary/30 truncate">
                                                                 {activeDossier.name}
                                                             </h2>
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-si-blue-primary" />
-                                                                <span className="text-[9px] font-bold text-white/40 uppercase tracking-tighter">
+                                                                <span className="text-[9px] font-bold text-white/40 uppercase tracking-tighter truncate">
                                                                     {activeDossier.founded ? `Est. ${activeDossier.founded}` : 'Established Node'} • {activeDossier.hq || 'Global Reach'}
                                                                 </span>
                                                             </div>
@@ -711,16 +750,16 @@ export default function WelcomePage() {
                                                         <p className="text-[8px] text-white/40 mt-0.5 uppercase">Corporate Control</p>
                                                     </div>
                                                     <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
-                                                        <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-1.5">Capabilities</span>
-                                                        <p className="text-[10px] font-bold text-white/70 truncate">{activeDossier.legacy || 'Strategic Influence'}</p>
-                                                        <p className="text-[8px] text-white/40 mt-0.5 uppercase">Market Position</p>
+                                                        <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-1.5">Market Status</span>
+                                                        <p className="text-[10px] font-bold text-white/70 truncate">{activeDossier.annualRevenue || activeDossier.employees || 'Active Scale'}</p>
+                                                        <p className="text-[8px] text-white/40 mt-0.5 uppercase">Operational Magnitude</p>
                                                     </div>
                                                 </div>
 
                                                 <div>
                                                     <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-3">Core Portfolio</span>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {(activeDossier.portfolio || ["Standardized Infrastructure", "Secure Network Ops"]).map((item: string, idx: number) => (
+                                                        {(activeDossier.portfolio && activeDossier.portfolio.length > 0 ? activeDossier.portfolio.slice(0, 4) : ["Standardized Infrastructure", "Secure Network Ops"]).map((item: string, idx: number) => (
                                                             <div key={idx} className="px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-white/60 tracking-tight whitespace-nowrap hover:bg-si-blue-primary/10 hover:border-si-blue-primary/30 transition-colors">
                                                                 {item}
                                                             </div>
@@ -730,7 +769,7 @@ export default function WelcomePage() {
 
                                                 <div>
                                                     <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-3">Business Model</span>
-                                                    <p className="text-[10px] font-medium text-white/50 leading-relaxed italic">
+                                                    <p className="text-[10px] font-medium text-white/50 leading-relaxed italic line-clamp-3">
                                                         {activeDossier.businessModel || "Critical operator within the supply chain network managing interconnected vendor operations."}
                                                     </p>
                                                 </div>
@@ -769,7 +808,7 @@ export default function WelcomePage() {
                                                         </div>
                                                         <div className="flex-1">
                                                             <p className="text-[9px] font-medium text-white/40 leading-tight italic max-w-[200px]">
-                                                                Verified organizational profile active.
+                                                                {isGeneric ? "Generic profile active. Enhancing..." : "Verified organizational profile active."}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -789,109 +828,13 @@ export default function WelcomePage() {
                                         );
                                     }
 
+                                    // ABSOLUTE FALLBACK (Should rarely happen now)
                                     return (
-                                        <div className="space-y-8">
-                                            <div>
-                                                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Organizational Legacy</span>
-                                                <div className="flex items-center gap-5">
-                                                    <div className="w-14 h-14 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center text-si-blue-primary group-hover:bg-si-blue-primary group-hover:text-white transition-all duration-500 flex-shrink-0">
-                                                        <Building2 className="w-7 h-7" />
-                                                    </div>
-                                                    <div>
-                                                        <h2 className="text-xl font-black font-outfit tracking-tight mb-0.5 italic text-white leading-tight">
-                                                            {userProfile?.organization_name || "Unidentified Client"}
-                                                        </h2>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-si-blue-primary" />
-                                                            <span className="text-[9px] font-bold text-white/40 uppercase tracking-tighter">
-                                                                Verified Node • {INDUSTRY_PROFILES.find(p => p.id === userProfile?.industry || p.name === userProfile?.industry)?.name || "General Risk Profile"}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                                                <Building2 className="w-8 h-8" />
                                             </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
-                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-1.5">Leadership</span>
-                                                    <p className="text-[10px] font-bold text-white/70 truncate">Authorized Signatory</p>
-                                                    <p className="text-[8px] text-white/40 mt-0.5 uppercase">Corporate Control</p>
-                                                </div>
-                                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 shadow-sm">
-                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-wider block mb-1.5">Capabilities</span>
-                                                    <p className="text-[10px] font-bold text-white/70 truncate">Tier 1 Infrastructure</p>
-                                                    <p className="text-[8px] text-white/40 mt-0.5 uppercase">Market Position</p>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-3">Core Portfolio</span>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {["Standardized Infrastructure", "Secure Network Ops", "Enterprise Data Integrity"].map((item: string, idx: number) => (
-                                                        <div key={idx} className="px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-white/60 tracking-tight whitespace-nowrap hover:bg-si-blue-primary/10 hover:border-si-blue-primary/30 transition-colors">
-                                                            {item}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-3">Business Model</span>
-                                                <p className="text-[10px] font-medium text-white/50 leading-relaxed italic">
-                                                    Critical operator managing sensitive data and interconnected digital infrastructure that demands comprehensive risk management.
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">Inherent Cyber Risk Factors</span>
-                                                <div className="space-y-4">
-                                                    {[
-                                                        { label: "Business Interruption Risk", value: 85, reasoning: "Operational dependency on system availability." },
-                                                        { label: "Supply Chain Vulnerability", value: 72, reasoning: "Vendor network exposure benchmarks." },
-                                                        { label: "Data Exfiltration Threat", value: 64, reasoning: "Baseline credential and asset security." }
-                                                    ].map((stat: { label: string, value: number, reasoning: string }, idx: number) => (
-                                                            <div key={idx} className="space-y-1">
-                                                                <div className="flex justify-between text-[9px] items-center mb-0.5">
-                                                                    <span className="text-white/50 font-bold uppercase tracking-tighter">{stat.label}</span>
-                                                                    <span className={`${stat.value > 70 ? 'text-rose-500' : 'text-si-blue-primary'} font-black uppercase text-[8px]`}>{stat.value}% RISK</span>
-                                                                </div>
-                                                                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                                                    <motion.div 
-                                                                        initial={{ width: 0 }}
-                                                                        animate={{ width: `${stat.value}%` }}
-                                                                        transition={{ duration: 1, delay: 0.5 + (idx * 0.1) }}
-                                                                        className={`h-full bg-gradient-to-r ${stat.value > 70 ? 'from-rose-500 to-rose-600' : 'from-si-blue-primary to-si-blue-secondary'} rounded-full`}
-                                                                    />
-                                                                </div>
-                                                                <p className="text-[7px] text-white italic leading-[1.3] mt-1.5 pb-1">{stat.reasoning}</p>
-                                                            </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-si-blue-primary/10 rounded-lg flex items-center justify-center text-si-blue-primary border border-si-blue-primary/20">
-                                                        <Globe className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-[9px] font-medium text-white/40 leading-tight italic max-w-[200px]">
-                                                            Generic profile active.
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {(userProfile?.organization_website || organizationWebsite) && (
-                                                    <a
-                                                        href={userProfile?.organization_website || organizationWebsite || "#"}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="p-2.5 bg-white/5 hover:bg-si-blue-primary/20 rounded-xl border border-white/5 transition-colors group/link"
-                                                    >
-                                                        <ExternalLink className="w-3.5 h-3.5 text-white/40 group-hover/link:text-si-blue-primary transition-colors" />
-                                                    </a>
-                                                )}
-                                            </div>
+                                            <p className="text-xs text-white/40 font-medium">Initializing Organizational Synthesis...</p>
                                         </div>
                                     );
                                 })()}

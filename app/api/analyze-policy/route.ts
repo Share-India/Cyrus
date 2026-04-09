@@ -35,12 +35,20 @@ export async function POST(req: Request) {
         // 3. Trigger n8n Workflow
         console.log(`[n8n Analysis] Triggering specialized workflow for: ${document.file_name}`);
         
-        // Use internal Docker network URL 'n8n:5678' for server-to-server communication
-        const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || "http://n8n:5678/webhook/analyze-policy";
+        // Use internal Docker network URL or localhost fallback for dev
+        const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL || "http://localhost:5678/webhook";
+        const N8N_ENDPOINT = `${N8N_BASE_URL}/analyze-policy`;
 
-        const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+        const N8N_USER = process.env.N8N_USER || "admin";
+        const N8N_PASS = process.env.N8N_PASSWORD || "CyrusAutomation123!";
+        const authHeader = `Basic ${Buffer.from(`${N8N_USER}:${N8N_PASS}`).toString('base64')}`;
+
+        const n8nResponse = await fetch(N8N_ENDPOINT, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': authHeader
+            },
             body: JSON.stringify({ 
                 documentId,
                 file_path: document.file_path,

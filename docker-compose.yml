@@ -6,15 +6,12 @@ services:
       dockerfile: Dockerfile
     container_name: cyrus_app
     restart: always
+    env_file: .env.local
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}
-      - SHODAN_API_KEY=${SHODAN_API_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook
     networks:
       - cyrus_network
 
@@ -42,6 +39,7 @@ services:
     image: n8nio/n8n:latest
     container_name: cyrus_n8n_automation
     restart: always
+    env_file: .env.local
     ports:
       - "5678:5678"
     depends_on:
@@ -57,20 +55,21 @@ services:
 
       - N8N_BLOCK_ENV_ACCESS_IN_EXPRESSIONS=false
       
-      - N8N_HOST=cyrus.shareindiainsurance.com
+      - N8N_HOST=localhost
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - N8N_SECURE_COOKIE=false
-      - WEBHOOK_URL=https://cyrus.shareindiainsurance.com/
+      - WEBHOOK_URL=http://localhost:5678/
       - NODE_ENV=production
 
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=CyrusAutomation123!
-
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - n8n_app_data:/home/node/.n8n
     networks:

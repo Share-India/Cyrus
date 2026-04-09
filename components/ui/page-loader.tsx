@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
+import { siteConfig } from "@/lib/site-config"
 
 export function PageLoader() {
     const pathname = usePathname()
@@ -54,7 +55,7 @@ export function PageLoader() {
                         >
                             <img
                                 src="/share-india-monogram.png"
-                                alt="Share India"
+                                alt={siteConfig.name}
                                 className="w-20 h-20 md:w-24 md:h-24 shadow-2xl rounded-2xl border-none"
                             />
 
@@ -73,7 +74,7 @@ export function PageLoader() {
                             className="text-center mt-12"
                         >
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-si-navy/40">
-                                Share India Risk Protocol
+                                {siteConfig.name} Risk Protocol
                             </span>
                         </motion.div>
                     </div>

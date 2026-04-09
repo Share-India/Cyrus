@@ -380,6 +380,84 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
             { label: "Massive Insider Threat Surface", value: 88, reasoning: "Managing 600,000+ globally distributed employees creates an immense statistical probability for social engineering and credential theft." },
             { label: "Infinite Jurisdiction Regulatory Fines", value: 94, reasoning: "Simultaneous violations of GDPR, HIPAA, and DPDP would yield compounding, multi-billion dollar regulatory devastation." }
         ]
+    },
+    "Royal Sundaram": {
+        name: "ROYAL SUNDARAM GENERAL INSURANCE CO. LTD.",
+        founded: "2000",
+        hq: "Vishranthi Melaram Towers, Chennai, India",
+        leadership: "Mr. M. S. Sreedhar (MD) | Backed by the Sundaram Finance Group",
+        legacy: "A historic pioneer in the Indian financial landscape, Royal Sundaram was the first private sector general insurance company to be licensed in India (2000). Backed by the 65-year-old Sundaram Finance Group, the firm has set the gold standard for retail insurance innovation, claims integrity, and digital-first underwriting for over two decades.",
+        portfolio: [
+            "Comprehensive Motor & Electric Vehicle Coverage",
+            "Advanced Health & Critical Illness Portfolios (Lifeline)",
+            "Complex Industrial Fire & Engineering Risks",
+            "Specialized Marine & Inland Transit Insurance",
+            "Large-Scale Employee Benefits & Liability Structures",
+            "Elite 'm-Chatra' Digital Self-Service Ecosystem"
+        ],
+        description: "Royal Sundaram is a cornerstone of India's private insurance sector. As a multi-line general insurer, they provide mission-critical risk transfer solutions to millions of retail customers and thousands of corporate entities, functioning as a vital pillar of the nation's financial stability.",
+        website: "https://royalsundaram.in",
+        
+        businessModel: "A high-velocity, data-intensive underwriting model driven by a multi-channel distribution engine. The firm leverages a vast network of agents, brokers, and banking partners (Affinity) to ingest retail premiums at scale. Their operational superiority is maintained through 'm-Chatra'—a proprietary digital platform that automates the entire policy lifecycle from issuance to settlement, necessitating extreme cybersecurity posture.",
+        
+        employees: "2,000+ (Specialized underwriters, actuaries, and claims advocates)",
+        annualRevenue: "₹3,500 Cr+ (Gross Written Premium momentum)",
+        
+        operationalReach: [
+            "Chennai (HQ)", "150+ Branch Nodes Pan-India", 
+            "Global Reinsurance Syndicates", "Extensive Digital Agent Network"
+        ],
+        
+        industriesServed: [
+            "Retail & Individual Consumers",
+            "Automotive & Transportation",
+            "Banking, Financial Services & Insurance (BFSI)",
+            "Industrial Manufacturing & EPC",
+            "Global Logistics & Marine Trade"
+        ],
+        
+        notableClients: [
+            "Sundaram Finance Group (Internal Ecosystem)",
+            "Major Nationalized & Private Banks",
+            "Top-Tier Automotive OEMs",
+            "Millions of Individual Policyholders"
+        ],
+        
+        revenueStreams: [
+            { label: "Retail Premium Ingestion", description: "High-volume revenue engine driven by motor, health, and travel insurance sales through physical and digital channels." },
+            { label: "Institutional Commercial Underwriting", description: "Enterprise-level risk management fees for fire, marine, and liability covers for large-scale industrial projects." },
+            { label: "Claims & Risk Engineering Advisory", description: "Consultative revenue generated through technical risk assessments and industrial safety engineering." },
+            { label: "Investment & Reserve Management", description: "Significant financial income generated from the strategic investment of regulatory reserves in capital markets." }
+        ],
+        
+        keyMilestones: [
+            { year: "2000", event: "Becomes India's first private sector general insurance company to receive an IRDA license." },
+            { year: "2008", event: "Pioneered the 'Cashless Claims' mechanism for health insurance in the Indian market." },
+            { year: "2015", event: "Launched 'm-Chatra,' a revolutionary mobile-first platform for agent and customer empowerment." },
+            { year: "2024", event: "Celebrating 24 years of operational excellence with over ₹3,500 Cr in Annual GWP." }
+        ],
+        
+        digitalAssets: [
+            "Protected Health Information (PHI) of millions of health policyholders",
+            "Proprietary 'm-Chatra' underwriting and claims engine",
+            "Direct API bridges with 10+ major Indian banks and thousands of fintech nodes",
+            "Vast repositories of corporate risk data and industrial blueprints",
+            "Regulatory reporting data lakes for IRDAI and GSTN compliance"
+        ],
+        
+        supplyChainExposure: "As a major insurance node, Royal Sundaram is deeply interconnected with the healthcare and automotive supply chains. Their digital platforms sync daily with thousands of hospitals (TPA networks) and garages. A compromise of these API bridges could allow threat actors to perform massive-scale insurance fraud or exfiltrate private health data from the entire healthcare ecosystem.",
+        
+        regulatoryEnvironment: "Royal Sundaram operates in a hyper-regulated environment. They are mandated to comply with IRDAI’s stringent 'Cyber Security Framework for Insurers' and the newly enacted DPDP Act (2023). Non-compliance during a data breach could result in penalties of up to ₹250 Cr and immediate suspension of underwriting licenses.",
+        
+        cyberThreatNarrative: "Royal Sundaram is a high-value target for nation-state actors and cyber-extortionists due to its custody of millions of sensitive health records (PHI). A ransomware attack on their claims settlement engine would immediately halt hospital payouts, creating a national healthcare crisis for their policyholders. Furthermore, their premium collection portals handle massive daily financial volumes, making them a prime target for sophisticated Business Email Compromise (BEC) and payment redirection fraud.",
+        
+        cyberStats: [
+            { label: "PII/PHI Data Sovereignty Breach", value: 94, reasoning: "Direct custody of millions of medical and financial records. DPDP 2023 compliance renders this the single highest financial liability." },
+            { label: "Claims Lifecycle Interruption (Ransomware)", value: 87, reasoning: "Absolute dependency on 'm-Chatra' for real-time claims processing. Downtime causes immediate client distress and reputational fallout." },
+            { label: "Third-Party Affinity API Exposure", value: 81, reasoning: "Deep digital integration with banking and broker nodes creates a massive attack surface beyond their direct control." },
+            { label: "Financial Transaction & Premium Fraud", value: 74, reasoning: "High frequency of digital premium payments and claim payouts offers multiple points for interception and redirect fraud." },
+            { label: "Regulatory Censure & License Suspension", value: 89, reasoning: "IRDAI mandates strict cybersecurity hygiene; a significant breach invites aggressive audits and potential trade restrictions." }
+        ]
     }
 };
 

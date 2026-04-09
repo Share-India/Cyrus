@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 import { type Domain, type ScoringResult, getCurrentPremiumLoading } from "./scoring-engine"
 import type { RemediationPlan } from "./recommendation-engine"
+import { siteConfig } from "./site-config"
 
 // Extend jsPDF type to include autoTable
 declare module "jspdf" {
@@ -52,7 +53,7 @@ export async function downloadPDFSummary(
     doc.setFontSize(12) // Slightly larger company name
     doc.setTextColor(...NAVY)
     doc.setFont('helvetica', 'bold')
-    doc.text('SHARE INDIA INSURANCE BROKERS', textX, textY)
+    doc.text(siteConfig.company.toUpperCase(), textX, textY)
 
     textY += 6
     doc.setFontSize(8)
@@ -62,7 +63,7 @@ export async function downloadPDFSummary(
 
     textY += 5
     doc.setFont('helvetica', 'italic')
-    doc.text('"YOU GENERATE, WE MULTIPLY"', textX, textY)
+    doc.text(`"${siteConfig.tagline.toUpperCase()}"`, textX, textY)
 
     // Update yPosition to be below the tallest element (logo or text) + padding
     yPosition = Math.max(startY + logoHeight, textY) + 20
@@ -465,7 +466,7 @@ export async function downloadPDFSummary(
         doc.setFont('helvetica', 'italic')
         doc.setTextColor(...DARK_GRAY)
         doc.text(
-            'DISCLAIMER: This report is based on self-attested controls. Final underwriting is subject to Share India\'s verification and approval.',
+            `DISCLAIMER: This report is based on self-attested controls. Final underwriting is subject to ${siteConfig.company}'s verification and approval.`,
             15,
             290
         )
