@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { AlertCircle, Terminal, HelpCircle, FileText, ChevronDown, ArrowUpRight } from "lucide-react"
 import type { Domain } from "@/lib/scoring-engine"
 import { useUnderwriting } from "@/context/underwriting-context"
+import { siteConfig } from "@/lib/site-config"
 
 interface DecisionPanelProps {
   result: ScoringResult
@@ -232,7 +233,7 @@ export function DecisionPanel({ result, domains, completionPercentage, onNavigat
       {/* Corporate Footer Branded */}
       <div className="p-6 border-t border-white/20 text-center bg-white/40 backdrop-blur-md">
         <p className="text-[11px] font-black text-si-navy uppercase tracking-[0.4em] mb-2 leading-none">
-          Share India Insurance Brokers
+          {siteConfig.company}
         </p>
         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">
           IRDAI Licensed Direct Insurance Broker (Composite)

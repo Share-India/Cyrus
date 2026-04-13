@@ -497,7 +497,7 @@ export default function WelcomePage() {
             {/* Header */}
             <header className="bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-4">
-                    <img src="/share-india-new.png" alt="Share India" className="h-9 w-auto" />
+                    <img src="/share-india-new.png" alt={siteConfig.company} className="h-9 w-auto" />
                     <div className="h-8 w-[1px] bg-slate-200" />
                     <div>
                         <h1 className="text-lg font-black text-si-navy font-outfit tracking-tight leading-none">

@@ -97,6 +97,10 @@ export async function POST(req: Request) {
                 throw new Error("Empty intelligence payload");
             }
 
+            if (dynamicDossier.message === "Workflow was started" || !dynamicDossier.name || !dynamicDossier.cyberStats) {
+                throw new Error(`n8n returned asynchronous confirmation or incomplete data: ${JSON.stringify(dynamicDossier)}`);
+            }
+
             console.log(`[Dossier API] Synthesis Successful for ${organizationName} via n8n`);
 
             // If userId is provided, update the database profile with the new enriched dossier

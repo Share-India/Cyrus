@@ -14,7 +14,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
       return {
         gradient: "from-rose-500 to-red-700",
         shadow: "shadow-red-200",
-        textColor: "text-red-700",
+        textColor: "text-rose-400",
         icon: ShieldX,
         label: "AUTO-DECLINED",
         description: "STRUCTURAL RISK INHIBITOR",
@@ -26,7 +26,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         return {
           gradient: "from-emerald-400 to-emerald-600",
           shadow: "shadow-emerald-200",
-          textColor: "text-emerald-700",
+          textColor: "text-emerald-400",
           icon: ShieldCheck,
           label: "APPROVED - TIER A",
           description: "OPTIMAL RISK PROFILE",
@@ -35,7 +35,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         return {
           gradient: "from-amber-400 to-amber-600",
           shadow: "shadow-amber-200",
-          textColor: "text-amber-700",
+          textColor: "text-amber-400",
           icon: ShieldCheck,
           label: "APPROVED - TIER B",
           description: "STANDARD RISK PROFILE",
@@ -44,7 +44,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         return {
           gradient: "from-orange-400 to-orange-600",
           shadow: "shadow-orange-200",
-          textColor: "text-orange-700",
+          textColor: "text-orange-400",
           icon: ShieldAlert,
           label: "APPROVED - TIER C",
           description: "SUBSTANDARD RISK PROFILE",
@@ -53,7 +53,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         return {
           gradient: "from-rose-500 to-red-700",
           shadow: "shadow-red-200",
-          textColor: "text-red-700",
+          textColor: "text-rose-400",
           icon: ShieldX,
           label: "POLICY DECLINED",
           description: "INADEQUATE RISK CONTROLS",
@@ -62,7 +62,7 @@ export function DecisionBadge({ result }: DecisionBadgeProps) {
         return {
           gradient: "from-slate-400 to-slate-600",
           shadow: "shadow-slate-200",
-          textColor: "text-slate-700",
+          textColor: "text-slate-300",
           icon: Activity,
           label: "ANALYZING...",
           description: "SIMULATION IN PROGRESS",

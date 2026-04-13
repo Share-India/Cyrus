@@ -4,6 +4,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: "${NEXT_PUBLIC_SUPABASE_URL}"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "${NEXT_PUBLIC_SUPABASE_ANON_KEY}"
+        NEXT_PUBLIC_APP_NAME: "${NEXT_PUBLIC_APP_NAME}"
+        NEXT_PUBLIC_COMPANY_NAME: "${NEXT_PUBLIC_COMPANY_NAME}"
+        NEXT_PUBLIC_APP_TAGLINE: "${NEXT_PUBLIC_APP_TAGLINE}"
+        NEXT_PUBLIC_N8N_WEBHOOK_URL: "${NEXT_PUBLIC_N8N_WEBHOOK_URL}"
     container_name: cyrus_app
     restart: always
     env_file: .env.local

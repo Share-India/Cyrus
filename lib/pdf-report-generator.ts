@@ -486,7 +486,7 @@ export async function downloadPDFSummary(
     }
 
     // Download the PDF
-    const filename = `ShareIndia_CyberRisk_Summary_${new Date().toISOString().split('T')[0]}.pdf`
+    const filename = `${siteConfig.company.replace(/\\s+/g, '')}_CyberRisk_Summary_${new Date().toISOString().split('T')[0]}.pdf`
     doc.save(filename)
 }
 
