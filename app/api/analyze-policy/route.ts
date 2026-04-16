@@ -33,15 +33,15 @@ export async function POST(req: Request) {
         else if (document.file_name.endsWith(".jpg") || document.file_name.endsWith(".jpeg")) mimeType = "image/jpeg";
 
         // 3. Trigger n8n Workflow
-        console.log(`[n8n Analysis] Triggering specialized workflow for: ${document.file_name}`);
-        
-        // Use internal Docker network URL or localhost fallback for dev
-        const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL || "http://localhost:5678/webhook";
+        // Priority: Environment Variable > Docker Internal DNS > Localhost Fallback
+        const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL || (process.env.NODE_ENV === 'production' ? "http://n8n:5678/webhook" : "http://localhost:5678/webhook");
         const N8N_ENDPOINT = `${N8N_BASE_URL}/analyze-policy`;
 
         const N8N_USER = process.env.N8N_USER || "admin";
         const N8N_PASS = process.env.N8N_PASSWORD || "CyrusAutomation123!";
         const authHeader = `Basic ${Buffer.from(`${N8N_USER}:${N8N_PASS}`).toString('base64')}`;
+
+        console.log(`[Policy Analysis API] Triggering workflow for: ${document.file_name} at ${N8N_ENDPOINT}`);
 
         const n8nResponse = await fetch(N8N_ENDPOINT, {
             method: 'POST',
@@ -57,7 +57,8 @@ export async function POST(req: Request) {
         });
 
         if (!n8nResponse.ok) {
-            throw new Error(`n8n Trigger Failed: ${n8nResponse.statusText}`);
+            const errorText = await n8nResponse.text();
+            throw new Error(`n8n Trigger Failed (${n8nResponse.status}): ${errorText || n8nResponse.statusText}`);
         }
 
         console.log(`[n8n Analysis] Workflow triggered successfully for: ${document.file_name}`);

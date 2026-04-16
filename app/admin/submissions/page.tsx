@@ -57,9 +57,12 @@ interface Submission {
     risk_tier: string
     premium_loading: string
     auto_declined: boolean
+    approval_status: 'pending' | 'approved' | 'rejected'
+    underwriter_notes: string | null
     created_at: string
     profiles: {
         email: string
+        organization_name: string
     }
 }
 
@@ -69,6 +72,7 @@ export default function SubmissionsDashboard() {
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedSector, setSelectedSector] = useState("All")
     const [selectedTier, setSelectedTier] = useState("All")
+    const [selectedStatus, setSelectedStatus] = useState("All")
     const [minScore, setMinScore] = useState(0)
     const [sortConfig, setSortConfig] = useState<{ key: keyof Submission | 'profiles.organization_name', direction: 'asc' | 'desc' }>({ key: 'created_at', direction: 'desc' })
     const supabase = createClient()
@@ -137,6 +141,11 @@ export default function SubmissionsDashboard() {
         if (selectedTier !== "All") {
             const cleanTier = selectedTier.replace('TIER ', '').replace('DECLINE', 'D')
             result = result.filter(s => s.risk_tier.includes(cleanTier))
+        }
+
+        // Status Filter
+        if (selectedStatus !== "All") {
+            result = result.filter(s => (s.approval_status || 'pending') === selectedStatus.toLowerCase())
         }
 
         // Score Range Filter
@@ -226,9 +235,24 @@ export default function SubmissionsDashboard() {
                             className="px-6 py-2.5 bg-si-navy text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-si-blue-primary transition-all shadow-lg shadow-si-navy/10"
                         >
                             <Download className="w-4 h-4" />
-                            Export CSV
+                            Export Queue
                         </button>
                     </div>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    {[
+                        { label: "Pending Review", count: submissions.filter(s => !s.approval_status || s.approval_status === 'pending').length, color: "text-amber-500", bg: "bg-amber-50" },
+                        { label: "Approved", count: submissions.filter(s => s.approval_status === 'approved').length, color: "text-emerald-500", bg: "bg-emerald-50" },
+                        { label: "Rejected", count: submissions.filter(s => s.approval_status === 'rejected').length, color: "text-si-red", bg: "bg-red-50" },
+                        { label: "Total Audits", count: submissions.length, color: "text-si-navy", bg: "bg-slate-50" }
+                    ].map((kpi, idx) => (
+                        <div key={idx} className={`${kpi.bg} p-6 rounded-[32px] border border-transparent hover:border-slate-100 transition-all`}>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{kpi.label}</span>
+                            <span className={`text-3xl font-black font-outfit ${kpi.color}`}>{kpi.count}</span>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Filter Bar */}
@@ -271,6 +295,20 @@ export default function SubmissionsDashboard() {
                                 <option value="TIER B">Tier B</option>
                                 <option value="TIER C">Tier C</option>
                                 <option value="DECLINE">Decline</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all">
+                            <FileText className="w-3 h-3 text-slate-400" />
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
+                            >
+                                <option value="All">All Statuses</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
                             </select>
                         </div>
 
@@ -319,7 +357,7 @@ export default function SubmissionsDashboard() {
                                         className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:bg-slate-100/50 transition-colors"
                                     >
                                         <div className="flex items-center gap-2">
-                                            Submission Date
+                                            Status / Date
                                             {sortConfig.key === 'created_at' && <ArrowUpDown className="w-3 h-3" />}
                                         </div>
                                     </th>
@@ -373,6 +411,15 @@ export default function SubmissionsDashboard() {
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col">
+                                                <div className="mb-2">
+                                                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
+                                                        sub.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                                        sub.approval_status === 'rejected' ? 'bg-si-red/10 text-si-red' :
+                                                        'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                        {sub.approval_status || 'PENDING'}
+                                                    </span>
+                                                </div>
                                                 <span className="text-xs font-bold text-slate-600">
                                                     {new Date(sub.created_at).toLocaleDateString()}
                                                 </span>

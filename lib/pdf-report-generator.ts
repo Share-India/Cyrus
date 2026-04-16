@@ -21,7 +21,9 @@ export async function downloadPDFSummary(
     protocolId: string = '',
     remediationPlan: RemediationPlan | null = null,
     modelVersion: string = '1.0.0',
-    timestamp: string = new Date().toISOString()
+    timestamp: string = new Date().toISOString(),
+    approvalStatus: string = 'pending',
+    underwriterNotes: string = ''
 ) {
     const doc = new jsPDF()
 
@@ -211,14 +213,35 @@ export async function downloadPDFSummary(
     yPosition += 6
 
     // Volatility Score
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...NAVY)
-    doc.text('Volatility Score:', 20, yPosition)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...DARK_GRAY)
     doc.text(result.volatilityScore.toFixed(2), 70, yPosition)
 
-    yPosition += 15
+    yPosition += 12
+
+    // Institutional Decision Block (New)
+    if (approvalStatus !== 'pending') {
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...NAVY)
+        doc.text('OFFICIAL UNDERWRITING DECISION:', 20, yPosition)
+        
+        doc.setFontSize(11)
+        const statusColor = approvalStatus === 'approved' ? [16, 185, 129] : [239, 68, 68];
+        doc.setTextColor(...(statusColor as [number, number, number]))
+        doc.text(approvalStatus.toUpperCase(), 85, yPosition)
+        
+        yPosition += 6
+        
+        if (underwriterNotes) {
+            doc.setFontSize(8)
+            doc.setFont('helvetica', 'italic')
+            doc.setTextColor(...DARK_GRAY)
+            const noteLines = doc.splitTextToSize(`Notes: ${underwriterNotes}`, 130)
+            doc.text(noteLines, 20, yPosition)
+            yPosition += (noteLines.length * 4)
+        }
+    }
 
     // Risk Executive Summary
     doc.setFontSize(11)

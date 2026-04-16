@@ -54,12 +54,15 @@ export async function POST(req: Request) {
 
         try {
             // Trigger n8n Workflow for Dossier Generation
-            const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL || "http://localhost:5678/webhook";
+            // Priority: Environment Variable > Docker Internal DNS > Localhost Fallback
+            const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL || (process.env.NODE_ENV === 'production' ? "http://n8n:5678/webhook" : "http://localhost:5678/webhook");
             const N8N_ENDPOINT = `${N8N_BASE_URL}/generate-dossier`;
 
             const N8N_USER = process.env.N8N_USER || "admin";
             const N8N_PASS = process.env.N8N_PASSWORD || "CyrusAutomation123!";
             const authHeader = `Basic ${Buffer.from(`${N8N_USER}:${N8N_PASS}`).toString('base64')}`;
+
+            console.log(`[Dossier API] Attempting connection to n8n at: ${N8N_ENDPOINT}`);
 
             const response = await fetch(N8N_ENDPOINT, {
                 method: 'POST',
@@ -72,7 +75,9 @@ export async function POST(req: Request) {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`n8n Error (${response.status}): ${errorText || 'No response body'}`);
+                const status = response.status;
+                console.error(`[Dossier API] n8n Webhook Rejected (${status}):`, errorText);
+                throw new Error(`n8n Error (${status}): ${errorText || 'No response body'}`);
             }
             
             const responseText = await response.text();
@@ -84,8 +89,8 @@ export async function POST(req: Request) {
                 const cleanJson = jsonMatch ? jsonMatch[0] : responseText;
                 dynamicDossier = JSON.parse(cleanJson);
             } catch (jsonErr) {
-                console.error("[Dossier API] Nuclear Parse Failed. Status:", response.status);
-                throw new Error(`AI returned invalid formatting`);
+                console.error("[Dossier API] Response Parsing Failed. Raw Response:", responseText.substring(0, 200));
+                throw new Error(`AI returned invalid JSON formatting`);
             }
             
             // Safety: Handle n8n array wrapping
@@ -98,7 +103,7 @@ export async function POST(req: Request) {
             }
 
             if (dynamicDossier.message === "Workflow was started" || !dynamicDossier.name || !dynamicDossier.cyberStats) {
-                throw new Error(`n8n returned asynchronous confirmation or incomplete data: ${JSON.stringify(dynamicDossier)}`);
+                throw new Error(`n8n returned asynchronous confirmation or incomplete data`);
             }
 
             console.log(`[Dossier API] Synthesis Successful for ${organizationName} via n8n`);
@@ -113,7 +118,11 @@ export async function POST(req: Request) {
 
             return NextResponse.json(dynamicDossier);
         } catch (error: any) {
-            console.error("[Dossier API] n8n Automation Failed:", error.message);
+            console.error("[Dossier API] n8n Automation Failed Instance-wide:", error.message);
+            
+            if (error.code === 'ECONNREFUSED' || error.message.includes('fetch failed')) {
+                console.error("[Dossier API] CRITICAL: Could not reach n8n. Is the container running?");
+            }
             console.log(`[Dossier API] Falling back to Direct Gemini Synthesis for: ${organizationName}`);
 
             try {

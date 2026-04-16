@@ -74,7 +74,7 @@ export async function analyzePolicyDocument(fileBuffer: Buffer, mimeType: string
     }
 
     const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: process.env.AI_MODEL || "gemini-2.0-flash",
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: policyAnalysisSchema,
@@ -97,6 +97,9 @@ export async function analyzePolicyDocument(fileBuffer: Buffer, mimeType: string
     `;
 
     try {
+        const startTime = Date.now();
+        console.log(`[Policy AI] Starting analysis for document (${mimeType}, ${fileBuffer.length} bytes)...`);
+
         const result = await model.generateContent([
             prompt,
             {
@@ -108,13 +111,16 @@ export async function analyzePolicyDocument(fileBuffer: Buffer, mimeType: string
         ]);
 
         const responseText = result.response.text();
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
         if (!responseText) {
             throw new Error("Gemini returned an empty response for policy analysis.");
         }
 
+        console.log(`[Policy AI] Analysis completed in ${duration}s.`);
         return JSON.parse(responseText);
     } catch (error) {
-        console.error("Error in AI Policy Analysis:", error);
+        console.error("[Policy AI] Gemini error:", error);
         throw error;
     }
 }

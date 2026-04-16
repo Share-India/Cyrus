@@ -47,7 +47,8 @@ import {
     LayoutDashboard,
     Upload,
     Loader2,
-    Globe
+    Globe,
+    Shield
 } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -55,8 +56,9 @@ import { toast } from "sonner"
 import { downloadAssessmentReport } from "@/lib/report-generator"
 import { downloadPDFSummary } from "@/lib/pdf-report-generator"
 import { generatePolicyAnalysisPDF } from "@/lib/policy-report-generator"
-import { PolicyAnalysisResult } from "@/lib/policy-analyzer"
-
+import { PolicyAnalysisPanel } from "@/components/policy-analysis-panel"
+import { ShodanIntelPanel } from "@/components/shodan-intel-panel"
+import { AuditTimeline } from "@/components/audit-timeline"
 import {
     Radar,
     RadarChart,
@@ -112,6 +114,9 @@ export default function SubmissionDetails() {
     const [recommendations, setRecommendations] = useState<Recommendation[]>([])
     const [aiRemediationPlan, setAiRemediationPlan] = useState<RemediationPlan | null>(null)
     const [isGeneratingRemediation, setIsGeneratingRemediation] = useState(false)
+    const [auditEvents, setAuditEvents] = useState<any[]>([])
+    const [isAuditLoading, setIsAuditLoading] = useState(false)
+    const [isDecisionLoading, setIsDecisionLoading] = useState(false)
     const supabase = createClient()
 
     useEffect(() => {
@@ -222,6 +227,69 @@ export default function SubmissionDetails() {
 
         fetchDocs()
     }, [submission, params.id, supabase])
+
+    // Fetch Audit History
+    useEffect(() => {
+        const fetchAudit = async () => {
+            if (!params.id) return;
+            setIsAuditLoading(true);
+            const { data } = await supabase
+                .from('audit_history')
+                .select('*')
+                .eq('assessment_id', params.id)
+                .order('created_at', { ascending: false });
+            
+            if (data) setAuditEvents(data);
+            setIsAuditLoading(false);
+        };
+        fetchAudit();
+    }, [params.id, supabase]);
+
+    const handleDecision = async (status: 'approved' | 'rejected', notes?: string) => {
+        setIsDecisionLoading(true);
+        try {
+            // 1. Update Assessment Status
+            const { error: updateError } = await supabase
+                .from('assessments')
+                .update({ 
+                    approval_status: status,
+                    underwriter_notes: notes,
+                    finalized_at: status === 'approved' ? new Date().toISOString() : null
+                })
+                .eq('id', params.id);
+            
+            if (updateError) throw updateError;
+
+            // 2. Log Audit Event
+            await fetch('/api/log-audit-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assessmentId: params.id,
+                    eventType: 'ADMIN_DECISION',
+                    description: `Underwriter marked assessment as ${status.toUpperCase()}`,
+                    payload: { status, note: notes }
+                })
+            });
+
+            setSubmission(prev => prev ? { ...prev, approval_status: status } : null as any);
+            toast.success(`Assessment formally ${status}`);
+            
+            // Refresh audit list
+            const { data: newAudit } = await supabase
+                .from('audit_history')
+                .select('*')
+                .eq('assessment_id', params.id)
+                .order('created_at', { ascending: false });
+            if (newAudit) setAuditEvents(newAudit);
+
+        } catch (e: any) {
+            console.error(e);
+            toast.error(`Decision failed: ${e.message}`);
+        } finally {
+            setIsDecisionLoading(false);
+        }
+    };
 
     const [isFinalizing, setIsFinalizing] = useState(false)
     const [isFinalized, setIsFinalized] = useState(false)
@@ -377,6 +445,30 @@ export default function SubmissionDetails() {
 
                 <div className="flex items-center gap-4">
 
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => {
+                                const note = prompt("Enter underwriter notes (optional):");
+                                handleDecision('approved', note || undefined);
+                            }}
+                            disabled={isDecisionLoading || submission.approval_status === 'approved'}
+                            className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                        >
+                            {isDecisionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Approve Assessment"}
+                        </button>
+                        <button
+                            onClick={() => {
+                                const note = prompt("Enter rejection reason:");
+                                if (note) handleDecision('rejected', note);
+                                else if (note === "") toast.error("Rejection reason is required");
+                            }}
+                            disabled={isDecisionLoading || submission.approval_status === 'rejected'}
+                            className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 text-white/60 hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all"
+                        >
+                            Reject
+                        </button>
+                    </div>
 
                     {/* Finalize Protocol Button */}
                     <button
@@ -560,7 +652,22 @@ export default function SubmissionDetails() {
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-si-blue-primary/10 rounded-full blur-[120px] -mr-40 -mt-40 pointer-events-none" />
                         </div>
 
-                        {/* Underwriting Advisor Section */}
+                            <h3 className="text-xs font-black text-si-navy/30 uppercase tracking-[0.5em] px-2 flex items-center gap-4">
+                                <Shield className="w-4 h-4 text-indigo-500" /> AI Document Forensics
+                            </h3>
+                            {policyDoc && (
+                                <PolicyAnalysisPanel 
+                                    documentId={policyDoc.id}
+                                    fileName={policyDoc.file_name}
+                                    initialStatus={policyDoc.analysis_status as any || 'pending'}
+                                    initialResult={policyDoc.analysis_result}
+                                    onStatusChange={(newStatus) => {
+                                        setPolicyDoc(prev => prev ? { ...prev, analysis_status: newStatus } : null);
+                                    }}
+                                />
+                            )}
+
+                            {/* Underwriting Advisor Section */}
                         <div className="space-y-8">
                             <h3 className="text-xs font-black text-si-navy/30 uppercase tracking-[0.5em] px-2 flex items-center gap-4">
                                 <Zap className="w-4 h-4 text-amber-500" /> Underwriting advisor
@@ -781,28 +888,7 @@ export default function SubmissionDetails() {
                                                         )}
 
                                                         <div className="flex flex-col items-start gap-2 mt-1">
-                                                            {/* AI Analysis Trigger / Status */}
-                                                            {(!policyDoc.analysis_status || 
-                                                              policyDoc.analysis_status === 'pending' || 
-                                                              policyDoc.analysis_status === 'failed') && (
-                                                                <button
-                                                                    onClick={runPolicyAnalysis}
-                                                                    disabled={isAnalyzingPolicy}
-                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-white/60 hover:text-white uppercase tracking-widest transition-all disabled:opacity-50"
-                                                                >
-                                                                    {isAnalyzingPolicy ? (
-                                                                        <>
-                                                                            <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
-                                                                            Triggering AI...
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <Zap className="w-3 h-3 text-amber-400" />
-                                                                            Run AI Analysis
-                                                                        </>
-                                                                    )}
-                                                                </button>
-                                                            )}
+                                                            {/* Integrated into main feed above */}
 
                                                             {/* OSINT Enrichment Trigger */}
                                                             <button
@@ -940,7 +1026,9 @@ export default function SubmissionDetails() {
                                                     submission.id,
                                                     aiRemediationPlan,
                                                     submission_data.model_version || submission.model_version || '1.0.0',
-                                                    submission.created_at
+                                                    submission.created_at,
+                                                    submission.approval_status || 'pending',
+                                                    submission.underwriter_notes || ''
                                                 )
                                             }}
                                             className="w-full group flex items-center justify-between p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all"
@@ -963,11 +1051,47 @@ export default function SubmissionDetails() {
                                 <ShieldCheck className="w-80 h-80 rotate-12" />
                             </div>
                         </div>
+                    </div>
+                </div>
 
+                {/* Intelligence Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+                    {/* Forensic Audit Timeline */}
+                    <div className="bg-slate-900 border border-slate-800 p-10 rounded-[40px] shadow-2xl">
+                        <h3 className="text-[11px] font-black text-si-blue-primary uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                            <Activity className="h-4 w-4" /> Forensic Audit Trail
+                        </h3>
+                        <AuditTimeline events={auditEvents} loading={isAuditLoading} />
+                    </div>
 
-                        {/* Audit Log (Nodes) */}
-                        <div className="bg-slate-50 p-12 rounded-[56px] border border-slate-100">
-                            <h3 className="text-[11px] font-black text-si-navy/30 uppercase tracking-[0.4em] mb-8">Detailed Checklist Log</h3>
+                    {/* External Attack Surface (Shodan) */}
+                    <div className="bg-white border border-slate-100 p-10 rounded-[40px] shadow-sm">
+                        <h3 className="text-[11px] font-black text-si-navy uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                            <Globe className="h-4 w-4 text-si-blue-primary" /> External Attack Surface
+                        </h3>
+                        {(submission.profiles as any)?.company_dossier?.shodanIntelligence ? (
+                            <ShodanIntelPanel 
+                                intel={(submission.profiles as any).company_dossier.shodanIntelligence}
+                                organizationName={(submission.profiles as any).organization_name || "The Client"}
+                            />
+                        ) : (
+                            <div className="p-8 rounded-[32px] bg-slate-50 border border-slate-100 text-center">
+                                <Globe className="h-10 w-10 text-slate-200 mx-auto mb-4" />
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Recon Data Missing</p>
+                                <button 
+                                    onClick={() => toast.error("Please run 'OSINT Scanning' from Audit Details to gather technical intel.")}
+                                    className="mt-4 text-[10px] font-black text-si-blue-primary uppercase tracking-widest hover:underline"
+                                >
+                                    Trigger OSINT Scan
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Audit Log (Nodes) */}
+                <div className="bg-slate-50 p-12 rounded-[56px] border border-slate-100 mt-12">
+                    <h3 className="text-[11px] font-black text-si-navy/30 uppercase tracking-[0.4em] mb-8">Detailed Checklist Log</h3>
                             <div className="space-y-6 max-h-[1000px] overflow-y-auto pr-4 custom-scrollbar">
                                 {submission_data.domains.flatMap(d => d.questions).map(q => (
                                     <div key={q.id} className={`p-6 rounded-3xl border transition-all group ${q.isKiller
@@ -996,9 +1120,7 @@ export default function SubmissionDetails() {
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </main>
                 </div>
-            </main>
-        </div>
-    )
-}
+            )
+        }

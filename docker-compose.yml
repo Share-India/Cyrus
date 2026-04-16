@@ -60,18 +60,23 @@ services:
       - DB_POSTGRESDB_USER=cyrus_admin
       - DB_POSTGRESDB_PASSWORD=cyrus_vault_pass
 
+      # AI & OSINT Propagation
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}
+      - SHODAN_API_KEY=${SHODAN_API_KEY}
+      - AI_MODEL=${AI_MODEL:-gemini-2.0-flash}
+
       - N8N_BLOCK_ENV_ACCESS_IN_EXPRESSIONS=false
       
-      - N8N_HOST=localhost
+      - N8N_HOST=n8n
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - N8N_SECURE_COOKIE=false
-      - WEBHOOK_URL=http://localhost:5678/
+      - WEBHOOK_URL=http://n8n:5678/
       - NODE_ENV=production
 
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=CyrusAutomation123!
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-CyrusAutomation123!}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
       interval: 10s

@@ -102,9 +102,16 @@ ${topAssetsSummary}
 
         console.log(`[Shodan Engine] Successfully gathered ${matches.length} matches, found ${openPorts.size} open ports and ${vulns.size} CVEs.`);
 
+        // Risk Categorization for UI
+        const criticalPorts = [21, 22, 23, 135, 139, 445, 3389, 5900];
+        const warningPorts = [80, 8080, 8443, 3306, 5432, 27017];
+
         return {
             assetCount: data.total || matches.length,
-            openPorts: Array.from(openPorts),
+            openPorts: Array.from(openPorts).map(p => ({
+                port: p,
+                risk: criticalPorts.includes(p) ? 'critical' : warningPorts.includes(p) ? 'warning' : 'standard'
+            })) as any,
             vulnerabilities: Array.from(vulns).slice(0, 50), // Cap to prevent massive arrays
             techStack: Array.from(techStack),
             rawReport: reportString
