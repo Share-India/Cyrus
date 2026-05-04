@@ -73,13 +73,21 @@ export async function analyzePolicyDocument(fileBuffer: Buffer, mimeType: string
         throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not configured.");
     }
 
+    const safetySettings = [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+    ];
+
     const model = genAI.getGenerativeModel({
         model: process.env.AI_MODEL || "gemini-2.0-flash",
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: policyAnalysisSchema,
             temperature: 0.1,
-        }
+        },
+        safetySettings: safetySettings as any
     });
 
     const prompt = `

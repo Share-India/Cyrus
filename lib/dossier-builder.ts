@@ -10,7 +10,6 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// Define the response schema matching CompanyDossier using SchemaType
 const dossierSchema: Schema = {
     type: SchemaType.OBJECT,
     properties: {
@@ -18,32 +17,16 @@ const dossierSchema: Schema = {
         founded: { type: SchemaType.STRING, description: "Year founded or established" },
         hq: { type: SchemaType.STRING, description: "Headquarters location (City, Country)" },
         leadership: { type: SchemaType.STRING, description: "Key leadership (CEO, Founder)" },
-        legacy: { type: SchemaType.STRING, description: "A bold, detailed paragraph about their history and market dominance" },
-        portfolio: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "List of key products, services, or solutions offered"
-        },
-        description: { type: SchemaType.STRING, description: "A comprehensive description of what the company does" },
-        website: { type: SchemaType.STRING, description: "Official website URL" },
-        businessModel: { type: SchemaType.STRING, description: "Detailed explanation of how they make money and operate" },
-        employees: { type: SchemaType.STRING, description: "Estimated number of employees" },
-        annualRevenue: { type: SchemaType.STRING, description: "Estimated annual revenue" },
-        operationalReach: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Geographic locations or markets they operate in"
-        },
-        industriesServed: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "List of industries they service"
-        },
-        notableClients: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Known or likely major clients/partners"
-        },
+        legacy: { type: SchemaType.STRING, description: "Detailed paragraph about history" },
+        portfolio: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Products" },
+        description: { type: SchemaType.STRING, description: "Description" },
+        website: { type: SchemaType.STRING, description: "Website URL" },
+        businessModel: { type: SchemaType.STRING, description: "Business Model" },
+        employees: { type: SchemaType.STRING, description: "Employees" },
+        annualRevenue: { type: SchemaType.STRING, description: "Revenue" },
+        operationalReach: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Markets" },
+        industriesServed: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Industries" },
+        notableClients: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Clients" },
         revenueStreams: {
             type: SchemaType.ARRAY,
             items: {
@@ -54,7 +37,7 @@ const dossierSchema: Schema = {
                 },
                 required: ["label", "description"]
             },
-            description: "Breakdown of major revenue streams with descriptions"
+            description: "Streams"
         },
         keyMilestones: {
             type: SchemaType.ARRAY,
@@ -66,161 +49,146 @@ const dossierSchema: Schema = {
                 },
                 required: ["year", "event"]
             },
-            description: "Timeline of key corporate events"
+            description: "Timeline"
         },
-        digitalAssets: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Critical digital infrastructure, software, and data they hold"
-        },
-        supplyChainExposure: { type: SchemaType.STRING, description: "Deep analysis of digital supply chain dependencies and cyber vulnerabilities" },
-        regulatoryEnvironment: { type: SchemaType.STRING, description: "Regulations they must comply with" },
-        cyberThreatNarrative: { type: SchemaType.STRING, description: "A highly realistic, devastating cyber threat narrative tailored to their business model." },
+        digitalAssets: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Assets" },
+        supplyChainExposure: { type: SchemaType.STRING, description: "Analysis" },
+        regulatoryEnvironment: { type: SchemaType.STRING, description: "Regulations" },
+        cyberThreatNarrative: { type: SchemaType.STRING, description: "Narrative" },
         cyberStats: {
             type: SchemaType.ARRAY,
             items: {
                 type: SchemaType.OBJECT,
                 properties: {
                     label: { type: SchemaType.STRING },
-                    value: { type: SchemaType.NUMBER, description: "Risk score from 0 to 100" },
+                    value: { type: SchemaType.NUMBER },
                     reasoning: { type: SchemaType.STRING }
                 },
                 required: ["label", "value", "reasoning"]
             },
-            description: "5 quantifiable cyber risk factors specific to this business."
+            description: "Stats"
         },
         shodanIntelligence: {
             type: SchemaType.OBJECT,
             properties: {
                 assetCount: { type: SchemaType.NUMBER },
-                openPorts: { type: SchemaType.ARRAY, items: { type: SchemaType.NUMBER } },
+                openPorts: { 
+                    type: SchemaType.ARRAY, 
+                    items: { 
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            port: { type: SchemaType.NUMBER },
+                            risk: { type: SchemaType.STRING }
+                        },
+                        required: ["port", "risk"]
+                    } 
+                },
                 vulnerabilities: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
                 techStack: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
                 lastScanDate: { type: SchemaType.STRING }
             },
-            description: "Explicitly pass back the technical OSINT findings if they were provided in the prompt."
+            description: "OSINT"
         }
     },
-    required: [
-        "name", "founded", "hq", "leadership", "legacy", "portfolio", "description",
-        "businessModel", "employees", "annualRevenue", "operationalReach", "industriesServed",
-        "notableClients", "revenueStreams", "keyMilestones", "digitalAssets",
-        "supplyChainExposure", "regulatoryEnvironment", "cyberThreatNarrative", "cyberStats"
-    ]
+    required: ["name", "founded", "hq", "leadership", "legacy", "portfolio", "description", "businessModel", "employees", "annualRevenue", "operationalReach", "industriesServed", "notableClients", "revenueStreams", "keyMilestones", "digitalAssets", "supplyChainExposure", "regulatoryEnvironment", "cyberThreatNarrative", "cyberStats"]
 };
 
-/**
- * Dynamically builds a CompanyDossier using the Gemini API and Google Search Grounding.
- */
 export async function buildDynamicDossier(organizationName: string, websiteUrl?: string): Promise<CompanyDossier> {
-    if (!apiKey) {
-        throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not configured.");
-    }
+    if (!apiKey) throw new Error("No API Key");
 
-    // Attempt Shodan Reconnaissance if a website is provided
-    let shodanRecon: ShodanFinds | null = null;
     let shodanPrompt = "";
-
     if (websiteUrl) {
-        console.log(`[Dossier Builder] Triggering OSINT Recon for: ${websiteUrl}`);
-        shodanRecon = await gatherShodanIntelligence(websiteUrl);
-
+        const shodanRecon = await gatherShodanIntelligence(websiteUrl);
         if (shodanRecon) {
-            shodanPrompt = `
-                CRITICAL TECHNICAL INTELLIGENCE INJECTED:
-                We have performed a direct OSINT scan on their public infrastructure.
-                Integrate these findings into your final Threat Narrative and Cyber Stats:
-                ${shodanRecon.rawReport}
-            `;
+            shodanPrompt = `OSINT: ${shodanRecon.rawReport}`;
         }
     }
 
-    // Model 1: Search-enabled for unstructured intelligence gathering
+    const safetySettings = [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+    ];
+
     const searchModel = genAI.getGenerativeModel({
         model: process.env.AI_MODEL || "gemini-2.0-flash",
-        generationConfig: {
-            temperature: 0.2,
-        },
-        // @ts-expect-error - The SDK types use googleSearchRetrieval but the API requires googleSearch
-        tools: [{ googleSearch: {} }]
+        safetySettings: safetySettings as any
     });
 
-    // Model 2: Strict JSON schema extraction (no tools)
     const extractionModel = genAI.getGenerativeModel({
         model: process.env.AI_MODEL || "gemini-2.0-flash",
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: dossierSchema,
             temperature: 0.1,
-        }
+        },
+        safetySettings: safetySettings as any
     });
 
-    const targetContext = websiteUrl
-        ? `The organization is "${organizationName}", and their official website is ${websiteUrl}.`
-        : `The organization is "${organizationName}".`;
-
     const researchPrompt = `
-        You are a Tier-1 Forensic Cyber Underwriter at a global reinsurance firm.
-        Perform a deep-dive OSINT synthesis for the organization: "${organizationName}".
-        ${websiteUrl ? `Primary URL for reconnaissance: ${websiteUrl}` : ''}
-
+        You are a Tier-1 Forensic Cyber Underwriter.
+        Perform a deep-dive OSINT synthesis for: "${organizationName}".
+        ${websiteUrl ? `Primary URL: ${websiteUrl}` : ''}
         ${shodanPrompt}
 
-        REQUIRED STANDARDS (ELITE SPECIFICITY ONLY):
-        1. **Leadership**: Identify the specific CEO, MD, or Authorized Signatory by name (e.g., "M.S. Sreedhar, MD"). NO generic "Management Team".
-        2. **Revenue/Scale**: Hunt for exact annual revenue or valuation (e.g., "INR 3,500 Cr", "USD 450M"). Identify exact employee headcount ranges.
-        3. **Business Model**: Explain the technical nature of their operations (e.g., "Direct-to-consumer digital insurance node with API-led distribution strategy"). 
-        4. **Portfolio**: List 4-6 specific products or service lines (e.g., "Commercial Casualty", "Retail Health", "SME Cyber").
-        5. **Cyber Risk Narrative**: Synthesized as highly technical risk factors with realistic business reasoning referencing specific laws like India's DPDP Act 2023 or IRDAI frameworks. 
-        6. **Digital Asset Inventory**: Be granular. List specific systems they likely use (e.g., "SAP S/4HANA ERP", "Direct API Gateways to HDFC Bank", "PHI Data for 2M+ patients").
+        REQUIRED STANDARDS:
+        1. **Leadership**: Specific CEO/MD name.
+        2. **Scale**: Exact annual revenue estimate (e.g. INR 5,000 Cr) and employee count.
+        3. **Business Model**: Technical nature of operations.
+        4. **Cyber Risk**: Technical risk factors referencing specific frameworks like India's DPDP Act 2023.
+        5. **Digital Assets**: Granular list (ERP, CRM, PHI/PII scale).
 
-        STRICT FORBIDDEN LIST:
-        - NO "N/A" or "Unknown".
-        - NO "Leading service provider".
-        - NO generic "Data security risk".
-        - NO placeholders like "[CEO NAME]".
-
-        Format your research as a dense narrative block of technical intel first, followed by the specific data points requested.
+        Format as a dense narrative briefing.
     `;
 
     try {
-        console.log(`[Dossier Builder] Step 1: Gathering unstructured intelligence via Search for ${organizationName}...`);
+        console.log(`[Dossier Builder] Step 1: Gathering structured intelligence for ${organizationName}...`);
         const searchResult = await searchModel.generateContent(researchPrompt);
         const searchResponse = searchResult.response.text();
 
-        if (!searchResponse) {
-            throw new Error("Gemini returned an empty research response.");
-        }
-
-        console.log(`[Dossier Builder] Step 2: Extracting structured JSON schema...`);
+        console.log(`[Dossier Builder] Step 2: Extracting high-fidelity JSON...`);
         const extractionPrompt = `
-            You are a strict JSON data extraction AI.
-            Read the following corporate intelligence briefing and map it exactly into the required JSON schema structure.
-            If any data point is missing from the briefing, infer the most logical, realistic professional estimate based on similar companies in their industry. Ensure all arrays have at least 4 items.
-
-            [INTELLIGENCE BRIEFING START]
+            You are a senior data engineer. Extract JSON from this briefing.
+            If data is missing, infer logically. Ensure 4 items per array.
+            
+            [BRIEFING]
             ${searchResponse}
-            [INTELLIGENCE BRIEFING END]
+            [/BRIEFING]
         `;
 
         const extractionResult = await extractionModel.generateContent(extractionPrompt);
-        const jsonText = extractionResult.response.text();
+        const jsonText = extractionResult.response.text().replace(/```json|```/g, "").trim();
+        
+        let cleanedJsonText = jsonText;
+        const firstBrace = jsonText.indexOf('{');
+        if (firstBrace > 0) cleanedJsonText = jsonText.substring(firstBrace);
 
-        if (!jsonText) {
-            throw new Error("Gemini returned an empty JSON extraction response.");
-        }
-
-        const data: CompanyDossier = JSON.parse(jsonText);
-
-        if (websiteUrl && (!data.website || data.website.trim() === "" || data.website.toLowerCase().includes("n/a") || data.website.toLowerCase() === "na")) {
-            data.website = websiteUrl;
-        }
-
-        console.log(`[Dossier Builder] Dynamic Dossier successfully generated for ${data.name}.`);
+        const data: CompanyDossier = JSON.parse(cleanedJsonText);
+        if (websiteUrl && !data.website) data.website = websiteUrl;
+        
+        console.log(`[Dossier Builder] Synthesis Successful: ${data.name}`);
         return data;
-
     } catch (error) {
-        console.error("Error generating dynamic dossier with Gemini:", error);
+        console.error("AI Build Error:", error);
         throw error;
     }
+}
+
+export function getFallbackModel() {
+    const safetySettings = [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+    ];
+
+    return genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+        },
+        safetySettings: safetySettings as any
+    });
 }

@@ -51,6 +51,8 @@ interface UnderwritingContextType {
     signOut: () => Promise<void>
     setCurrentDomainIndex: (index: number) => void
     setCurrentQuestionIndex: (index: number) => void
+    isMfaVerified: boolean
+    setMfaVerified: (verified: boolean) => void
 }
 
 // Helper to normalize industry ID (handles old typos and name storage)
@@ -93,6 +95,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     const [hasDraft, setHasDraft] = useState(false)
     const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
+    const [isMfaVerified, setIsMfaVerified] = useState(false)
 
     const fetchQuestionnaire = useCallback(async (retryCount = 0): Promise<Domain[] | null> => {
         const supabase = createClient()
@@ -299,6 +302,18 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 setHasDraft(false)
             }
 
+            // 5. MFA Check
+            const getMfaCookie = () => {
+                if (typeof document === 'undefined') return false
+                return document.cookie.split('; ').some(row => {
+                    const [key, value] = row.trim().split('=')
+                    return key === 'cyrus_mfa_verified' && value === 'true'
+                })
+            }
+            const mfaStatus = sessionStorage.getItem("cyrus_mfa_authenticated") === "true" || getMfaCookie()
+            setIsMfaVerified(mfaStatus)
+            console.log("🛡️ [MFA Init]: Status:", mfaStatus ? "Verified" : "Pending")
+
             setDomains(finalDomains || JSON.parse(JSON.stringify(DOMAINS)))
             setIsLoading(false)
             sessionStorage.removeItem("cyrus_reset_active")
@@ -317,17 +332,17 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     useEffect(() => {
         const supabase = createClient()
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("🔔 Auth Event:", event, session?.user?.id)
+            console.log("🔔 [Auth Listener]: Event:", event, "| User:", session?.user?.id || "None")
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                // If user changed in another tab, reload to prevent data contamination
                 if (userProfile && session?.user?.id !== userProfile.id) {
-                    console.warn("🔄 Session mismatch detected. Reloading for account isolation.")
+                    console.warn("🔄 [Auth Listener]: Session mismatch detected. Reloading for account isolation.")
                     window.location.reload()
                 }
             }
 
             if (event === 'SIGNED_OUT') {
+                console.log("👋 [Auth Listener]: User signed out. Clearing state.")
                 setUserRole(null)
                 setUserProfile(null)
                 setDomains([])
@@ -339,6 +354,24 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             subscription.unsubscribe()
         }
     }, [userProfile])
+
+    // 5. MFA Check
+    useEffect(() => {
+        if (!isLoading && userProfile && !isMfaVerified) {
+            if (typeof window !== 'undefined') {
+                const path = window.location.pathname
+                const isLoginPage = path === '/login'
+                const isAuthPage = path.startsWith('/auth/')
+                
+                if (!isLoginPage && !isAuthPage) {
+                    console.log("🛡️ [MFA Gate]: Enforcement Active. Redirecting from", path, "to Identity Gateway")
+                    window.location.href = '/login'
+                } else {
+                    console.log("🛡️ [MFA Gate]: User is at Identity Gateway (Awaiting Phase 3)")
+                }
+            }
+        }
+    }, [isLoading, userProfile, isMfaVerified])
 
     // Derived State
     const result: ScoringResult = useMemo(() => {
@@ -680,9 +713,20 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
 
         if (!user) return { success: false, error: "Not authenticated" }
 
+        // CACHE INVALIDATION: If organization name changes, clear the old dossier
+        const nameChanged = updates.organization_name && updates.organization_name !== userProfile?.organization_name
+        const finalUpdates = { ...updates, app_version: MODEL_VERSION }
+        
+        if (nameChanged) {
+            console.log("🏢 Organization changed. Invaliding old dossier.");
+            finalUpdates.company_dossier = null;
+            // Clear local cache too
+            localStorage.removeItem(`cyrus_cached_dossier_${user.id}`);
+        }
+
         const { error } = await supabase
             .from('profiles')
-            .update({ ...updates, app_version: MODEL_VERSION })
+            .update(finalUpdates)
             .eq('id', user.id)
 
         if (error) {
@@ -690,7 +734,8 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             return { success: false, error: error.message }
         }
 
-        setUserProfile((prev: any) => prev ? { ...prev, ...updates } : null)
+        setUserProfile((prev: any) => prev ? { ...prev, ...finalUpdates } : null)
+        
         if (updates.organization_name) {
             setClientName(updates.organization_name)
         }
@@ -702,7 +747,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         }
 
         return { success: true }
-    }, [])
+    }, [userProfile, setSelectedIndustry])
 
     const signOut = useCallback(async () => {
         const supabase = createClient()
@@ -720,6 +765,13 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         localStorage.removeItem("cyrus_client_name")
         localStorage.removeItem("cyrus_selected_industry")
         sessionStorage.clear()
+        
+        // Clear MFA cookie
+        if (typeof document !== 'undefined') {
+            document.cookie = "cyrus_mfa_verified=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        }
+        
+        setIsMfaVerified(false)
 
         await supabase.auth.signOut()
         window.location.href = '/login'
@@ -759,7 +811,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         signOut,
         refreshData: fetchQuestionnaire,
         setCurrentDomainIndex,
-        setCurrentQuestionIndex
+        setCurrentQuestionIndex,
+        isMfaVerified,
+        setMfaVerified: setIsMfaVerified
     }
 
     return <UnderwritingContext.Provider value={value}>{children}</UnderwritingContext.Provider>

@@ -5,7 +5,7 @@
 
 export interface ShodanFinds {
     assetCount: number;
-    openPorts: number[];
+    openPorts: { port: number; risk: 'critical' | 'warning' | 'standard' }[];
     vulnerabilities: string[]; // CVEs
     techStack: string[]; // Web servers, DB versions, etc.
     rawReport: string; // A summarized string for the LLM
@@ -111,7 +111,7 @@ ${topAssetsSummary}
             openPorts: Array.from(openPorts).map(p => ({
                 port: p,
                 risk: criticalPorts.includes(p) ? 'critical' : warningPorts.includes(p) ? 'warning' : 'standard'
-            })) as any,
+            })),
             vulnerabilities: Array.from(vulns).slice(0, 50), // Cap to prevent massive arrays
             techStack: Array.from(techStack),
             rawReport: reportString

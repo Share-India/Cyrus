@@ -52,13 +52,21 @@ export async function generateRemediationPlan(result: ScoringResult, dossier?: C
         throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not configured.");
     }
 
+    const safetySettings = [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+    ];
+
     const model = genAI.getGenerativeModel({
         model: "gemini-2.0-flash",
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: remediationSchema,
             temperature: 0.3, // Slight creativity for actionable writing
-        }
+        },
+        safetySettings: safetySettings as any
     });
 
     const failedKillersTexts = result.failedKillers.map(k => `- ${k.domain}: ${k.text}`).join("\n");

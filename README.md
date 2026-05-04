@@ -1,167 +1,181 @@
-# CYRUS.PRO — Weighted Underwriting & Risk Assessment
+# CYRUS.PRO — Enterprise Weighted Underwriting & Risk Intelligence
 
-> An enterprise-grade cyber risk underwriting engine with AI-powered organization intelligence, dynamic multi-domain scoring, and high-fidelity reporting.
-
-Built with **Next.js 16**, **React 19**, **Supabase**, **Gemini AI**, and **Framer Motion**.
+<div align="center">
+  <img src="https://raw.githubusercontent.com/adityaladge/weightedunderwritingmodel/main/public/logo.png" alt="CYRUS.PRO Logo" width="120" />
+  <h3>The Forensic Standard for Cyber Risk Assessment</h3>
+  <p>Next-Gen Institutional Underwriting Workstation with AI OSINT Synthesis and Weighted Risk Computation</p>
+  
+  [![Tech](https://img.shields.io/badge/Stack-Next.js%2016%20|%20React%2019%20|%20Supabase-blue?style=for-the-badge)](https://nextjs.org)
+  [![AI](https://img.shields.io/badge/AI-Gemini%202.0%20Flash-orange?style=for-the-badge)](https://aistudio.google.com)
+  [![OSINT](https://img.shields.io/badge/Recon-Shodan%20API-red?style=for-the-badge)](https://shodan.io)
+  [![License](https://img.shields.io/badge/License-Proprietary-black?style=for-the-badge)]()
+</div>
 
 ---
 
-## 🚀 Overview
+## 📖 Executive Summary
 
-CYRUS.PRO is designed for technical underwriters and risk analysts handling complex cyber insurance assessments. It combines a weighted, multi-domain questionnaire engine with a Gemini-powered intelligence dossier system — giving underwriters a complete picture of any organization's risk profile before a single question is answered.
+**CYRUS.PRO** is an enterprise-grade cyber risk underwriting platform designed for modern insurance institutions. It moves beyond static questionnaires by integrating **Real-time AI Intelligence** and **Forensic OSINT Reconnaissance** into the underwriting workflow.
+
+Underwriters can generate a comprehensive digital risk dossier for any organization in seconds, then proceed to a dynamic, weighted risk assessment that computes premiums and risk tiers based on 96+ granular technical data points across 19 security domains.
 
 ---
 
-## ✨ Features
+## 🏗️ System Architecture
 
-### 🤖 AI-Powered Organization Intelligence (Dossier)
-- Generates a **real-time Client Context Docket** for any organization using **Gemini 2.0 Flash** with **Google Search grounding**
-- Synthesizes: company overview, leadership, revenue streams, key milestones, digital asset inventory, supply chain exposure, regulatory environment, and a tailored **cyber threat narrative**
-- Produces **5 quantified cyber risk vectors** (0–100 scores) with actional underwriting reasoning
-- Zero manual research required — the AI agent handles all data synthesis independently
+```mermaid
+graph TD
+    User((Underwriter)) -->|Interact| FE[Next.js 16 Web Console]
+    FE -->|Auth / Data| SB[(Supabase / PostgreSQL)]
+    FE -->|Trigger| DS[Dossier Synthesis Engine]
+    
+    subgraph AI & Intelligence Layer
+        DS -->|Search Grounding| G2[Gemini 2.0 Flash]
+        DS -->|Network Recon| SH[Shodan API]
+        G2 -->|Structured Data| FE
+    end
+    
+    subgraph Scoring Engine
+        FE -->|Inputs| WM[Weighted Model v2.1]
+        WM -->|Killer Node Logic| RT[Risk Tiering A-D]
+        RT -->|Output| PDF[High-Fidelity Reports]
+    end
+    
+    subgraph Automation
+        INF[n8n Workflow Engine] -->|Async Processing| SB
+        INF -->|Policy Analysis| G2
+    end
+```
 
-### 📋 Dynamic Risk Questionnaire Engine
-- **19+ risk domains** with industry-specific weight mapping
-- Weighted scoring engine with real-time score computation
-- **"Killer Node" detection** — flags critical failure points that automatically tier the risk
-- Per-domain progress tracking and adaptive question flow
+---
 
-### ☁️ Cloud-Based Draft System
-- Save and resume assessments seamlessly across devices
-- Supabase-backed persistent storage with Row Level Security (RLS)
-- Automatic draft recovery on session restore (12s timeout + retry logic)
+## 🧠 Core Methodology
 
-### 🧑‍💼 Admin Command Center
-- Full submission audit trail with role-based access
-- **Excel & PDF export** of individual and aggregate assessment reports
-- Industry analytics and trend dashboards (Recharts)
-- User role management and submission review queue
+### 1. Weighted Scoring Model (v2.1)
+The system employs a **Normalized Industry Weighting** algorithm. Unlike flat models, CYRUS.PRO adjusts the "gravity" of security domains based on the client's industry profile.
+*   **Industry Context**: A manufacturing firm (OT focus) has higher weight on `IoT/OT Security`, while a FinTech firm weights `Regulatory Compliance` and `IAM` more heavily.
+*   **Dynamic Computation**: Scores are recalculated in real-time as the underwriter fills the assessment, providing immediate feedback on risk volatility.
 
-### 🎨 Premium UI/UX
-- Dark-mode optimized, high-fidelity interface
-- Fluid micro-animations via **Framer Motion**
-- Full **Radix UI** component suite with accessibility built-in
-- OTP-based auth flows, reset password, onboarding tour
+### 2. The "Killer Node" Protocol
+Critical security controls are marked as **Killer Nodes**. A failure in any "Killer" question triggers:
+*   **Immediate Tier Capping**: The risk cannot be rated higher than "C" or "D" regardless of other high scores.
+*   **Auto-Decline Logic**: Certain fatal failures (e.g., no backups, active ransomware presence) trigger a recommended "Technical Decline".
+*   **Underwriting Narrative**: The system generates a specific reasoning block explaining the fatal flaw for the audit trail.
+
+### 3. AI Dossier Synthesis
+Leveraging **Gemini 2.0 Flash** with Google Search grounding, CYRUS.PRO builds a 360° view of a client:
+*   **Digital Footprint**: Maps IPs, open ports (via Shodan), and exposed tech stacks.
+*   **Business Context**: Identifies revenue streams, leadership, and regulatory environment (e.g., DPDP Act 2023 compliance).
+*   **Threat Narrative**: Predicts specific threat actors and attack vectors likely to target that specific entity.
+
+---
+
+## ✨ Features Deep Dive
+
+### 🤖 Intelligence Dossier (Client Context Docket)
+*   **Zero-Input Recon**: Just enter a company name; the AI handles the rest.
+*   **Quantified Risk Vectors**: 5 AI-generated scores (0-100) for Financial Stability, Digital Exposure, Supply Chain Risk, Regulatory Pressure, and Security Maturity.
+*   **Asset Inventory**: Automated list of known ERPs, Cloud Providers, and critical digital assets.
+
+### 📋 Forensic Assessment Engine
+*   **19 Risk Domains**: Covering Network Security, DBR, IAM, SOC/SOAR, Dark Web Exposure, and more.
+*   **96+ Weighted Questions**: Precise technical questions derived from ISO 27001, NIST, and industry best practices.
+*   **Multi-Domain Progress**: Visual tracking of completion percentages across the entire audit landscape.
+
+### 🏛️ Admin Command Center
+*   **Audit Trail**: Full history of every assessment, draft, and finalized report.
+*   **Role-Based Access (RBAC)**: Distinct permissions for Field Agents, Underwriters, and Senior Auditors.
+*   **Data Analytics**: Recharts-powered dashboard showing industry trends and risk distribution.
+
+### 📄 Professional Reporting
+*   **High-Fidelity PDF**: Forensic-quality risk reports for institutional filing.
+*   **Excel Master-File**: Technical exports for further actuarial modeling.
 
 ---
 
 ## 🛠️ Technical Stack
 
-| Layer | Technology |
-|---|---|
-| **Framework** | Next.js 16 (App Router) |
-| **UI** | React 19, Tailwind CSS v4, Radix UI, Framer Motion |
-| **AI** | Google Gemini 2.0 Flash (`@google/generative-ai`) with Google Search grounding |
-| **Backend / Auth** | Supabase (PostgreSQL, RLS, Supabase Auth, SSR) |
-| **Forms** | React Hook Form + Zod |
-| **Reporting** | jsPDF + jsPDF-AutoTable, ExcelJS / xlsx |
-| **Charts** | Recharts |
-| **Automation** | n8n (Asynchronous Workflow Engine) |
-| **Containerization**| Docker & Docker Compose |
-| **OSINT** | Shodan API |
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Framework** | **Next.js 16 (App Router)** | Modern SSR/ISR & Edge Compatibility |
+| **UI Engine** | **React 19 + Framer Motion** | High-fidelity interactive components |
+| **Styling** | **Tailwind CSS v4** | Next-gen utility-first styling |
+| **Database** | **Supabase (PostgreSQL)** | RLS security, Real-time sync, and Persistence |
+| **AI Intelligence** | **Gemini 2.0 Flash** | Data synthesis & Search grounding |
+| **OSINT** | **Shodan API** | Network reconnaissance & Port mapping |
+| **Automation** | **n8n** | Asynchronous workflows & Document analysis |
+| **Reporting** | **jsPDF + ExcelJS** | Multi-format institutional exports |
 
 ---
 
-├── infrastructure/             # Automation & Docker configuration
-│   ├── n8n/                    # n8n custom data and workflows
-│   ├── start-automation.sh     # One-click docker startup script
-│   └── *_workflow.json         # n8n workflow export files
-├── docker-compose.yml          # Full stack containerization
-├── Dockerfile                  # Next.js production build config
-├── components/                 # Shared UI components
-├── context/                    # React context (underwriting state)
-├── lib/
-│   ├── dossier-builder.ts      # Gemini AI dossier generation logic
-│   └── company-data.ts         # CompanyDossier type definitions
-├── hooks/                      # Custom React hooks
-├── scripts/
-│   └── seed_model_v2.ts        # Database seeding script
-└── styles/
-    └── globals.css
-```
-
----
-
-## 🛠️ Infrastructure & Automation
-
-CYRUS.PRO uses a self-hosted **n8n** automation engine to offload heavy AI processing and OSINT research. This ensures the frontend remains highly responsive even during complex risk synthesis.
-
-### 🐳 Docker Deployment
-The entire stack (Next.js, n8n, PostgreSQL) is containerized for consistent deployment.
-
-```bash
-# Start the full automation stack
-sh infrastructure/start-automation.sh
-```
-
-### 🤖 n8n Workflows
-- **CYRUS - Dossier Generation**: Triggers on new client onboarding; uses Shodan and Gemini to build intelligence profiles.
-- **CYRUS - AI Policy Analysis**: Triggered from the Admin panel; scans policy documents for risk vectors.
-- **CYRUS - Master Document Management**: Generates final Executive Master Dockets and stores them in Supabase.
-
----
-
-## 🏁 Getting Started
+## 🚀 Setup & Installation
 
 ### Prerequisites
-- Node.js 18+
-- A [Supabase](https://supabase.com) project
-- A [Google AI Studio](https://aistudio.google.com) API key (for Gemini)
+*   Node.js 20+ (LTS)
+*   Supabase Account & Project
+*   Google AI Studio API Key (Gemini)
+*   Shodan API Key
 
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/adityaladge/weightedunderwritingmodel.git
-cd weightedunderwritingmodel
-
-# 2. Install dependencies
-npm install
-
-# 3. Configure environment variables
-cp .env.local.example .env.local
-# Edit .env.local with your actual keys (see below)
-
-# 4. Start the development server
-npm run dev
-```
-
-### Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Google Gemini AI (for dossier generation)
-GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
-```
-
-### Database Setup
-
-Run the `master_consolidated_setup.sql` script in your Supabase SQL Editor to initialize the schema, Row Level Security policies, and seed data.
-
-To seed the underwriting model data:
-```bash
-npm run seed
-```
+### Local Development
+1.  **Clone & Install**:
+    ```bash
+    git clone https://github.com/adityaladge/weightedunderwritingmodel.git
+    cd weightedunderwritingmodel
+    npm install
+    ```
+2.  **Environment Configuration**:
+    Create `.env.local`:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=your_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+    GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key
+    SHODAN_API_KEY=your_shodan_key
+    ```
+3.  **Database Migration**:
+    Execute the SQL scripts in `scripts/` or `supabase/` in your Supabase SQL Editor to set up tables and RLS policies.
+4.  **Seed the Model**:
+    ```bash
+    npm run seed
+    ```
+5.  **Run**:
+    ```bash
+    npm run dev
+    ```
 
 ---
 
-## 🔌 API Reference
+## 🔌 API Strategy
 
-| `/api/generate-dossier` | `POST` | Trigger AI dossier generation (n8n) |
-| `/api/analyze-policy` | `POST` | Trigger document risk analysis (n8n) |
-| `/api/assessments` | `GET/POST` | List / create assessments |
-| `/api/excel` | `POST` | Export assessment as Excel report |
-| `/api/intelligence` | `GET` | Retrieve risk intelligence data |
-| `/api/industries` | `GET` | List available industries |
-| `/api/health` | `GET` | Health check |
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/generate-dossier` | `POST` | Triggers the Gemini+Shodan synthesis pipeline |
+| `/api/assessments` | `GET/POST` | Manages assessment lifecycle (Drafts & Final) |
+| `/api/analyze-policy` | `POST` | AI-driven IT Policy document parsing |
+| `/api/excel` | `POST` | Generates technical XLS assessment master |
+| `/api/health` | `GET` | System integrity check |
 
 ---
 
-## 📄 License
+## 🛡️ Security & Compliance
+*   **Row Level Security (RLS)**: Users can only access assessments they created or are assigned to.
+*   **Data Isolation**: Strict multi-tenant architecture at the database level.
+*   **Audit Logging**: Every score change and draft update is timestamped.
 
-Custom Proprietary License — All Rights Reserved. © Share India Group.
+---
+
+## 🗺️ Roadmap
+*   [ ] **API v3**: Public endpoint for partner integration.
+*   [ ] **Advanced Benchmarking**: Compare risk scores against industry-wide averages.
+*   [ ] **Auto-Premium Calculation**: Dynamic actuarial link for instant pricing.
+*   [ ] **Multi-Document Analysis**: Analyze 5+ policy documents simultaneously.
+
+---
+
+## 📄 License & Credits
+**Proprietary License**. All rights reserved. 
+Developed by **Aditya Ladge** for **Share India Group**.
+
+---
+<div align="center">
+  <sub>Built with precision for the future of cyber insurance.</sub>
+</div>

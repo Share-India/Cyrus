@@ -19,6 +19,7 @@ export default function WelcomePage() {
         isAdmin,
         updateProfile,
         signOut,
+        handleReset,
         isLoading: contextLoading,
     } = useUnderwriting()
 
@@ -72,51 +73,97 @@ export default function WelcomePage() {
             const websiteUrl = userProfile.organization_website || userProfile.website || ""
             const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
 
-            // 1. Bypass static hardcoded dossiers and immediately check cache or call API
+            if (!orgName || orgName.trim() === "") {
+                setShowDossierModal(true);
+                return; // Prevent API fetch but show modal to prompt for name
+            }
 
-            // 2. Check LocalStorage Cache to save API Tokens
+            // Define what a "High-Fidelity" dossier looks like to avoid redundant triggers
+            const isHighFidelity = (d: any) => {
+                if (!d) return false;
+                // It must match the current organization name
+                if (orgName && d.name && !d.name.toLowerCase().includes(orgName.toLowerCase()) && !orgName.toLowerCase().includes(d.name.toLowerCase().split(' ')[0])) {
+                    return false;
+                }
+                // It must have more than just baseline generic data
+                const isGeneric = !d.revenueStreams || d.revenueStreams.length === 0 || d.leadership === "Authorized Signatory" || d.leadership === "Management Team";
+                return !isGeneric;
+            }
+
+            // 1. Check Database Profile for an existing dossier FIRST (Cloud Truth)
+            // If it exists in the DB, the user has already confirmed it once.
+            if (isHighFidelity(userProfile.company_dossier)) {
+                console.log("☁️ [Dossier]: Confirmed intelligence found in Cloud Profile. Skipping synthesis.");
+                setDossier(userProfile.company_dossier)
+                setHasSeenModal(true) // User has already confirmed this in a previous session
+                setShowDossierModal(false)
+                // Sync to local cache for performance
+                localStorage.setItem(localCacheKey, JSON.stringify(userProfile.company_dossier))
+                return
+            }
+
+            // 2. Check LocalStorage Cache
             const cachedData = localStorage.getItem(localCacheKey)
             if (cachedData) {
                 try {
                     const parsedCache = JSON.parse(cachedData)
-                    if (parsedCache && parsedCache.name) {
+                    if (isHighFidelity(parsedCache)) {
+                        console.log("📦 [Dossier]: High-fidelity intelligence found in local cache.");
                         setDossier(parsedCache)
                         setShowDossierModal(true)
                         return
                     }
+                    console.log("🔄 Cached dossier is generic or mismatched. Re-synthesizing...");
                 } catch (e) {
                     console.error("Failed to parse cached dossier", e)
                 }
             }
 
-            // 3. Unknown org + No Cache → Call Gemini & Shodan API
+            // 3. No Confirmed/Cached Dossier → Call Gemini & Shodan API
+            console.log("🚀 [Dossier]: Initializing First-Time Intelligence Synthesis...");
             setIsDossierLoading(true)
             setShowDossierModal(true)
 
             fetch("/api/generate-dossier", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ organizationName: orgName, websiteUrl })
+                body: JSON.stringify({ 
+                    organizationName: orgName, 
+                    websiteUrl,
+                    userId: userProfile.id 
+                })
             })
-                .then(res => {
-                    if (!res.ok) throw new Error("Generation failed")
+                .then(async res => {
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.error || `Generation failed: ${res.statusText}`);
+                    }
                     return res.json()
                 })
                 .then((data: CompanyDossier) => {
                     setDossier(data)
-                    // We DO NOT save to localStorage here, we wait for user confirmation
+                    // We do NOT save to DB here yet. 
+                    // We wait for the user to confirm it in handleConfirmDossier.
+                    localStorage.setItem(localCacheKey, JSON.stringify(data))
                 })
                 .catch(err => {
                     console.error("[Dossier Fetch Error]", err)
-                    setDossierError("Intelligence synthesis failed. Please try again.")
+                    setDossierError(err.message || "Intelligence synthesis failed. Please try again.")
                 })
                 .finally(() => setIsDossierLoading(false))
         }
     }, [contextLoading, userProfile, hasSeenModal])
 
-    const handleConfirmDossier = () => {
-        // Only trigger cache save when the user explicitly confirms the intel is correct
+    const handleConfirmDossier = async () => {
+        // User confirmed the intel is correct → Persist to Cloud Profile immediately
         if (dossier && userProfile?.id) {
+            console.log("💾 [Dossier]: Persisting confirmed intelligence to Cloud Profile...");
+            
+            // This ensures it never loads again on any device/session
+            await updateProfile({ 
+                company_dossier: dossier 
+            });
+
             const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
             localStorage.setItem(localCacheKey, JSON.stringify(dossier))
         }
@@ -164,24 +211,44 @@ export default function WelcomePage() {
                                     </div>
                                 )}
 
-                                {/* Error State */}
-                                {!isDossierLoading && dossierError && (
-                                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-                                        <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center">
-                                            <AlertCircle className="w-8 h-8 text-rose-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-black text-si-navy font-outfit">Synthesis Interrupted</h3>
-                                            <p className="text-sm text-slate-500 mt-1">{dossierError}</p>
-                                        </div>
-                                        <button onClick={handleConfirmDossier} className="mt-2 px-6 py-2.5 bg-si-blue-primary text-white text-sm font-bold rounded-full hover:bg-si-navy transition-colors">
-                                            Continue without Dossier
-                                        </button>
-                                    </div>
-                                )}
+                                {/* Error State or Missing Info */}
+                                 {!isDossierLoading && (dossierError || (!userProfile?.organization_name)) && (
+                                     <div className="flex flex-col items-center justify-center py-24 gap-6 text-center max-w-sm mx-auto">
+                                         <div className="w-20 h-20 bg-amber-50 rounded-[32px] flex items-center justify-center border border-amber-100 shadow-sm">
+                                             {!userProfile?.organization_name ? (
+                                                <Building2 className="w-10 h-10 text-amber-500" />
+                                             ) : (
+                                                <AlertCircle className="w-10 h-10 text-rose-500" />
+                                             )}
+                                         </div>
+                                         <div>
+                                             <h3 className="text-2xl font-black text-si-navy font-outfit tracking-tight">
+                                                 {!userProfile?.organization_name ? "Identity Verification Required" : "Synthesis Interrupted"}
+                                             </h3>
+                                             <p className="text-sm text-slate-500 mt-2 font-medium">
+                                                 {!userProfile?.organization_name 
+                                                    ? "We need your Organization Name to perform technical OSINT reconnaissance and build your risk dossier." 
+                                                    : dossierError}
+                                             </p>
+                                         </div>
+
+                                         {!userProfile?.organization_name ? (
+                                             <div className="w-full space-y-3">
+                                                 <Link href="/settings" className="flex items-center justify-center gap-2 w-full py-4 bg-si-navy text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-si-blue-primary transition-all shadow-lg shadow-si-navy/20">
+                                                     Complete Profile Setup
+                                                     <ArrowRight className="w-3 h-3" />
+                                                 </Link>
+                                             </div>
+                                         ) : (
+                                             <button onClick={handleConfirmDossier} className="px-8 py-4 bg-si-blue-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-si-navy transition-all shadow-lg shadow-si-blue-primary/20">
+                                                 Proceed without Dossier
+                                             </button>
+                                         )}
+                                     </div>
+                                 )}
 
                                 {/* Dossier Content — only shown once loaded */}
-                                {!isDossierLoading && !dossierError && (<>
+                                {!isDossierLoading && !dossierError && userProfile?.organization_name && (<>
                                 {/* Modal Header */}
                                 <div className="flex items-start gap-4 mb-8">
                                     <div className="w-14 h-14 bg-si-blue-primary/10 rounded-2xl flex items-center justify-center text-si-blue-primary flex-shrink-0 mt-1">
@@ -400,10 +467,18 @@ export default function WelcomePage() {
                                                 </div>
                                                 {dossier.shodanIntelligence.openPorts && dossier.shodanIntelligence.openPorts.length > 0 && (
                                                     <div className="mb-3">
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Exposed Services</p>
                                                         <div className="flex flex-wrap gap-2">
-                                                            {dossier.shodanIntelligence.openPorts.slice(0, 10).map((port, idx) => (
-                                                                <span key={idx} className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded border border-slate-700 font-mono">Port {port}</span>
+                                                            {dossier.shodanIntelligence.openPorts.slice(0, 10).map((p, idx) => (
+                                                                <span 
+                                                                    key={idx} 
+                                                                    className={`px-2 py-1 text-xs rounded border font-mono ${
+                                                                        p.risk === 'critical' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 
+                                                                        p.risk === 'warning' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 
+                                                                        'bg-slate-800 text-slate-300 border-slate-700'
+                                                                    }`}
+                                                                >
+                                                                    Port {p.port}
+                                                                </span>
                                                             ))}
                                                         </div>
                                                     </div>
@@ -574,31 +649,44 @@ export default function WelcomePage() {
                                 </Link>
 
                                 {completionStats.percentage > 0 && (
-                                    <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                                        <div className="relative w-12 h-12">
-                                            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                                                <path
-                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none"
-                                                    stroke="#E2E8F0"
-                                                    strokeWidth="3"
-                                                />
-                                                <path
-                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none"
-                                                    stroke="#3B82F6"
-                                                    strokeWidth="3"
-                                                    strokeDasharray={`${completionStats.percentage}, 100`}
-                                                />
-                                            </svg>
-                                            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-si-navy">
-                                                {completionStats.percentage}%
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                                            <div className="relative w-12 h-12">
+                                                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                                    <path
+                                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                        fill="none"
+                                                        stroke="#E2E8F0"
+                                                        strokeWidth="3"
+                                                    />
+                                                    <path
+                                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                        fill="none"
+                                                        stroke="#3B82F6"
+                                                        strokeWidth="3"
+                                                        strokeDasharray={`${completionStats.percentage}, 100`}
+                                                    />
+                                                </svg>
+                                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-si-navy">
+                                                    {completionStats.percentage}%
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-si-navy uppercase">Overall Progress</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">{completionStats.answered} / {completionStats.total} Answered</p>
                                             </div>
                                         </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-si-navy uppercase">Overall Progress</p>
-                                            <p className="text-[10px] text-slate-500 font-medium">{completionStats.answered} / {completionStats.total} Answered</p>
-                                        </div>
+                                        <button 
+                                            onClick={async () => {
+                                                if (window.confirm("This will clear your current progress and start a fresh assessment. Continue?")) {
+                                                    await handleReset();
+                                                    window.location.href = "/assessment";
+                                                }
+                                            }}
+                                            className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-si-red transition-colors text-left pl-4"
+                                        >
+                                            Discard & Start New Assessment
+                                        </button>
                                     </div>
                                 )}
                             </div>

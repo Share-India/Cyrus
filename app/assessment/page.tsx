@@ -382,7 +382,12 @@ export default function AssessmentPage() {
                             Return Home
                         </button>
                         <button
-                            onClick={() => window.location.reload()}
+                            onClick={async () => {
+                                if (window.confirm("Start a new assessment? This will clear current results.")) {
+                                    await handleReset()
+                                    window.location.href = "/assessment"
+                                }
+                            }}
                             className="py-4 bg-slate-50 border border-slate-100 text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-100 transition-all duration-300"
                         >
                             New Assessment

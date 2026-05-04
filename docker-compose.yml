@@ -15,7 +15,7 @@ services:
     restart: always
     env_file: .env.local
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
       - N8N_WEBHOOK_URL=http://n8n:5678/webhook

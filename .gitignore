@@ -18,6 +18,9 @@ pnpm-debug.log*
 # OS
 .DS_Store
 
+# Build Artifacts
+tsconfig.tsbuildinfo
+
 # IDE
 .vscode/
 

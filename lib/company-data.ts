@@ -27,7 +27,7 @@ export interface CompanyDossier {
     // External OSINT Verification
     shodanIntelligence?: {
         assetCount: number;
-        openPorts: number[];
+        openPorts: { port: number; risk: 'critical' | 'warning' | 'standard' }[];
         vulnerabilities: string[];
         techStack: string[];
         lastScanDate: string;
@@ -458,12 +458,79 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
             { label: "Financial Transaction & Premium Fraud", value: 74, reasoning: "High frequency of digital premium payments and claim payouts offers multiple points for interception and redirect fraud." },
             { label: "Regulatory Censure & License Suspension", value: 89, reasoning: "IRDAI mandates strict cybersecurity hygiene; a significant breach invites aggressive audits and potential trade restrictions." }
         ]
+    },
+    "L&T Technology Services": {
+        name: "L&T TECHNOLOGY SERVICES LIMITED (LTTS)",
+        founded: "2012",
+        hq: "Vadodara, Gujarat, India (Corporate) | R&D Excellence in Bangalore",
+        leadership: "Amit Chadha (CEO & MD) | Part of the Larsen & Toubro Conglomerate",
+        legacy: "The global titan of 'Pure-Play' Engineering Research & Development (ER&D). Born from the $27B legacy of Larsen & Toubro, LTTS architects the world’s most advanced digital twins, autonomous vehicles, and sustainable industrial ecosystems. A mission-critical engineering node for 69 of the Fortune 500.",
+        portfolio: [
+            "Advanced Autonomous Mobility & ADAS Engineering",
+            "Smart Manufacturing & Industrial IoT (Industry 4.0)",
+            "Pervasive AI, Generative AI & Digital Twin Workflows",
+            "Next-Gen Medical Devices & Digital Health Platforms",
+            "Energy Transition & Net-Zero Sustainability Engineering",
+            "Cyber-Physical System Security (OT/ICS hardening)"
+        ],
+        description: "L&T Technology Services is a global engineering powerhouse. They provide end-to-end design, development, and testing services for products and processes across five major segments: Transportation, Industrial Products, Telecom & Hi-Tech, Medical Devices, and Plant Engineering.",
+        website: "https://www.ltts.com",
+        businessModel: "A high-expertise, project-based engineering services model. Revenue is generated through long-term R&D partnerships, managed engineering centers, and bespoke IP-led digital transformation contracts for the world's largest automotive, aerospace, and medical device manufacturers.",
+        employees: "23,000+ (Elite specialization in engineering and R&D)",
+        annualRevenue: "₹10,670 Cr / $1.26 Billion+ (FY2025)",
+        operationalReach: [
+            "India (Bangalore, Vadodara, Pune, Chennai)", "North America (Silicon Valley, Texas, Michigan)", 
+            "Europe (Germany, France, Nordic Region)", "Japan & Korea Tech Hubs"
+        ],
+        industriesServed: [
+            "Autonomous Mobility & Automotive",
+            "Industrial Manufacturing & Heavy Engineering",
+            "High-Tech, Telecom & Media",
+            "Life Sciences & Medical Technology",
+            "Energy, Utilities & Smart Cities"
+        ],
+        notableClients: [
+            "NVIDIA (AI Strategic Partnership)",
+            "Fortune 500 Automotive OEMs",
+            "Global MedTech Conglomerates",
+            "Major Aerospace Defense Contractors"
+        ],
+        revenueStreams: [
+            { label: "Engineering R&D Services", description: "Direct project-based revenue for product design and process engineering across global manufacturing clients." },
+            { label: "Digital Transformation & AI Consulting", description: "High-margin revenue from implementing pervasive AI, GenAI, and IIoT architectures for industrial enterprises." },
+            { label: "IP-led Solutions & Licensing", description: "Revenue from proprietary frameworks and software-defined-engineering platforms." }
+        ],
+        keyMilestones: [
+            { year: "2012", event: "Incorporated as a dedicated engineering services subsidiary of L&T Group." },
+            { year: "2016", event: "Successfully launched IPO on the Indian exchanges (BSE/NSE)." },
+            { year: "2024", event: "Acquired Intelliswift to severely amplify GenAI and software engineering capabilities." },
+            { year: "2025", event: "Crossed the $1.26 Billion revenue milestone with 105+ innovation centers worldwide." }
+        ],
+        digitalAssets: [
+            "Global Innovation & R&D Center Vaults (105+ locations)",
+            "Massive Proprietary IP Repositories for Industrial AI/ML",
+            "Design Schematics & Digital Twins for Fortune 500 Heavy Infrastructure",
+            "Mission-Critical Client PLM (Product Lifecycle Management) data lakes",
+            "Advanced OT/ICS simulation and testing environments"
+        ],
+        supplyChainExposure: "LTTS is the digital brain of its clients' supply chains. By managing the R&D and design schematics for 69 Fortune 500 firms, LTTS is a massive 'single point of failure.' A breach at LTTS allows threat actors to exfiltrate the future product blueprints of multiple global industries simultaneously. Furthermore, their deep integration into client OT/ICS systems means a compromised LTTS update could theoretically halt manufacturing lines across entire continents.",
+        regulatoryEnvironment: "Subject to a complex web of international trade compliance, export controls, and rigorous data protection laws (GDPR, CCPA, India's DPDP 2023). Must also comply with sector-specific safety standards like ISO 26262 for automotive and ISO 13485 for medical devices.",
+        cyberThreatNarrative: "As a premier R&D hub for global aerospace and defense contractors, LTTS is a Tier-1 target for nation-state espionage (APTs). These actors seek the 'Blueprints of the Future'—autonomous driving algorithms, smart manufacturing schematics, and medical IP. A ransomware attack paralyzing their R&D centers would trigger catastrophic delay penalties and potentially expose sensitive client schematics. Their high public profile and heritage in the L&T group make them a prime target for high-value Business Email Compromise (BEC) and financial redirect fraud during large acquisition disbursements.",
+        cyberStats: [
+            { label: "IP/Espionage Exfiltration Risk (R&D Schematics)", value: 95, reasoning: "Host to the core design intelligence of 69 Fortune 500 firms; theft of this IP is a global competitive catastrophe." },
+            { label: "OT/ICS Supply Chain Pivot Vector", value: 88, reasoning: "Direct engineering access to client manufacturing lines; a breach at LTTS could be used as a vector to infect multinational factory floors." },
+            { label: "Ransomware & R&D Operational Downtime", value: 84, reasoning: "Paralysis of the design ERPs and PLM systems instantly triggers massive contractual liquidated damages from Fortune 500 clients." },
+            { label: "Geopolitical APT Interest", value: 92, reasoning: "Strategic importance to Indian and global infrastructure makes them a prime target for state-sponsored threat actors seeking industrial leverage." },
+            { label: "Regulatory Data Privacy Liability", value: 76, reasoning: "Custody of employee and client data across 40+ countries creates a massive, multi-jurisdictional compliance surface." }
+        ]
     }
 };
 
 export const getDossier = (orgName: string | null | undefined): CompanyDossier | null => {
     if (!orgName) return null;
     const q = orgName.toLowerCase().trim();
+    
+    if (!q) return null; // Safety check: prevent empty string from matching 'Avcon'
 
     // Strategy 1: Exact match
     if (COMPANY_DOSSIERS[orgName]) return COMPANY_DOSSIERS[orgName];
