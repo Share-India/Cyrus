@@ -136,20 +136,34 @@ export default function LoginPage() {
         }
 
         try {
-            const { error } = await supabase.auth.signInWithOtp({
-                [isPhone ? 'phone' : 'email']: normalizedIdentifier,
-                options: { 
-                    shouldCreateUser: true, // Allow new users to sign up via this path
-                    emailRedirectTo: !isPhone ? `${window.location.origin}/auth/callback` : undefined
-                }
-            })
-
-            if (error) throw error
-
             if (isPhone) {
+                // PHONE LOGIN: Send SMS OTP via MSG91
+                // Only works for already-registered users (whitelist enforced in API)
+                const res = await fetch('/api/auth/send-phone-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: normalizedIdentifier })
+                })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error)
+
                 setOtpDestination(normalizedIdentifier)
                 setStep("verification")
             } else {
+                // EMAIL LOGIN: Send magic link — only for registered users
+                const { error } = await supabase.auth.signInWithOtp({
+                    email: normalizedIdentifier,
+                    options: {
+                        shouldCreateUser: false, // Block unregistered emails
+                        emailRedirectTo: `${window.location.origin}/auth/callback`
+                    }
+                })
+                if (error) {
+                    if (error.message.toLowerCase().includes('signups not allowed')) {
+                        throw new Error('No account found with this email. Please sign up first.')
+                    }
+                    throw error
+                }
                 setOtpDestination(normalizedIdentifier)
                 setStep("magic_link_sent")
             }
@@ -213,7 +227,7 @@ export default function LoginPage() {
                 // For sign-up, we'll use email as primary but include phone in metadata
                 options.emailRedirectTo = `${window.location.origin}/auth/callback`
 
-                const { data, error } = await supabase.auth.signUp({
+                const { data: signUpData, error } = await supabase.auth.signUp({
                     email: signUpEmail,
                     password,
                     options
@@ -221,8 +235,22 @@ export default function LoginPage() {
 
                 if (error) throw error
 
-                // After email signup, we go to magic link sent for verification
+                // After signup, send magic link for email verification
+                const { error: otpError } = await supabase.auth.signInWithOtp({
+                    email: signUpEmail,
+                    options: {
+                        shouldCreateUser: false,
+                        emailRedirectTo: `${window.location.origin}/auth/callback`
+                    }
+                })
+
+                // signInWithOtp for email sends a magic link (not a numeric code)
+                // so always show "Check Your Inbox" page
                 setOtpDestination(signUpEmail)
+                if (otpError) {
+                    // Even if OTP send failed, Supabase already sent confirmation email via signUp()
+                    setSuccessMessage("A confirmation link was sent to your email. Please check your inbox.")
+                }
                 setStep("magic_link_sent")
             } else {
                 // LOGIN FLOW (L1: Password)
@@ -299,38 +327,37 @@ export default function LoginPage() {
         }
 
         try {
+            if (isPhone) {
+                // PHONE OTP VERIFICATION: Verify via MSG91, then auto-sign-in via admin magic link
+                const res = await fetch('/api/auth/verify-phone-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: normalizedIdentifier, otp: token })
+                })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error)
+
+                // Redirect to the admin-generated magic link which logs the user in
+                sessionStorage.setItem("cyrus_mfa_authenticated", "true")
+                document.cookie = "cyrus_mfa_verified=true; path=/; max-age=86400"
+                window.location.href = data.actionLink
+                return
+            }
+
+            // EMAIL OTP verification (fallback — not normally used in current flow)
             const { data, error } = await supabase.auth.verifyOtp({
-                [isPhone ? 'phone' : 'email']: normalizedIdentifier,
+                email: normalizedIdentifier,
                 token,
-                type: isPhone ? 'sms' : 'email'
+                type: 'email'
             })
 
             if (error) throw error
             
             if (data.user) {
-                // If it was a sign-up attempt, ensure the profile is updated
-                if (isSignUp) {
-                    await supabase
-                        .from('profiles')
-                        .update({
-                            organization_name: organizationName,
-                            organization_website: organizationWebsite,
-                            industry: industry,
-                            name: name,
-                            username: username,
-                            phone: normalizedIdentifier
-                        })
-                        .eq('id', data.user.id)
-                }
-
-                // MFA Success: Unlock the session gate
                 sessionStorage.setItem("cyrus_mfa_authenticated", "true")
-                
-                // Set cookie for cross-tab persistence
                 if (typeof document !== 'undefined') {
-                    document.cookie = "cyrus_mfa_verified=true; path=/; max-age=86400" // 24h
+                    document.cookie = "cyrus_mfa_verified=true; path=/; max-age=86400"
                 }
-                
                 setMfaVerified(true)
 
                 const { data: profile } = await supabase
