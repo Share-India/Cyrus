@@ -191,6 +191,28 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </motion.div>
+                        <AnimatePresence>
+                            {!formData.phone && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                    className="p-8 bg-si-red/5 border-2 border-si-red/20 rounded-[32px] space-y-4 shadow-xl shadow-si-red/5"
+                                >
+                                    <div className="flex items-center gap-4 text-si-red">
+                                        <div className="w-10 h-10 rounded-xl bg-si-red text-white flex items-center justify-center shrink-0 animate-pulse">
+                                            <ShieldAlert className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xs font-black uppercase tracking-widest leading-none mb-1">Critical Identity Gap</h3>
+                                            <p className="text-[10px] font-bold opacity-70 uppercase tracking-tight">Your account lacks a verified mobile number</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-si-red/80 font-medium leading-relaxed">
+                                        To ensure consistent access and enable SMS-based OTP verification, please add your mobile number below. This is now a mandatory requirement for the CYRUS network.
+                                    </p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     {/* Right Column: Interactive Form */}

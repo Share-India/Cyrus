@@ -25,6 +25,8 @@ export default function LoginPage() {
     const [showDevBypass, setShowDevBypass] = useState(false)
 
     // New State for Client Details
+    const [signUpEmail, setSignUpEmail] = useState("")
+    const [signUpPhone, setSignUpPhone] = useState("")
     const [organizationName, setOrganizationName] = useState("")
     const [organizationWebsite, setOrganizationWebsite] = useState("")
     const [industry, setIndustry] = useState("")
@@ -94,9 +96,24 @@ export default function LoginPage() {
     }
 
     const handleMethodChoice = (method: "password" | "otp") => {
-        if (!identifier || identifier.length < 3) {
-            setError("Please enter a valid email or phone number first.")
-            return
+        if (isSignUp) {
+            if (!signUpEmail || !signUpPhone || !name || !username || !organizationName || (selectedRole === 'client' && !industry)) {
+                setError("Please fill in all required fields (Email, Phone, Name, etc.) to register.");
+                return
+            }
+            if (!/^\+?\d{10,}$/.test(signUpPhone.replace(/[\s\-()]/g, ""))) {
+                setError("Please enter a valid phone number with country code (e.g. +91).");
+                return
+            }
+            if (!signUpEmail.includes("@")) {
+                setError("Please enter a valid email address.");
+                return
+            }
+        } else {
+            if (!identifier || identifier.length < 3) {
+                setError("Please enter a valid email or phone number first.");
+                return
+            }
         }
         
         setError(null)
@@ -167,6 +184,20 @@ export default function LoginPage() {
                     throw new Error("Password must be at least 8 characters.")
                 }
 
+                // Normalize phone
+                let normalizedPhone = signUpPhone.replace(/[\s\-()]/g, "")
+                if (/^\d{10}$/.test(normalizedPhone)) {
+                    normalizedPhone = `+91${normalizedPhone}`
+                }
+
+                // Enforce RBAC rules for Admin role
+                if (selectedRole === 'admin') {
+                    const isAuthorizedEmail = signUpEmail === 'aditya.ladge@gmail.com' || signUpEmail.endsWith('@shareindia.co.in');
+                    if (!isAuthorizedEmail) {
+                        throw new Error("Access Denied: Administrative accounts are restricted to the @shareindia.co.in domain.");
+                    }
+                }
+
                 const options: any = {
                     data: {
                         role: selectedRole,
@@ -175,34 +206,24 @@ export default function LoginPage() {
                         industry: industry,
                         name: name,
                         username: username,
-                        phone: isPhone ? normalizedIdentifier : undefined
+                        phone: normalizedPhone // Pass to metadata so trigger picks it up
                     },
                 };
 
-                if (!isPhone) {
-                    options.emailRedirectTo = `${window.location.origin}/auth/callback`
-                }
+                // For sign-up, we'll use email as primary but include phone in metadata
+                options.emailRedirectTo = `${window.location.origin}/auth/callback`
 
-                const payload: any = { 
+                const { data, error } = await supabase.auth.signUp({
+                    email: signUpEmail,
                     password,
-                    options 
-                }
+                    options
+                })
 
-                if (isPhone) {
-                    payload.phone = normalizedIdentifier
-                } else {
-                    payload.email = normalizedIdentifier
-                }
-
-                const { data, error } = await supabase.auth.signUp(payload)
                 if (error) throw error
 
-                // After signup, we need to verify the identifier
-                if (isPhone) {
-                    setStep("verification")
-                } else {
-                    setStep("magic_link_sent")
-                }
+                // After email signup, we go to magic link sent for verification
+                setOtpDestination(signUpEmail)
+                setStep("magic_link_sent")
             } else {
                 // LOGIN FLOW (L1: Password)
                 const payload: any = { password }
@@ -338,7 +359,26 @@ export default function LoginPage() {
         const supabase = createClient()
         
         try {
-            if (loginMethod === "password") {
+            if (isSignUp) {
+                // For sign-up resend
+                const { error } = await supabase.auth.signUp({
+                    email: signUpEmail,
+                    password,
+                    options: {
+                        data: {
+                            role: selectedRole,
+                            organization_name: organizationName,
+                            organization_website: organizationWebsite,
+                            industry: industry,
+                            name: name,
+                            username: username,
+                            phone: signUpPhone
+                        },
+                        emailRedirectTo: `${window.location.origin}/auth/callback`
+                    }
+                })
+                if (error) throw error
+            } else if (loginMethod === "password") {
                 // For password MFA, always send to the registered email
                 const { data: { user } } = await supabase.auth.getUser()
                 const email = user?.email
@@ -367,6 +407,7 @@ export default function LoginPage() {
             }
             
             setResendCountdown(30)
+            setSuccessMessage("Verification link/code has been re-dispatched.")
         } catch (err: any) {
             setError(err.message || "Failed to resend code.")
         } finally {
@@ -510,21 +551,168 @@ export default function LoginPage() {
                                 </p>
                             </div>
 
-                            <form onSubmit={(e) => { e.preventDefault(); handleMethodChoice("password"); }} className="space-y-8">
-                                <div className="space-y-2">
-                                    <div className="relative group">
-                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center justify-center text-slate-400 group-focus-within:text-si-blue-primary transition-colors">
-                                            {identifier.length === 0 ? <Fingerprint className="w-5 h-5" /> : (isPhone ? <span className="font-black text-sm">+91</span> : <MailOpen className="w-5 h-5" />)}
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={identifier}
-                                            onChange={(e) => setIdentifier(e.target.value)}
-                                            placeholder="Email address or Phone number"
-                                            className="w-full pl-16 pr-8 py-5 bg-white border-2 border-slate-100 rounded-3xl text-lg font-bold text-si-navy focus:outline-none focus:ring-4 focus:ring-si-blue-primary/10 focus:border-si-blue-primary shadow-sm transition-all duration-300 placeholder:font-normal placeholder:text-slate-300"
-                                            required
-                                        />
-                                    </div>
+                            <form onSubmit={(e) => { e.preventDefault(); handleMethodChoice("password"); }} className="space-y-6">
+                                <div className="space-y-4">
+                                    <AnimatePresence mode="wait">
+                                        {!isSignUp ? (
+                                            <motion.div
+                                                key="login-identifier"
+                                                initial={{ opacity: 0, scale: 0.98 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.98 }}
+                                                className="relative group"
+                                            >
+                                                <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center justify-center text-slate-400 group-focus-within:text-si-blue-primary transition-colors">
+                                                    {identifier.length === 0 ? <Fingerprint className="w-5 h-5" /> : (isPhone ? <span className="font-black text-sm">+91</span> : <MailOpen className="w-5 h-5" />)}
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={identifier}
+                                                    onChange={(e) => setIdentifier(e.target.value)}
+                                                    placeholder="Email or Phone number"
+                                                    className="w-full pl-16 pr-8 py-5 bg-white border-2 border-slate-100 rounded-3xl text-lg font-bold text-si-navy focus:outline-none focus:ring-4 focus:ring-si-blue-primary/10 focus:border-si-blue-primary shadow-sm transition-all duration-300 placeholder:font-normal placeholder:text-slate-300"
+                                                    required
+                                                />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                key="signup-identifiers"
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="space-y-4"
+                                            >
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="relative group">
+                                                        <MailOpen className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-si-blue-primary" />
+                                                        <input
+                                                            type="email"
+                                                            value={signUpEmail}
+                                                            onChange={(e) => setSignUpEmail(e.target.value)}
+                                                            placeholder="Work Email Address"
+                                                            className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all placeholder:text-slate-300"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="relative group">
+                                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-xs text-slate-400">+91</span>
+                                                        <input
+                                                            type="tel"
+                                                            value={signUpPhone}
+                                                            onChange={(e) => setSignUpPhone(e.target.value)}
+                                                            placeholder="Mobile Number"
+                                                            className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all placeholder:text-slate-300"
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    <AnimatePresence>
+                                        {isSignUp && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                className="space-y-4 overflow-hidden pt-2"
+                                            >
+                                                <div className="flex flex-col gap-2 mb-2">
+                                                    <div className="p-1 bg-slate-100/50 rounded-[20px] inline-flex">
+                                                        <button type="button" onClick={() => setSelectedRole("client")} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedRole === "client" ? "bg-white text-si-navy shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Client</button>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                if (signUpEmail && !(signUpEmail === 'aditya.ladge@gmail.com' || signUpEmail.endsWith('@shareindia.co.in'))) {
+                                                                    setError("Admin access is restricted to @shareindia.co.in domain.");
+                                                                    return;
+                                                                }
+                                                                setSelectedRole("admin");
+                                                            }} 
+                                                            className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedRole === "admin" ? "bg-si-navy text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
+                                                        >
+                                                            Admin
+                                                        </button>
+                                                    </div>
+                                                    {selectedRole === 'admin' && (
+                                                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] font-black text-si-blue-primary uppercase tracking-widest px-2">
+                                                            ⚠️ Restricted Personnel Only
+                                                        </motion.p>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="relative group">
+                                                        <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
+                                                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all placeholder:text-slate-300" required />
+                                                    </div>
+                                                    <div className="relative group">
+                                                        <Shield className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
+                                                        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all placeholder:text-slate-300" required />
+                                                    </div>
+                                                </div>
+
+                                                {selectedRole === 'client' && (
+                                                    <div className="space-y-4">
+                                                        <div className="relative group">
+                                                            <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
+                                                            <input type="text" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} placeholder="Organization Name" className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all placeholder:text-slate-300" required />
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                            <div className="relative group">
+                                                                <Globe className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
+                                                                <input type="url" value={organizationWebsite} onChange={(e) => setOrganizationWebsite(e.target.value)} placeholder="Website (Optional)" className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all placeholder:text-slate-300" />
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
+                                                                <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="w-full pl-14 pr-10 py-4 bg-white border-2 border-slate-50 rounded-2xl text-sm font-bold text-si-navy focus:border-si-blue-primary outline-none transition-all appearance-none text-slate-600" required>
+                                                                    <option value="" disabled>Industry Profile</option>
+                                                                    {INDUSTRY_PROFILES.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                                </select>
+                                                                <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Industry Logic Visualization */}
+                                                        {industry && (
+                                                            <motion.div 
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                className="p-5 bg-si-navy/[0.03] border-2 border-dashed border-slate-100 rounded-3xl space-y-4"
+                                                            >
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Weight Distribution Preview</span>
+                                                                    <span className="text-[9px] font-bold text-si-blue-primary uppercase">{INDUSTRY_PROFILES.find(p => p.id === industry)?.name} Profile</span>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    {Object.entries(INDUSTRY_PROFILES.find(p => p.id === industry)?.domainWeights || {})
+                                                                        .sort((a, b) => b[1] - a[1])
+                                                                        .slice(0, 3)
+                                                                        .map(([domain, weight]) => (
+                                                                            <div key={domain} className="flex flex-col gap-1.5">
+                                                                                <div className="flex justify-between text-[8px] font-black uppercase tracking-tight">
+                                                                                    <span className="text-si-navy/60">{domain}</span>
+                                                                                    <span className="text-si-blue-primary">{weight}%</span>
+                                                                                </div>
+                                                                                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                                                    <motion.div 
+                                                                                        initial={{ width: 0 }}
+                                                                                        animate={{ width: `${weight * 5}%` }} 
+                                                                                        className="h-full bg-si-blue-primary" 
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        ))
+                                                                    }
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
                                 {error && step === "identifier" && (
@@ -652,53 +840,16 @@ export default function LoginPage() {
                                 </div>
 
                                 <AnimatePresence>
-                                    {isSignUp && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            className="space-y-4 pt-2"
-                                        >
-                                             <div className="p-1 bg-slate-100/50 rounded-[20px] inline-flex mb-4">
-                                                <button type="button" onClick={() => setSelectedRole("client")} className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${selectedRole === "client" ? "bg-white text-si-navy shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Client</button>
-                                                <button type="button" onClick={() => setSelectedRole("admin")} className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${selectedRole === "admin" ? "bg-white text-si-navy shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Admin</button>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="relative group">
-                                                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
-                                                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-semibold focus:border-si-blue-primary outline-none transition-all" required />
-                                                </div>
-                                                <div className="relative group">
-                                                    <Shield className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
-                                                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-semibold focus:border-si-blue-primary outline-none transition-all" required />
-                                                </div>
-                                            </div>
-
-                                            {selectedRole === 'client' && (
-                                                <div className="space-y-4 pt-2">
-                                                    <div className="relative group">
-                                                        <Building2 className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
-                                                        <input type="text" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} placeholder="Organization Name" className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-semibold focus:border-si-blue-primary outline-none transition-all" required />
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="relative group">
-                                                            <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
-                                                            <input type="url" value={organizationWebsite} onChange={(e) => setOrganizationWebsite(e.target.value)} placeholder="Website (Optional)" className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-semibold focus:border-si-blue-primary outline-none transition-all" />
-                                                        </div>
-                                                        <div className="relative group">
-                                                            <Briefcase className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-si-blue-primary" />
-                                                            <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="w-full pl-12 pr-10 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-semibold focus:border-si-blue-primary outline-none transition-all appearance-none text-slate-600" required>
-                                                                <option value="" disabled>Select Industry</option>
-                                                                {INDUSTRY_PROFILES.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                                            </select>
-                                                            <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                     {isSignUp && (
+                                         <motion.div
+                                             initial={{ opacity: 0, height: 0 }}
+                                             animate={{ opacity: 1, height: 'auto' }}
+                                             className="space-y-4 pt-2"
+                                         >
+                                             {/* Removed redundant profile fields from step 2 */}
+                                         </motion.div>
+                                     )}
+                                 </AnimatePresence>
 
                                 {error && (
                                     <div className="space-y-4">
@@ -827,11 +978,12 @@ export default function LoginPage() {
                                 </div>
                             </form>
                         </motion.div>
-                    ) : (
+                    ) : step === "magic_link_sent" ? (
                         <motion.div
                             key="magic-link-step"
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
                             className="w-full max-w-md mx-auto text-center space-y-8"
                         >
                             <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-500/10">
@@ -841,7 +993,7 @@ export default function LoginPage() {
                             <h2 className="text-4xl font-black text-si-navy tracking-tighter font-outfit">Check Your Inbox.</h2>
                             <p className="text-lg text-slate-500 font-medium leading-relaxed">
                                 We've sent a secure magic link to <br/>
-                                <span className="font-bold text-si-navy">{otpDestination || identifier}</span>
+                                <span className="font-bold text-si-navy">{otpDestination || (isSignUp ? signUpEmail : identifier)}</span>
                             </p>
 
                             <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 mt-8 text-left space-y-3">
@@ -856,6 +1008,7 @@ export default function LoginPage() {
 
                             <div className="flex flex-col gap-6 mt-8">
                                 <button
+                                    type="button"
                                     onClick={handleResendOtp}
                                     disabled={resendCountdown > 0 || isLoading}
                                     className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest hover:text-si-navy transition-colors disabled:opacity-50"
@@ -878,7 +1031,7 @@ export default function LoginPage() {
                                 </button>
                             </div>
                         </motion.div>
-                    )}
+                    ) : null}
                 </AnimatePresence>
             </div>
         </div>

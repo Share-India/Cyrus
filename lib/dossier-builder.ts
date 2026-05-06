@@ -113,6 +113,7 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
 
     const searchModel = genAI.getGenerativeModel({
         model: process.env.AI_MODEL || "gemini-2.0-flash",
+        tools: [{ googleSearch: {} }] as any,
         safetySettings: safetySettings as any
     });
 
