@@ -1,6 +1,6 @@
 "use client"
 
-import { ShieldCheck, ArrowRight, Play, FileText, BarChart3, Lock, User, Building2, Save, LogOut, CheckCircle2, AlertCircle, Globe, Settings as SettingsIcon, Shield, ExternalLink, Loader2 } from "lucide-react"
+import { ShieldCheck, ArrowRight, Play, FileText, BarChart3, Lock, User, Building2, Save, LogOut, CheckCircle2, AlertCircle, Globe, Settings as SettingsIcon, Shield, ExternalLink, Loader2, Calendar, Users, TrendingUp, MapPin } from "lucide-react"
 import Link from "next/link"
 import { getDossier, CompanyDossier } from "@/lib/company-data"
 import { useUnderwriting } from "@/context/underwriting-context"
@@ -66,9 +66,14 @@ export default function WelcomePage() {
     const [isDossierLoading, setIsDossierLoading] = useState(false)
     const [dossierError, setDossierError] = useState<string | null>(null)
 
+    const [hasAttemptedSynthesis, setHasAttemptedSynthesis] = useState(false)
+
     // Fetch dossier dynamically via Gemini + Google Search when profile is available
     useEffect(() => {
-        if (!contextLoading && userProfile && !hasSeenModal) {
+        const localConfirmedKey = `cyrus_dossier_confirmed_${userProfile?.id}`
+        const isConfirmed = localStorage.getItem(localConfirmedKey) === "true"
+
+        if (!contextLoading && userProfile && !hasSeenModal && !isConfirmed && !hasAttemptedSynthesis) {
             const orgName = userProfile.organization_name
             const websiteUrl = userProfile.organization_website || userProfile.website || ""
             const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
@@ -81,6 +86,14 @@ export default function WelcomePage() {
             // Define what a "High-Fidelity" dossier looks like to avoid redundant triggers
             const isHighFidelity = (d: any) => {
                 if (!d) return false;
+                
+                // CRITICAL: Reject any dossier containing "N/A" or "Unknown"
+                const hasPlaceholders = JSON.stringify(d).toLowerCase().includes('"n/a"') || 
+                                        JSON.stringify(d).toLowerCase().includes('"unknown"') ||
+                                        d.founded?.includes("N/A") ||
+                                        d.hq?.includes("N/A");
+                if (hasPlaceholders) return false;
+
                 // It must match the current organization name
                 if (orgName && d.name && !d.name.toLowerCase().includes(orgName.toLowerCase()) && !orgName.toLowerCase().includes(d.name.toLowerCase().split(' ')[0])) {
                     return false;
@@ -91,12 +104,11 @@ export default function WelcomePage() {
             }
 
             // 1. Check Database Profile for an existing dossier FIRST (Cloud Truth)
-            // If it exists in the DB, the user has already confirmed it once.
             if (isHighFidelity(userProfile.company_dossier)) {
-                console.log("☁️ [Dossier]: Confirmed intelligence found in Cloud Profile. Skipping synthesis.");
+                console.log("☁️ [Dossier]: Existing intelligence found in Cloud Profile. Presenting for review.");
                 setDossier(userProfile.company_dossier)
-                setHasSeenModal(true) // User has already confirmed this in a previous session
-                setShowDossierModal(false)
+                setShowDossierModal(true)
+                setHasSeenModal(true) 
                 // Sync to local cache for performance
                 localStorage.setItem(localCacheKey, JSON.stringify(userProfile.company_dossier))
                 return
@@ -121,6 +133,7 @@ export default function WelcomePage() {
 
             // 3. No Confirmed/Cached Dossier → Call Gemini & Shodan API
             console.log("🚀 [Dossier]: Initializing First-Time Intelligence Synthesis...");
+            setHasAttemptedSynthesis(true)
             setIsDossierLoading(true)
             setShowDossierModal(true)
 
@@ -140,11 +153,17 @@ export default function WelcomePage() {
                     }
                     return res.json()
                 })
-                .then((data: CompanyDossier) => {
+                .then(async (data: CompanyDossier) => {
                     setDossier(data)
-                    // We do NOT save to DB here yet. 
-                    // We wait for the user to confirm it in handleConfirmDossier.
-                    localStorage.setItem(localCacheKey, JSON.stringify(data))
+                    
+                    // AUTO-SAVE: Persist immediately so it's not lost on refresh
+                    if (userProfile?.id) {
+                        console.log("💾 [Dossier]: Auto-persisting synthesized intelligence...");
+                        await updateProfile({ 
+                            company_dossier: data 
+                        });
+                        localStorage.setItem(localCacheKey, JSON.stringify(data))
+                    }
                 })
                 .catch(err => {
                     console.error("[Dossier Fetch Error]", err)
@@ -155,17 +174,14 @@ export default function WelcomePage() {
     }, [contextLoading, userProfile, hasSeenModal])
 
     const handleConfirmDossier = async () => {
-        // User confirmed the intel is correct → Persist to Cloud Profile immediately
         if (dossier && userProfile?.id) {
-            console.log("💾 [Dossier]: Persisting confirmed intelligence to Cloud Profile...");
+            console.log("✅ [Dossier]: Confirmation received. Moving to assessment floor.");
+            const localConfirmedKey = `cyrus_dossier_confirmed_${userProfile.id}`
+            localStorage.setItem(localConfirmedKey, "true")
             
-            // This ensures it never loads again on any device/session
             await updateProfile({ 
                 company_dossier: dossier 
             });
-
-            const localCacheKey = `cyrus_cached_dossier_${userProfile.id}`
-            localStorage.setItem(localCacheKey, JSON.stringify(dossier))
         }
         setShowDossierModal(false)
         setHasSeenModal(true)
@@ -181,7 +197,7 @@ export default function WelcomePage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-500/30 backdrop-blur-md"
                     >
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -262,54 +278,48 @@ export default function WelcomePage() {
 
                                 <div className="space-y-6">
 
-                                    {/* 1. ENTITY IDENTITY */}
-                                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">① Verified Entity</span>
-                                        <h3 className="text-2xl font-black text-si-navy font-outfit mb-3">{dossier?.name || userProfile?.organization_name || "Unidentified Organization"}</h3>
-                                        <div className="flex flex-wrap items-center gap-2 mb-4">
-                                            {dossier?.hq && (
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-full border border-slate-200">
-                                                    <Globe className="w-3 h-3 text-si-blue-primary" /> {dossier.hq}
-                                                </span>
-                                            )}
-                                            {dossier?.founded && (
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-full border border-slate-200">
-                                                    📅 Est. {dossier.founded}
-                                                </span>
-                                            )}
-                                            {dossier?.employees && (
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-full border border-slate-200">
-                                                    👥 {dossier.employees}
-                                                </span>
-                                            )}
-                                            {dossier?.annualRevenue && (
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-full border border-slate-200">
-                                                    💰 {dossier.annualRevenue}
-                                                </span>
-                                            )}
-                                            {dossier?.website && !dossier.website.toLowerCase().includes("n/a") && (
-                                                <a href={dossier.website.startsWith('http') ? dossier.website : `https://${dossier.website}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-si-blue-primary bg-si-blue-primary/10 px-3 py-1.5 rounded-full border border-si-blue-primary/20 hover:bg-si-blue-primary/20 transition-colors">
-                                                    <ExternalLink className="w-3 h-3" /> {dossier.website.replace(/https?:\/\//, '')}
-                                                </a>
-                                            )}
-                                            {dossier?.shodanIntelligence && (
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200" title="Technical OSINT performed via Shodan">
-                                                    <ShieldCheck className="w-3 h-3" /> Shodan OSINT Verified
-                                                </span>
-                                            )}
+                                    {/* 1. ENTITY IDENTITY & FINANCIAL SCALE */}
+                                    <div className="bg-white p-8 rounded-[2rem] border border-slate-200 relative overflow-hidden shadow-sm">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-si-blue-primary/5 blur-[80px] -mr-32 -mt-32 pointer-events-none" />
+                                        
+                                        <div className="relative z-10">
+                                            <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest block mb-4">① Verified Entity Profile</span>
+                                            <h3 className="text-3xl md:text-4xl font-black text-si-navy font-outfit mb-6 tracking-tight leading-tight">{dossier?.name || userProfile?.organization_name}</h3>
+                                            
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                                <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-5 shadow-sm hover:border-si-blue-primary/30 transition-colors">
+                                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5 flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-si-blue-primary" /> Established</p>
+                                                    <p className="text-xl font-black text-si-navy font-outfit">{dossier?.founded}</p>
+                                                </div>
+                                                <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-5 shadow-sm hover:border-si-blue-primary/30 transition-colors">
+                                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5 flex items-center gap-2"><Users className="w-3.5 h-3.5 text-si-blue-primary" /> Workforce</p>
+                                                    <p className="text-xl font-black text-si-navy font-outfit">{dossier?.employees}</p>
+                                                </div>
+                                                <div className="bg-si-navy border border-si-navy rounded-2xl p-5 shadow-xl shadow-si-navy/10 col-span-2">
+                                                    <p className="text-[9px] text-white/40 font-black uppercase tracking-widest mb-1.5 flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5 text-si-blue-primary" /> Annual Revenue Scale</p>
+                                                    <p className="text-xl font-black text-white font-outfit">{dossier?.annualRevenue}</p>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-sm text-slate-600 leading-relaxed font-medium">{dossier?.description}</p>
                                         </div>
-                                        <p className="text-sm text-slate-700 leading-relaxed">{dossier?.description}</p>
                                     </div>
 
-                                    {/* 2. LEADERSHIP & LEGACY */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">② Leadership & Control</span>
-                                            <p className="text-sm font-bold text-slate-800 leading-relaxed">{dossier?.leadership || "Authorized Signatory"}</p>
+                                    {/* 2. LEADERSHIP & CONTROL MAP */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-white p-7 rounded-2xl border border-slate-200 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 bg-si-blue-primary/10 rounded-lg flex items-center justify-center text-si-blue-primary"><Shield className="w-4 h-4" /></div>
+                                                <span className="text-[10px] font-black text-si-navy uppercase tracking-widest">Leadership & Control</span>
+                                            </div>
+                                            <p className="text-[13px] font-bold text-slate-800 leading-relaxed border-l-2 border-si-blue-primary pl-4">{dossier?.leadership}</p>
                                         </div>
-                                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Track Record & Legacy</span>
-                                            <p className="text-sm text-slate-700 leading-relaxed">{dossier?.legacy || "Tier 1 Capabilities"}</p>
+                                        <div className="bg-white p-7 rounded-2xl border border-slate-200 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600"><CheckCircle2 className="w-4 h-4" /></div>
+                                                <span className="text-[10px] font-black text-si-navy uppercase tracking-widest">Track Record & Legacy</span>
+                                            </div>
+                                            <p className="text-[13px] text-slate-600 font-medium leading-relaxed italic">{dossier?.legacy}</p>
                                         </div>
                                     </div>
 
@@ -319,15 +329,37 @@ export default function WelcomePage() {
                                         <p className="text-sm text-slate-700 leading-relaxed font-medium">{dossier?.businessModel || "Critical operator within the supply chain network."}</p>
                                     </div>
 
-                                    {/* 4. REVENUE STREAMS */}
+                                    {/* 4. REVENUE STREAMS INFOGRAPHIC */}
                                     {Array.isArray(dossier?.revenueStreams) && dossier.revenueStreams.length > 0 && (
                                         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">④ Revenue Streams</span>
-                                            <div className="space-y-3">
-                                                {dossier.revenueStreams.map((stream: {label: string; description: string}, idx: number) => (
-                                                    <div key={idx} className="bg-white rounded-xl p-4 border border-slate-200">
-                                                        <p className="text-xs font-black text-si-navy uppercase tracking-wide mb-1">{stream.label}</p>
-                                                        <p className="text-xs text-slate-600 leading-relaxed">{stream.description}</p>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">④ Revenue Stream Composition</span>
+                                            <div className="space-y-4">
+                                                {dossier.revenueStreams.map((stream: {label: string; description: string; percentage?: number}, idx: number) => (
+                                                    <div key={idx} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm relative overflow-hidden group">
+                                                        {stream.percentage && (
+                                                            <div className="absolute top-0 right-0 h-full w-full bg-slate-50 origin-left scale-x-0 transition-transform duration-1000 ease-out group-hover:scale-x-100" />
+                                                        )}
+                                                        <div className="relative z-10">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <p className="text-sm font-black text-si-navy uppercase tracking-wide">{stream.label}</p>
+                                                                {stream.percentage && (
+                                                                    <span className="text-xs font-black text-si-blue-primary bg-si-blue-primary/10 px-2 py-1 rounded-lg">
+                                                                        {stream.percentage}%
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {stream.percentage && (
+                                                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mb-3">
+                                                                    <motion.div 
+                                                                        initial={{ width: 0 }}
+                                                                        animate={{ width: `${stream.percentage}%` }}
+                                                                        transition={{ duration: 1, delay: idx * 0.1 }}
+                                                                        className="h-full bg-si-blue-primary rounded-full"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <p className="text-xs text-slate-600 leading-relaxed font-medium">{stream.description}</p>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -361,16 +393,48 @@ export default function WelcomePage() {
                                         )}
                                     </div>
 
-                                    {/* 6. OPERATIONAL REACH */}
+                                    {/* 6. OPERATIONAL REACH GEOSPATIAL MAP */}
                                     {Array.isArray(dossier?.operationalReach) && dossier.operationalReach.length > 0 && (
                                         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">⑥ Operational Geographic Reach</span>
-                                            <div className="flex flex-wrap gap-2">
-                                                {dossier.operationalReach.map((loc: string, idx: number) => (
-                                                    <span key={idx} className="text-[10px] font-semibold text-si-blue-primary bg-si-blue-primary/10 border border-si-blue-primary/20 px-2.5 py-1 rounded-lg">{loc}</span>
-                                                ))}
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5 flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Headquarters</p>
+                                                        <p className="text-sm font-bold text-si-navy">{dossier.hq}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Global Presence</p>
+                                                        <p className="text-xs font-bold text-si-navy">{dossier.operationalReach.length} Regions</p>
+                                                    </div>
+                                                </div>
+                                                {dossier.shodanIntelligence?.openPorts && dossier.shodanIntelligence.openPorts.length > 0 && (
+                                                    <div className="mb-3">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {dossier.shodanIntelligence.openPorts.slice(0, 10).map((p, idx) => (
+                                                                <span 
+                                                                    key={idx} 
+                                                                    className={`px-2 py-1 text-[10px] rounded border font-mono font-bold ${
+                                                                        p.risk === 'critical' ? 'bg-rose-50 text-rose-600 border-rose-200' : 
+                                                                        p.risk === 'warning' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
+                                                                        'bg-slate-100 text-slate-600 border-slate-200'
+                                                                    }`}
+                                                                >
+                                                                    Port {p.port}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {dossier.shodanIntelligence?.techStack && dossier.shodanIntelligence.techStack.length > 0 && (
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Passive Stack Identification</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {dossier.shodanIntelligence.techStack.slice(0, 8).map((tech, idx) => (
+                                                                <span key={idx} className="px-2 py-1 bg-white text-slate-600 text-[10px] rounded border border-slate-200 font-bold">{tech}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
                                     )}
 
                                     {/* 7. KEY MILESTONES */}
@@ -441,92 +505,44 @@ export default function WelcomePage() {
                                         </div>
                                     )}
 
-                                    {/* 12.5 EXTERNAL TECHNICAL VERIFICATION (SHODAN) */}
-                                    {dossier?.shodanIntelligence && (
-                                        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-700 relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-emerald-500/20 transition-colors" />
-                                            <div className="relative z-10">
-                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-4 flex items-center gap-2">
-                                                    <ShieldCheck className="w-4 h-4" /> Technical OSINT Surface Scan
-                                                </span>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                    <div>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Exposed Assets</p>
-                                                        <p className="text-2xl font-black text-white">{dossier.shodanIntelligence.assetCount}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Open Ports</p>
-                                                        <p className="text-2xl font-black text-amber-400">{dossier.shodanIntelligence.openPorts?.length || 0}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">CVEs Detected</p>
-                                                        <p className={`text-2xl font-black ${(dossier.shodanIntelligence.vulnerabilities?.length || 0) > 0 ? "text-rose-500" : "text-emerald-400"}`}>
-                                                            {dossier.shodanIntelligence.vulnerabilities?.length || 0}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {dossier.shodanIntelligence.openPorts && dossier.shodanIntelligence.openPorts.length > 0 && (
-                                                    <div className="mb-3">
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {dossier.shodanIntelligence.openPorts.slice(0, 10).map((p, idx) => (
-                                                                <span 
-                                                                    key={idx} 
-                                                                    className={`px-2 py-1 text-xs rounded border font-mono ${
-                                                                        p.risk === 'critical' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 
-                                                                        p.risk === 'warning' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 
-                                                                        'bg-slate-800 text-slate-300 border-slate-700'
-                                                                    }`}
-                                                                >
-                                                                    Port {p.port}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {dossier.shodanIntelligence.techStack && dossier.shodanIntelligence.techStack.length > 0 && (
-                                                    <div>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Passive Stack Identification</p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {dossier.shodanIntelligence.techStack.slice(0, 8).map((tech, idx) => (
-                                                                <span key={idx} className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded border border-slate-700 font-mono">{tech}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {/* 13. CYBER RISK EXPOSURE BARS */}
                                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">⑬ Quantified Cyber Risk Exposure</span>
                                         <p className="text-xs text-slate-400 mb-5">Sector-calibrated threat intelligence scores. Red ≥ 70% (Critical) · Amber ≥ 55% (High) · Blue (Moderate).</p>
                                         <div className="space-y-5">
-                                            {(Array.isArray(dossier?.cyberStats) ? dossier.cyberStats : [
+                                            {(Array.isArray(dossier?.cyberStats) ? 
+                                                dossier.cyberStats
+                                                    // Filter out entries where Gemini returned a raw monetary/count value instead of a risk %
+                                                    .filter((stat: { label: string; value: number; reasoning: string }) => 
+                                                        typeof stat.value === 'number' && stat.value >= 0 && stat.value <= 100
+                                                    )
+                                                : [
                                                 { label: "Business Interruption Risk", value: 85, reasoning: "High operational dependency on synchronized digital infrastructure. Any downtime triggers immediate downstream loss." },
                                                 { label: "Supply Chain Vulnerability", value: 72, reasoning: "Risk propagated from third-party vendor interfaces and digital procurement dependencies." },
                                                 { label: "Data Exfiltration Threat", value: 64, reasoning: "Inherent risk to organizational IP and confidential project records." }
                                             ]).map((stat: { label: string; value: number; reasoning: string }, idx: number) => {
-                                                const color = stat.value >= 70 ? '#f43f5e' : stat.value >= 55 ? '#f59e0b' : '#3b82f6'
-                                                const barGradient = stat.value >= 70
+                                                // Clamp value to 0-100 as a safety net
+                                                const safeValue = Math.min(100, Math.max(0, stat.value))
+                                                const color = safeValue >= 70 ? '#f43f5e' : safeValue >= 55 ? '#f59e0b' : '#3b82f6'
+                                                const barGradient = safeValue >= 70
                                                     ? 'linear-gradient(to right, #f87171, #f43f5e)'
-                                                    : stat.value >= 55
+                                                    : safeValue >= 55
                                                     ? 'linear-gradient(to right, #fbbf24, #f97316)'
                                                     : 'linear-gradient(to right, #3b82f6, #60a5fa)'
-                                                const severity = stat.value >= 70 ? 'CRITICAL' : stat.value >= 55 ? 'HIGH' : 'MODERATE'
+                                                const severity = safeValue >= 70 ? 'CRITICAL' : safeValue >= 55 ? 'HIGH' : 'MODERATE'
                                                 return (
                                                     <div key={idx}>
                                                         <div className="flex justify-between items-center mb-1.5">
                                                             <span className="text-sm text-slate-700 font-semibold">{stat.label}</span>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ color, backgroundColor: `${color}20` }}>{severity}</span>
-                                                                <span className="font-black text-base" style={{ color }}>{stat.value}%</span>
+                                                                <span className="font-black text-base" style={{ color }}>{safeValue}%</span>
                                                             </div>
                                                         </div>
                                                         <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
                                                             <motion.div
                                                                 initial={{ width: 0 }}
-                                                                animate={{ width: `${stat.value}%` }}
+                                                                animate={{ width: `${safeValue}%` }}
                                                                 transition={{ duration: 1.4, delay: 0.3 + idx * 0.15, ease: "easeOut" }}
                                                                 style={{ background: barGradient }}
                                                                 className="h-full rounded-full"
@@ -538,6 +554,7 @@ export default function WelcomePage() {
                                                     </div>
                                                 )
                                             })}
+
                                         </div>
                                     </div>
 

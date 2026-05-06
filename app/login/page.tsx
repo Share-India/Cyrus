@@ -235,33 +235,60 @@ export default function LoginPage() {
 
                 if (error) throw error
 
-                // After signup, send magic link for email verification
-                const { error: otpError } = await supabase.auth.signInWithOtp({
-                    email: signUpEmail,
-                    options: {
-                        shouldCreateUser: false,
-                        emailRedirectTo: `${window.location.origin}/auth/callback`
-                    }
-                })
+                // After signup, send appropriate Factor 2 MFA based on primary identifier
+                if (isPhone) {
+                    console.log("🔒 [Registration MFA]: Sending Factor 2 (OTP) to registered phone:", normalizedPhone);
+                    const res = await fetch('/api/auth/send-phone-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: normalizedPhone })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
 
-                // signInWithOtp for email sends a magic link (not a numeric code)
-                // so always show "Check Your Inbox" page
-                setOtpDestination(signUpEmail)
-                if (otpError) {
-                    // Even if OTP send failed, Supabase already sent confirmation email via signUp()
-                    setSuccessMessage("A confirmation link was sent to your email. Please check your inbox.")
+                    setOtpDestination(normalizedPhone);
+                    setStep("verification");
+                } else {
+                    console.log("🔒 [Registration MFA]: Sending Factor 2 (Magic Link) to registered email:", signUpEmail);
+                    const { error: otpError } = await supabase.auth.signInWithOtp({
+                        email: signUpEmail,
+                        options: {
+                            shouldCreateUser: false,
+                            emailRedirectTo: `${window.location.origin}/auth/callback`
+                        }
+                    });
+
+                    setOtpDestination(signUpEmail);
+                    if (otpError) {
+                        setSuccessMessage("A confirmation link was sent to your email. Please check your inbox.");
+                    }
+                    setStep("magic_link_sent");
                 }
-                setStep("magic_link_sent")
             } else {
                 // LOGIN FLOW (L1: Password)
-                const payload: any = { password }
+                let finalEmailForLogin = normalizedIdentifier;
+
                 if (isPhone) {
-                    payload.phone = normalizedIdentifier
-                } else {
-                    payload.email = normalizedIdentifier
+                    // Supabase doesn't natively map email signups to phone identities. 
+                    // We must securely exchange the phone/password for the registered email.
+                    const verifyRes = await fetch('/api/auth/verify-phone-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: normalizedIdentifier, password })
+                    });
+                    
+                    const verifyData = await verifyRes.json();
+                    if (!verifyRes.ok) {
+                        throw new Error(verifyData.error || "Invalid credentials. Please verify your email/phone and password.");
+                    }
+                    
+                    finalEmailForLogin = verifyData.email;
                 }
 
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword(payload)
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: finalEmailForLogin,
+                    password: password
+                })
                 
                 if (authError) {
                     if (authError.message.toLowerCase().includes("invalid login credentials")) {
@@ -270,38 +297,51 @@ export default function LoginPage() {
                     throw authError
                 }
 
-                // PASSWORD SUCCESS -> Factor 2: Send OTP to REGISTERED EMAIL
-                const registeredEmail = authData.user?.email
-                if (!registeredEmail) {
-                    throw new Error("No registered email found for MFA. Please contact support.")
-                }
-
-                setOtpDestination(registeredEmail)
-                console.log("🔒 [MFA Initiation]: Sending Factor 2 to registered email:", registeredEmail);
+                // PASSWORD SUCCESS -> Factor 2: Send MFA
                 
-                const { error: otpError } = await supabase.auth.signInWithOtp({
-                    email: registeredEmail,
-                    options: { 
-                        shouldCreateUser: false,
-                        emailRedirectTo: `${window.location.origin}/auth/callback`
-                    }
-                })
+                if (isPhone) {
+                    console.log("🔒 [MFA Initiation]: Sending Factor 2 (OTP) to registered phone:", normalizedIdentifier);
+                    const res = await fetch('/api/auth/send-phone-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: normalizedIdentifier })
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error)
 
-                if (otpError) {
-                    console.error("❌ [MFA Error]:", otpError.message);
-                    if (otpError.status === 429 || otpError.message.toLowerCase().includes("rate limit")) {
-                        throw new Error("MFA Rate Limit Exceeded: Supabase's default emailer is limited to 3 emails per hour. Please wait or configure a custom SMTP provider in your Supabase Dashboard.")
+                    setOtpDestination(normalizedIdentifier)
+                    setStep("verification")
+                } else {
+                    const registeredEmail = authData.user?.email
+                    if (!registeredEmail) {
+                        throw new Error("No registered email found for MFA. Please contact support.")
                     }
-                    if (otpError.status === 500) {
-                        if (process.env.NODE_ENV === 'development') setShowDevBypass(true)
-                        throw new Error("MFA delivery failed. This usually happens when the Supabase SMTP limit is reached. Use Dev Bypass or try again later.")
+
+                    setOtpDestination(registeredEmail)
+                    console.log("🔒 [MFA Initiation]: Sending Factor 2 (Magic Link) to registered email:", registeredEmail);
+                    
+                    const { error: otpError } = await supabase.auth.signInWithOtp({
+                        email: registeredEmail,
+                        options: { 
+                            shouldCreateUser: false,
+                            emailRedirectTo: `${window.location.origin}/auth/callback`
+                        }
+                    })
+
+                    if (otpError) {
+                        console.error("❌ [MFA Error]:", otpError.message);
+                        if (otpError.status === 429 || otpError.message.toLowerCase().includes("rate limit")) {
+                            throw new Error("MFA Rate Limit Exceeded: Supabase's default emailer is limited to 3 emails per hour. Please wait or configure a custom SMTP provider in your Supabase Dashboard.")
+                        }
+                        if (otpError.status === 500) {
+                            if (process.env.NODE_ENV === 'development') setShowDevBypass(true)
+                            throw new Error("MFA delivery failed. This usually happens when the Supabase SMTP limit is reached. Use Dev Bypass or try again later.")
+                        }
+                        throw otpError
                     }
-                    throw otpError
+                    
+                    setStep("magic_link_sent")
                 }
-                
-                // For email OTP/Magic Link, we go to magic_link_sent
-                // Note: The user can still enter a code if Supabase sends one
-                setStep("magic_link_sent")
             }
         } catch (err: any) {
             console.error("🔥 [Login Crash]:", err.message);
@@ -386,49 +426,44 @@ export default function LoginPage() {
         const supabase = createClient()
         
         try {
-            if (isSignUp) {
-                // For sign-up resend
-                const { error } = await supabase.auth.signUp({
-                    email: signUpEmail,
-                    password,
-                    options: {
-                        data: {
-                            role: selectedRole,
-                            organization_name: organizationName,
-                            organization_website: organizationWebsite,
-                            industry: industry,
-                            name: name,
-                            username: username,
-                            phone: signUpPhone
-                        },
-                        emailRedirectTo: `${window.location.origin}/auth/callback`
-                    }
-                })
-                if (error) throw error
-            } else if (loginMethod === "password") {
-                // For password MFA, always send to the registered email
-                const { data: { user } } = await supabase.auth.getUser()
-                const email = user?.email
-                if (!email) throw new Error("No registered email found.")
+            if (isPhone) {
+                // Determine the correct phone number depending on the flow (Login vs Signup)
+                let targetPhone = identifier;
+                if (isSignUp) {
+                    targetPhone = signUpPhone;
+                }
                 
+                let normalizedPhone = targetPhone.replace(/[\s\-()]/g, "")
+                if (/^\d{10}$/.test(normalizedPhone)) {
+                    normalizedPhone = `+91${normalizedPhone}`
+                }
+
+                console.log("🔒 [Resend MFA]: Sending Factor 2 (OTP) to registered phone:", normalizedPhone);
+                const res = await fetch('/api/auth/send-phone-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: normalizedPhone })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+            } else {
+                // Determine the correct email depending on the flow
+                let targetEmail = identifier;
+                if (isSignUp) {
+                    targetEmail = signUpEmail;
+                } else if (loginMethod === "password") {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user?.email) targetEmail = user.email;
+                }
+
+                console.log("🔒 [Resend MFA]: Sending Factor 2 (Magic Link) to registered email:", targetEmail);
                 const { error } = await supabase.auth.signInWithOtp({
-                    email,
+                    email: targetEmail,
                     options: { 
                         shouldCreateUser: false,
                         emailRedirectTo: `${window.location.origin}/auth/callback`
                     }
-                })
-                if (error) throw error
-            } else {
-                // For direct OTP, send to the initial identifier
-                let normalizedIdentifier = identifier.replace(/[\s\-()]/g, "")
-                if (isPhone && /^\d{10}$/.test(normalizedIdentifier)) {
-                    normalizedIdentifier = `+91${normalizedIdentifier}`
-                }
-                
-                const { error } = await supabase.auth.signInWithOtp({
-                    [isPhone ? 'phone' : 'email']: normalizedIdentifier,
-                    options: { shouldCreateUser: false }
                 })
                 if (error) throw error
             }
@@ -701,40 +736,7 @@ export default function LoginPage() {
                                                             </div>
                                                         </div>
 
-                                                        {/* Industry Logic Visualization */}
-                                                        {industry && (
-                                                            <motion.div 
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                className="p-5 bg-si-navy/[0.03] border-2 border-dashed border-slate-100 rounded-3xl space-y-4"
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Weight Distribution Preview</span>
-                                                                    <span className="text-[9px] font-bold text-si-blue-primary uppercase">{INDUSTRY_PROFILES.find(p => p.id === industry)?.name} Profile</span>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    {Object.entries(INDUSTRY_PROFILES.find(p => p.id === industry)?.domainWeights || {})
-                                                                        .sort((a, b) => b[1] - a[1])
-                                                                        .slice(0, 3)
-                                                                        .map(([domain, weight]) => (
-                                                                            <div key={domain} className="flex flex-col gap-1.5">
-                                                                                <div className="flex justify-between text-[8px] font-black uppercase tracking-tight">
-                                                                                    <span className="text-si-navy/60">{domain}</span>
-                                                                                    <span className="text-si-blue-primary">{weight}%</span>
-                                                                                </div>
-                                                                                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                                                    <motion.div 
-                                                                                        initial={{ width: 0 }}
-                                                                                        animate={{ width: `${weight * 5}%` }} 
-                                                                                        className="h-full bg-si-blue-primary" 
-                                                                                    />
-                                                                                </div>
-                                                                            </div>
-                                                                        ))
-                                                                    }
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
+                                                        {/* Weight Distribution Preview intentionally removed */}
                                                     </div>
                                                 )}
                                             </motion.div>
@@ -760,35 +762,16 @@ export default function LoginPage() {
                                         </span>
                                     </button>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleMethodChoice("password")}
-                                            disabled={isLoading}
-                                            className="py-5 bg-si-navy text-white rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-si-blue-primary transition-all duration-500 shadow-lg shadow-si-navy/10 flex items-center justify-center gap-3 group disabled:opacity-50"
-                                        >
-                                            {isLoading && loginMethod === "password" ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                                <>
-                                                    Via Password
-                                                    <Lock className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                                                </>
-                                            )}
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleMethodChoice("otp")}
-                                            disabled={isLoading}
-                                            className="py-5 bg-white border-2 border-slate-100 text-si-navy rounded-3xl font-black uppercase tracking-widest text-[10px] hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-500 shadow-sm flex items-center justify-center gap-3 group disabled:opacity-50"
-                                        >
-                                            {isLoading && loginMethod === "otp" ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                                <>
-                                                    Instant Access
-                                                    <Fingerprint className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full py-5 bg-si-navy text-white rounded-3xl font-black uppercase tracking-[0.3em] text-xs hover:bg-si-blue-primary transition-all duration-500 shadow-xl shadow-si-navy/20 flex items-center justify-center gap-3 group relative overflow-hidden disabled:opacity-50"
+                                    >
+                                        <span className="relative z-10 flex items-center justify-center gap-3">
+                                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Authenticate"}
+                                            {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />}
+                                        </span>
+                                    </button>
                                 )}
                             </form>
 

@@ -17,7 +17,7 @@ export interface CompanyDossier {
     operationalReach?: string[];
     industriesServed?: string[];
     notableClients?: string[];
-    revenueStreams?: { label: string; description: string }[];
+    revenueStreams?: { label: string; description: string; percentage?: number }[];
     keyMilestones?: { year: string; event: string }[];
     digitalAssets?: string[];
     supplyChainExposure?: string;
@@ -89,19 +89,23 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
         revenueStreams: [
             {
                 label: "Capital Equipment Engineering & Sales",
-                description: "Primary revenue engine driven by high-ticket, direct B2B sales of complex, battery-operated and hydraulic material handling fleets to domestic and international facilities."
+                description: "Primary revenue engine driven by high-ticket, direct B2B sales of complex, battery-operated and hydraulic material handling fleets to domestic and international facilities.",
+                percentage: 60
             },
             {
                 label: "Proprietary 3D Design & Customization Integration",
-                description: "Premium consulting and engineering services utilizing advanced 3D CAD modeling to design hyper-customized storage and lifting solutions for irregular spatial constraints."
+                description: "Premium consulting and engineering services utilizing advanced 3D CAD modeling to design hyper-customized storage and lifting solutions for irregular spatial constraints.",
+                percentage: 15
             },
             {
                 label: "Recurring Enterprise AMC Subscriptions",
-                description: "300+ active Annual Maintenance Contracts providing a stable, high-margin revenue floor. Includes scheduled servicing, emergency SLA-bound breakdown support, and parts supply."
+                description: "300+ active Annual Maintenance Contracts providing a stable, high-margin revenue floor. Includes scheduled servicing, emergency SLA-bound breakdown support, and parts supply.",
+                percentage: 20
             },
             {
                 label: "International Export Expansion",
-                description: "Emerging, high-growth revenue channel exporting heavy scissor lifts and motorized equipment to developing industrial sectors in Africa, Asia, and the Middle East."
+                description: "Emerging, high-growth revenue channel exporting heavy scissor lifts and motorized equipment to developing industrial sectors in Africa, Asia, and the Middle East.",
+                percentage: 5
             }
         ],
 
@@ -183,10 +187,10 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
         ],
         
         revenueStreams: [
-            { label: "Institutional Brokerage Commissions", description: "The primary revenue engine, capturing high percentages of large commercial premiums placed across property, casualty, and marine lines." },
-            { label: "Specialized Risk Advisory Fees", description: "Consultative revenue generated through deep architectural risk assessments and bespoke policy structuring." },
-            { label: "Claims Advocacy & Management", description: "Retained negotiation fees spanning the lengthy lifecycle of complex industrial and commercial claim settlements." },
-            { label: "Employee Benefits Management", description: "Recurring administrative and placement revenue driven by managing thousands of employee health and life insurance portfolios." }
+            { label: "Institutional Brokerage Commissions", description: "The primary revenue engine, capturing high percentages of large commercial premiums placed across property, casualty, and marine lines.", percentage: 55 },
+            { label: "Specialized Risk Advisory Fees", description: "Consultative revenue generated through deep architectural risk assessments and bespoke policy structuring.", percentage: 20 },
+            { label: "Claims Advocacy & Management", description: "Retained negotiation fees spanning the lengthy lifecycle of complex industrial and commercial claim settlements.", percentage: 15 },
+            { label: "Employee Benefits Management", description: "Recurring administrative and placement revenue driven by managing thousands of employee health and life insurance portfolios.", percentage: 10 }
         ],
         
         keyMilestones: [
@@ -263,9 +267,9 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
         ],
         
         revenueStreams: [
-            { label: "Megascale Infrastructure Installations", description: "Massive, project-based CapEx injections resulting from the complete design, fabrication, and erection of warehousing systems." },
-            { label: "Automated Mezzanine Solutions", description: "High-margin structural engineering projects that multiply client floor space, requiring complex structural integrity calculations." },
-            { label: "Maintenance & Capacity Expansion", description: "Secondary revenue through long-term structural integrity checks and facility expansions for existing client bases." }
+            { label: "Megascale Infrastructure Installations", description: "Massive, project-based CapEx injections resulting from the complete design, fabrication, and erection of warehousing systems.", percentage: 65 },
+            { label: "Automated Mezzanine Solutions", description: "High-margin structural engineering projects that multiply client floor space, requiring complex structural integrity calculations.", percentage: 25 },
+            { label: "Maintenance & Capacity Expansion", description: "Secondary revenue through long-term structural integrity checks and facility expansions for existing client bases.", percentage: 10 }
         ],
         
         keyMilestones: [
@@ -346,10 +350,10 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
         ],
         
         revenueStreams: [
-            { label: "Core IT Outsourcing & Managed Operations", description: "The titan revenue engine; massive, multi-decade contracts to keep the world's largest corporate networks secure and functional." },
-            { label: "Digital Transformation & Cloud Migration", description: "Ultra-high value consulting engagements shifting global conglomerates from legacy mainframes to hybrid-cloud agility." },
-            { label: "Proprietary Platform Sales (SaaS/PaaS)", description: "Licensing flagship systems like TCS BαNCS to run entire banking ecosystems, and ignio for AI-driven IT operations." },
-            { label: "Next-Gen Cybersecurity Consulting", description: "Providing threat intelligence, penetration testing, and incident response to highly vulnerable multinational corporations." }
+            { label: "Core IT Outsourcing & Managed Operations", description: "The titan revenue engine; massive, multi-decade contracts to keep the world's largest corporate networks secure and functional.", percentage: 45 },
+            { label: "Digital Transformation & Cloud Migration", description: "Ultra-high value consulting engagements shifting global conglomerates from legacy mainframes to hybrid-cloud agility.", percentage: 30 },
+            { label: "Proprietary Platform Sales (SaaS/PaaS)", description: "Licensing flagship systems like TCS BαNCS to run entire banking ecosystems, and ignio for AI-driven IT operations.", percentage: 15 },
+            { label: "Next-Gen Cybersecurity Consulting", description: "Providing threat intelligence, penetration testing, and incident response to highly vulnerable multinational corporations.", percentage: 10 }
         ],
         
         keyMilestones: [
@@ -424,10 +428,10 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
         ],
         
         revenueStreams: [
-            { label: "Retail Premium Ingestion", description: "High-volume revenue engine driven by motor, health, and travel insurance sales through physical and digital channels." },
-            { label: "Institutional Commercial Underwriting", description: "Enterprise-level risk management fees for fire, marine, and liability covers for large-scale industrial projects." },
-            { label: "Claims & Risk Engineering Advisory", description: "Consultative revenue generated through technical risk assessments and industrial safety engineering." },
-            { label: "Investment & Reserve Management", description: "Significant financial income generated from the strategic investment of regulatory reserves in capital markets." }
+            { label: "Retail Premium Ingestion", description: "High-volume revenue engine driven by motor, health, and travel insurance sales through physical and digital channels.", percentage: 50 },
+            { label: "Institutional Commercial Underwriting", description: "Enterprise-level risk management fees for fire, marine, and liability covers for large-scale industrial projects.", percentage: 30 },
+            { label: "Claims & Risk Engineering Advisory", description: "Consultative revenue generated through technical risk assessments and industrial safety engineering.", percentage: 10 },
+            { label: "Investment & Reserve Management", description: "Significant financial income generated from the strategic investment of regulatory reserves in capital markets.", percentage: 10 }
         ],
         
         keyMilestones: [
@@ -496,9 +500,9 @@ export const COMPANY_DOSSIERS: Record<string, CompanyDossier> = {
             "Major Aerospace Defense Contractors"
         ],
         revenueStreams: [
-            { label: "Engineering R&D Services", description: "Direct project-based revenue for product design and process engineering across global manufacturing clients." },
-            { label: "Digital Transformation & AI Consulting", description: "High-margin revenue from implementing pervasive AI, GenAI, and IIoT architectures for industrial enterprises." },
-            { label: "IP-led Solutions & Licensing", description: "Revenue from proprietary frameworks and software-defined-engineering platforms." }
+            { label: "Engineering R&D Services", description: "Direct project-based revenue for product design and process engineering across global manufacturing clients.", percentage: 55 },
+            { label: "Digital Transformation & AI Consulting", description: "High-margin revenue from implementing pervasive AI, GenAI, and IIoT architectures for industrial enterprises.", percentage: 30 },
+            { label: "IP-led Solutions & Licensing", description: "Revenue from proprietary frameworks and software-defined-engineering platforms.", percentage: 15 }
         ],
         keyMilestones: [
             { year: "2012", event: "Incorporated as a dedicated engineering services subsidiary of L&T Group." },

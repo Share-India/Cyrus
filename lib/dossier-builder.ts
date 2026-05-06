@@ -33,9 +33,10 @@ const dossierSchema: Schema = {
                 type: SchemaType.OBJECT,
                 properties: {
                     label: { type: SchemaType.STRING },
-                    description: { type: SchemaType.STRING }
+                    description: { type: SchemaType.STRING },
+                    percentage: { type: SchemaType.NUMBER, description: "Estimated percentage of total revenue (must sum to 100)" }
                 },
-                required: ["label", "description"]
+                required: ["label", "description", "percentage"]
             },
             description: "Streams"
         },
@@ -118,7 +119,7 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
     });
 
     const extractionModel = genAI.getGenerativeModel({
-        model: process.env.AI_MODEL || "gemini-2.0-flash",
+        model: "gemini-1.5-pro",
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: dossierSchema,
@@ -134,13 +135,14 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
         ${shodanPrompt}
 
         REQUIRED STANDARDS:
-        1. **Leadership**: Specific CEO/MD name.
-        2. **Scale**: Exact annual revenue estimate (e.g. INR 5,000 Cr) and employee count.
-        3. **Business Model**: Technical nature of operations.
-        4. **Cyber Risk**: Technical risk factors referencing specific frameworks like India's DPDP Act 2023.
-        5. **Digital Assets**: Granular list (ERP, CRM, PHI/PII scale).
+        1. **NO N/A POLICY**: You are FORBIDDEN from using "N/A", "Unknown", or "hq". If a specific value is elusive, use your training data to provide the most historically accurate estimate for "${organizationName}".
+        2. **Research Founding**: Search specifically for the year ${organizationName} was incorporated or established.
+        3. **HQ Precision**: Identify the specific city and state/province of the headquarters.
+        4. **Financial Detail**: Provide dense financial estimates (Revenue, Employee Count, Market Cap if public).
+        5. **Operational Reach**: Detail specific regions and technical infrastructure scale.
+        6. **Cyber Risk**: Align risk factors with regional legislation (e.g. India's DPDP 2023, IT Act).
 
-        Format as a dense narrative briefing.
+        Format as a deep-dive, professional intelligence briefing for an executive underwriter.
     `;
 
     try {
@@ -151,7 +153,10 @@ export async function buildDynamicDossier(organizationName: string, websiteUrl?:
         console.log(`[Dossier Builder] Step 2: Extracting high-fidelity JSON...`);
         const extractionPrompt = `
             You are a senior data engineer. Extract JSON from this briefing.
-            If data is missing, infer logically. Ensure 4 items per array.
+            
+            CRITICAL RULE: YOU MUST NOT USE "N/A" OR "Unknown". 
+            If the briefing is missing a field like 'founded' or 'hq', use your internal training data to fill it with the most accurate known information for "${organizationName}".
+            Ensure exactly 4 items per array.
             
             [BRIEFING]
             ${searchResponse}

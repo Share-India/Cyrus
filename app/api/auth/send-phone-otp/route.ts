@@ -13,29 +13,54 @@ export async function POST(req: NextRequest) {
 
         const supabase = createAdminClient()
 
-        // Check if a user with this phone exists in our profiles (whitelist check)
+        // 1. Look up the profile to get the Auth ID
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('email, id')
+            .select('id, email')
             .eq('phone', normalizedPhone)
             .maybeSingle()
 
         if (profileError || !profile) {
-            return NextResponse.json(
-                { error: 'No registered account found with this phone number. Please sign up first.' },
-                { status: 404 }
-            )
+            return NextResponse.json({ error: 'Account not found.' }, { status: 404 })
         }
 
-        // Send OTP via MSG91
+        // MSG91 Credentials
         const authKey = process.env.MSG91_AUTH_KEY
         const templateId = process.env.MSG91_TEMPLATE_ID
-        // Strip leading '+' for MSG91 (it expects country code without +)
-        const msg91Phone = normalizedPhone.replace('+', '')
 
-        const msg91Url = `https://api.msg91.com/api/v5/otp?authkey=${authKey}&mobile=${msg91Phone}&template_id=${templateId}`
+        if (!templateId || !authKey) {
+            return NextResponse.json({ error: 'MSG91 Config Error.' }, { status: 500 })
+        }
 
-        const msg91Response = await fetch(msg91Url, { method: 'POST' })
+        // Normalize mobile for MSG91: Ensure we have the '91' prefix
+        let msg91Phone = normalizedPhone.replace(/\+/g, "").trim();
+        if (msg91Phone.length === 10) {
+            msg91Phone = "91" + msg91Phone;
+        }
+
+        // Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+        // Using MSG91 FLOW API
+        const msg91Url = `https://control.msg91.com/api/v5/flow/`
+ 
+        const msg91Response = await fetch(msg91Url, { 
+            method: 'POST',
+            headers: {
+                'authkey': authKey,
+                'content-type': 'application/json',
+                'accept': 'application/json'
+            },
+            body: JSON.stringify({
+                template_id: templateId,
+                mobiles: msg91Phone,
+                alphanumeric: "Cyber Risk Underwriting System",
+                numeric: otp,
+                var1: "Cyber Risk Underwriting System",
+                var2: otp,
+                otp: otp
+            })
+        })
         const msg91Result = await msg91Response.json()
 
         if (msg91Result.type === 'error') {
@@ -43,7 +68,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: msg91Result.message || 'Failed to send OTP.' }, { status: 400 })
         }
 
-        console.log(`[Phone OTP] Sent to ${normalizedPhone} for account: ${profile.email}`)
+        // Store OTP in Supabase Auth Metadata (avoids missing column issues in profiles)
+        await supabase.auth.admin.updateUserById(profile.id, {
+            user_metadata: { 
+                last_otp: otp,
+                otp_expiry: Date.now() + 15 * 60000 
+            }
+        })
+
+        console.log(`[Phone OTP] Sent and stored in metadata for ${profile.email}`)
         return NextResponse.json({ success: true })
 
     } catch (err: any) {

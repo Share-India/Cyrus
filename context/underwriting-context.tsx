@@ -335,7 +335,7 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
             console.log("🔔 [Auth Listener]: Event:", event, "| User:", session?.user?.id || "None")
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                if (userProfile && session?.user?.id !== userProfile.id) {
+                if (userProfile && session?.user?.id && session.user.id !== userProfile.id) {
                     console.warn("🔄 [Auth Listener]: Session mismatch detected. Reloading for account isolation.")
                     window.location.reload()
                 }
