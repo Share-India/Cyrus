@@ -12,15 +12,29 @@ export async function POST(req: NextRequest) {
         }
 
         const supabase = createAdminClient()
-
+ 
         // 1. Look up the profile to get the Auth ID
-        const { data: profile, error: profileError } = await supabase
+        // Support multiple phone formats (with/without +, with/without 91)
+        const raw = normalizedPhone.replace(/[\s\-()+]/g, "");
+        const formats = Array.from(new Set([
+            normalizedPhone,
+            raw,
+            `+${raw}`,
+            raw.startsWith('91') ? raw.substring(2) : `91${raw}`,
+            raw.startsWith('91') ? raw : `91${raw}`,
+            `+91${raw.startsWith('91') ? raw.substring(2) : raw}`
+        ])).filter(f => f.length >= 8);
+
+        const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('id, email')
-            .eq('phone', normalizedPhone)
-            .maybeSingle()
+            .in('phone', formats)
+            .limit(1)
+
+        const profile = profiles?.[0];
 
         if (profileError || !profile) {
+            console.error("[OTP Verify] Profile not found for formats:", formats, profileError);
             return NextResponse.json({ error: 'Account not found.' }, { status: 404 })
         }
 

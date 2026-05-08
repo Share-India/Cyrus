@@ -15,29 +15,49 @@ export async function POST(req: Request) {
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
         // 1. Lookup the email associated with this phone number from the profiles table
+        // We check multiple formats to be resilient to legacy data or different normalization styles
+        const raw = phone.replace(/[\s\-()+]/g, "");
+        const formats = Array.from(new Set([
+            phone,
+            raw,
+            `+${raw}`,
+            raw.startsWith('91') ? raw.substring(2) : `91${raw}`,
+            raw.startsWith('91') ? raw : `91${raw}`,
+            `+91${raw.startsWith('91') ? raw.substring(2) : raw}`
+        ])).filter(f => f.length >= 8);
+
         const { data: profiles, error: lookupError } = await supabaseAdmin
             .from("profiles")
             .select("email")
-            .eq("phone", phone);
+            .in("phone", formats);
 
         if (lookupError || !profiles || profiles.length === 0) {
-            return NextResponse.json({ error: "Invalid credentials. Please verify your email/phone and password." }, { status: 401 });
+            console.error("[Login Proxy] Lookup Failed for formats:", formats, lookupError);
+            return NextResponse.json({ error: "Account not found. Please verify your phone number." }, { status: 401 });
         }
 
-        const registeredEmail = profiles[0].email;
-
-        // 2. Verify the password by attempting a secure login on the server side
-        const { error: authError } = await supabaseAdmin.auth.signInWithPassword({
-            email: registeredEmail,
-            password: password
-        });
-
-        if (authError) {
-            return NextResponse.json({ error: "Invalid credentials. Please verify your email/phone and password." }, { status: 401 });
+        // 2. Iterative Verification: Try each matching email until one works with the password
+        console.log(`🔍 [Login Proxy] Found ${profiles.length} potential matches. Attempting iterative verification...`);
+        
+        let authenticatedEmail = null;
+        for (const profile of profiles) {
+            const { error: authError } = await supabaseAdmin.auth.signInWithPassword({
+                email: profile.email,
+                password: password
+            });
+            
+            if (!authError) {
+                authenticatedEmail = profile.email;
+                break;
+            }
         }
 
-        // 3. Success! Return the email so the client can establish its own session securely
-        return NextResponse.json({ email: registeredEmail });
+        if (!authenticatedEmail) {
+            return NextResponse.json({ error: "Invalid credentials. Please verify your password." }, { status: 401 });
+        }
+
+        // 3. Success! Return the specific email that was authenticated
+        return NextResponse.json({ email: authenticatedEmail });
 
     } catch (error) {
         console.error("[Login Proxy] Error:", error);

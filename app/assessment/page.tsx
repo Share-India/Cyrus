@@ -129,16 +129,22 @@ export default function AssessmentPage() {
             router.push("/dashboard")
             return
         }
-
+ 
         if (window.confirm("Ready to submit for official underwriting? This will finalize your risk assessment.")) {
             setIsSubmitting(true)
-            const res = await submitAssessment()
-            setIsSubmitting(false)
-            if (res.success) {
-                setSubmittedAssessmentId(res.assessmentId)
-                setSubmitted(true)
-            } else {
-                alert(`Submission failed: ${res.error}`)
+            try {
+                const res = await submitAssessment()
+                if (res && res.success) {
+                    setSubmittedAssessmentId(res.assessmentId)
+                    setSubmitted(true)
+                } else {
+                    alert(`Submission failed: ${res?.error || "Unknown Error"}`)
+                }
+            } catch (err: any) {
+                console.error("Critical submission crash caught in UI:", err)
+                alert(`A critical network error occurred: ${err.message || "Failed to fetch"}. Please check your connection and try again.`)
+            } finally {
+                setIsSubmitting(false)
             }
         }
     }
@@ -361,7 +367,7 @@ export default function AssessmentPage() {
                         <button
                             onClick={() => {
                                 const industryName = INDUSTRY_PROFILES.find(p => p.id === selectedIndustry)?.name || ''
-                                downloadPDFSummary(result, domains, clientName, industryName, '', lastSavedTimestamp || new Date().toISOString(), '', MODEL_VERSION, lastSavedTimestamp || new Date().toISOString())
+                                downloadPDFSummary(result, domains, clientName, industryName, '', lastSavedTimestamp || new Date().toISOString(), '', null, MODEL_VERSION, lastSavedTimestamp || new Date().toISOString())
                             }}
                             className="flex-1 py-4 bg-si-navy text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-si-blue-primary transition-all duration-300 shadow-xl shadow-si-navy/20 flex items-center justify-center gap-2 group"
                         >

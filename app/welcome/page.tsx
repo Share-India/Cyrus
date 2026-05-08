@@ -1,6 +1,31 @@
 "use client"
 
-import { ShieldCheck, ArrowRight, Play, FileText, BarChart3, Lock, User, Building2, Save, LogOut, CheckCircle2, AlertCircle, Globe, Settings as SettingsIcon, Shield, ExternalLink, Loader2, Calendar, Users, TrendingUp, MapPin } from "lucide-react"
+import { 
+    Shield, 
+    ShieldCheck, 
+    Play, 
+    ArrowRight, 
+    Settings as SettingsIcon, 
+    Building2, 
+    Users, 
+    Calendar, 
+    TrendingUp, 
+    CheckCircle2, 
+    MapPin, 
+    AlertCircle,
+    Loader2,
+    Lock,
+    Cloud,
+    AlertTriangle,
+    RotateCw,
+    FileText,
+    BarChart3,
+    User,
+    Save,
+    LogOut,
+    Globe,
+    ExternalLink
+} from "lucide-react"
 import Link from "next/link"
 import { getDossier, CompanyDossier } from "@/lib/company-data"
 import { useUnderwriting } from "@/context/underwriting-context"
@@ -98,9 +123,14 @@ export default function WelcomePage() {
                 if (orgName && d.name && !d.name.toLowerCase().includes(orgName.toLowerCase()) && !orgName.toLowerCase().includes(d.name.toLowerCase().split(' ')[0])) {
                     return false;
                 }
-                // It must have more than just baseline generic data
-                const isGeneric = !d.revenueStreams || d.revenueStreams.length === 0 || d.leadership === "Authorized Signatory" || d.leadership === "Management Team";
-                return !isGeneric;
+                
+                // Deep Detail Requirements: Must have at least 3 revenue streams, 2 milestones, and cloud/compliance data
+                const hasDeepDetail = 
+                    Array.isArray(d.revenueStreams) && d.revenueStreams.length >= 2 &&
+                    Array.isArray(d.cloudInfrastructure) && d.cloudInfrastructure.length >= 1 &&
+                    Array.isArray(d.complianceFrameworks) && d.complianceFrameworks.length >= 1;
+
+                return hasDeepDetail;
             }
 
             // 1. Check Database Profile for an existing dossier FIRST (Cloud Truth)
@@ -143,7 +173,8 @@ export default function WelcomePage() {
                 body: JSON.stringify({ 
                     organizationName: orgName, 
                     websiteUrl,
-                    userId: userProfile.id 
+                    userId: userProfile.id,
+                    forceRefresh: true // Bypass DB cache for first-time synthesis
                 })
             })
                 .then(async res => {
@@ -239,12 +270,12 @@ export default function WelcomePage() {
                                          </div>
                                          <div>
                                              <h3 className="text-2xl font-black text-si-navy font-outfit tracking-tight">
-                                                 {!userProfile?.organization_name ? "Identity Verification Required" : "Synthesis Interrupted"}
+                                                 {!userProfile?.organization_name ? "Identity Verification Required" : "Intelligence Gap Detected"}
                                              </h3>
                                              <p className="text-sm text-slate-500 mt-2 font-medium">
                                                  {!userProfile?.organization_name 
                                                     ? "We need your Organization Name to perform technical OSINT reconnaissance and build your risk dossier." 
-                                                    : dossierError}
+                                                    : "The automated OSINT scan could not reach a high-fidelity threshold. Please verify your organization name and retry."}
                                              </p>
                                          </div>
 
@@ -256,9 +287,25 @@ export default function WelcomePage() {
                                                  </Link>
                                              </div>
                                          ) : (
-                                             <button onClick={handleConfirmDossier} className="px-8 py-4 bg-si-blue-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-si-navy transition-all shadow-lg shadow-si-blue-primary/20">
-                                                 Proceed without Dossier
-                                             </button>
+                                             <div className="w-full space-y-3">
+                                                 <button 
+                                                     onClick={() => {
+                                                         setDossierError(null);
+                                                         setHasAttemptedSynthesis(false);
+                                                         // Clear local confirmation to force re-trigger
+                                                         const localConfirmedKey = `cyrus_dossier_confirmed_${userProfile?.id}`;
+                                                         localStorage.removeItem(localConfirmedKey);
+                                                         window.location.reload();
+                                                     }} 
+                                                     className="flex items-center justify-center gap-2 w-full py-4 bg-si-blue-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-si-navy transition-all shadow-lg shadow-si-blue-primary/20"
+                                                 >
+                                                     Retry High-Fidelity Synthesis
+                                                     <RotateCw className="w-3 h-3" />
+                                                 </button>
+                                                 <button onClick={handleConfirmDossier} className="w-full py-3 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-slate-600 transition-colors">
+                                                     Proceed with Baseline Profile
+                                                 </button>
+                                             </div>
                                          )}
                                      </div>
                                  )}
@@ -393,6 +440,33 @@ export default function WelcomePage() {
                                         )}
                                     </div>
 
+                                    {/* 5B. SUBSIDIARIES & COMPETITORS */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Array.isArray(dossier?.subsidiaries) && dossier.subsidiaries.length > 0 && (
+                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Strategic Subsidiaries</span>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {dossier.subsidiaries.map((sub: string, idx: number) => (
+                                                        <span key={idx} className="text-[10px] font-bold text-si-navy bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl shadow-sm">{sub}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {Array.isArray(dossier?.keyCompetitors) && dossier.keyCompetitors.length > 0 && (
+                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Primary Market Competitors</span>
+                                                <div className="space-y-2">
+                                                    {dossier.keyCompetitors.map((comp: string, idx: number) => (
+                                                        <div key={idx} className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0" />
+                                                            <span className="text-xs font-semibold text-slate-600">{comp}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* 6. OPERATIONAL REACH GEOSPATIAL MAP */}
                                     {Array.isArray(dossier?.operationalReach) && dossier.operationalReach.length > 0 && (
                                         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
@@ -466,15 +540,60 @@ export default function WelcomePage() {
                                         </div>
                                     </div>
 
-                                    {/* 9. DIGITAL ASSETS AT RISK */}
-                                    {Array.isArray(dossier?.digitalAssets) && dossier.digitalAssets.length > 0 && (
-                                        <div className="bg-amber-50 p-6 rounded-2xl border border-amber-200">
-                                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest block mb-3">⑨ Digital Assets at Risk</span>
-                                            <div className="space-y-2">
-                                                {dossier.digitalAssets.map((asset: string, idx: number) => (
-                                                    <div key={idx} className="flex items-start gap-2">
-                                                        <span className="text-amber-500 mt-0.5 flex-shrink-0">⚠</span>
-                                                        <span className="text-xs text-slate-700 font-medium leading-relaxed">{asset}</span>
+                                    {/* 9. DIGITAL ASSETS & CLOUD INFRASTRUCTURE */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Array.isArray(dossier?.digitalAssets) && dossier.digitalAssets.length > 0 && (
+                                            <div className="bg-amber-50 p-6 rounded-2xl border border-amber-200">
+                                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest block mb-3">⑨ Digital Assets at Risk</span>
+                                                <div className="space-y-2">
+                                                    {dossier.digitalAssets.map((asset: string, idx: number) => (
+                                                        <div key={idx} className="flex items-start gap-2">
+                                                            <span className="text-amber-500 mt-0.5 flex-shrink-0">⚠</span>
+                                                            <span className="text-xs text-slate-700 font-medium leading-relaxed">{asset}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {Array.isArray(dossier?.cloudInfrastructure) && dossier.cloudInfrastructure.length > 0 && (
+                                            <div className="bg-si-navy p-6 rounded-2xl border border-white/10 shadow-xl">
+                                                <span className="text-[10px] font-black text-si-blue-primary uppercase tracking-widest block mb-3 flex items-center gap-2"><Cloud className="w-3 h-3" /> Cloud Infrastructure</span>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {dossier.cloudInfrastructure.map((cloud: string, idx: number) => (
+                                                        <span key={idx} className="text-[10px] font-black text-white bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-lg">{cloud}</span>
+                                                    ))}
+                                                </div>
+                                                {Array.isArray(dossier?.complianceFrameworks) && dossier.complianceFrameworks.length > 0 && (
+                                                    <div className="mt-4 pt-4 border-t border-white/5">
+                                                        <span className="text-[9px] font-black text-white/40 uppercase tracking-widest block mb-2">Compliance Attestations</span>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {dossier.complianceFrameworks.map((frame: string, idx: number) => (
+                                                                <span key={idx} className="text-[9px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">{frame}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 9B. RECENT SECURITY INCIDENTS */}
+                                    {Array.isArray(dossier?.recentSecurityIncidents) && dossier.recentSecurityIncidents.length > 0 && (
+                                        <div className="bg-rose-50 p-6 rounded-2xl border border-rose-200">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white animate-pulse">
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Adversarial Activity Log</span>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {dossier.recentSecurityIncidents.map((incident: {year: string; title: string; impact: string}, idx: number) => (
+                                                    <div key={idx} className="bg-white/60 rounded-xl p-4 border border-rose-100">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <p className="text-xs font-black text-rose-700 uppercase">{incident.title}</p>
+                                                            <span className="text-[10px] font-black text-rose-400">{incident.year}</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{incident.impact}</p>
                                                     </div>
                                                 ))}
                                             </div>

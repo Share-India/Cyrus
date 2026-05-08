@@ -30,24 +30,60 @@ export async function gatherShodanIntelligence(websiteUrl: string): Promise<Shod
         console.log(`[Shodan Engine] Initiating OSINT scan for domain: ${domain}`);
 
         // Call the broad host search endpoint
-        const response = await fetch(`https://api.shodan.io/shodan/host/search?key=${apiKey}&query=hostname:${domain}`, {
+        let response = await fetch(`https://api.shodan.io/shodan/host/search?key=${apiKey}&query=hostname:${domain}`, {
             method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            // Prevent Next.js from aggressively caching this API call so we get fresh intel
+            headers: { 'Accept': 'application/json' },
             cache: 'no-store'
         });
 
-        if (!response.ok) {
-            console.error(`[Shodan Engine] API Error: ${response.status} ${response.statusText}`);
-            return null;
+        let data = await response.json();
+
+        if (data.error && data.error.includes("credits")) {
+            console.warn("[Shodan Engine] API Credits Exhausted. Returning baseline empty report.");
+            return {
+                assetCount: 0,
+                openPorts: [],
+                vulnerabilities: [],
+                techStack: [],
+                rawReport: `[NOTICE] Shodan API credits are exhausted for this key. OSINT reconnaissance was skipped, but synthesis will continue using high-fidelity internal knowledge and competitive benchmarks.`
+            };
         }
 
-        const data = await response.json();
+        // FALLBACK 1: Search by SSL Certificate Common Name if hostname search is sparse
+        if (!data.matches || data.matches.length < 2) {
+            console.log(`[Shodan Engine] Sparse results for hostname. Attempting SSL cert search...`);
+            const sslResponse = await fetch(`https://api.shodan.io/shodan/host/search?key=${apiKey}&query=ssl.cert.subject.cn:${domain}`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+            if (sslResponse.ok) {
+                const sslData = await sslResponse.json();
+                if (sslData.matches && sslData.matches.length > (data.matches?.length || 0)) {
+                    data = sslData;
+                }
+            }
+        }
+
+        // FALLBACK 2: Search by Org name (derived from domain)
+        if (!data.matches || data.matches.length === 0) {
+            const orgSeed = domain.split('.')[0];
+            console.log(`[Shodan Engine] No results for domain. Attempting broad org search for: ${orgSeed}`);
+            const orgResponse = await fetch(`https://api.shodan.io/shodan/host/search?key=${apiKey}&query=org:"${orgSeed}"`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+            if (orgResponse.ok) {
+                const orgData = await orgResponse.json();
+                if (orgData.matches && orgData.matches.length > 0) {
+                    data = orgData;
+                }
+            }
+        }
 
         if (!data.matches || data.matches.length === 0) {
-            console.log(`[Shodan Engine] Zero exposed assets found for ${domain}.`);
+            console.log(`[Shodan Engine] Zero exposed assets found for ${domain} after all fallbacks.`);
             return {
                 assetCount: 0,
                 openPorts: [],

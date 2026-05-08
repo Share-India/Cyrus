@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -32,8 +32,12 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
-
     const path = request.nextUrl.pathname
+
+    console.log(`🛡️ [Proxy]: Path: ${path} | User: ${user?.id || 'None'}`)
+
+    // MFA Check
+    const mfaVerified = request.cookies.get('cyrus_mfa_verified')?.value === 'true'
 
     // Public routes
     const publicRoutes = ['/login', '/auth/callback']
@@ -44,9 +48,22 @@ export async function middleware(request: NextRequest) {
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
 
     if (!user && isProtectedRoute) {
+        console.log(`➡️ [Proxy]: Unauthenticated. Purging MFA state and redirecting ${path} to /login`)
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         url.searchParams.set('next', path)
+        
+        const redirectResponse = NextResponse.redirect(url)
+        // Break the loop: Clear the client's "verified" state if the server says they aren't logged in
+        redirectResponse.cookies.set('cyrus_mfa_verified', 'false', { maxAge: 0 })
+        return redirectResponse
+    }
+
+    // Force MFA if user exists but not verified (except for logout)
+    if (user && !mfaVerified && isProtectedRoute) {
+        console.log(`➡️ [Proxy]: MFA Missing. Redirecting ${path} to /login`)
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 

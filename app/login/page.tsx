@@ -54,20 +54,32 @@ export default function LoginPage() {
     useEffect(() => {
         const resumeSession = async () => {
             const supabase = createClient()
-            const { data: { session } } = await supabase.auth.getSession()
+            // 1. Fetch Session
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
             
-            // If user is already MFA verified, skip login entirely
-            if (session?.user && isMfaVerified) {
-                console.log("🛡️ [Login Resilience]: User is already verified. Redirecting to app.")
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single()
-                
-                const role = profile?.role || 'client'
-                window.location.href = role === 'admin' ? '/admin' : '/welcome'
+            if (sessionError || !session?.user) {
+                console.log("🛡️ [Login Resilience]: No active session found. Staying at gateway.")
                 return
+            }
+
+            // 2. If user is already MFA verified, skip login entirely
+            if (isMfaVerified && session?.user) {
+                console.log("🚀 [Login Resilience]: Verified session detected. Moving to destination.")
+                const role = session.user.user_metadata?.role || 'client'
+                
+                // Prevent self-redirect loop if already navigating
+                const target = role === 'admin' ? '/admin' : '/welcome'
+                const currentPath = window.location.pathname
+                if (currentPath !== target && currentPath !== '/auth/callback') {
+                    window.location.href = target
+                }
+                return
+            } else if (isMfaVerified && !session?.user) {
+                console.warn("⚠️ [Login Resilience]: MFA state active but session missing. Resetting state.")
+                setMfaVerified(false)
+                if (typeof document !== 'undefined') {
+                    document.cookie = "cyrus_mfa_verified=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+                }
             }
 
             // If user has a valid Supabase session but hasn't cleared the local MFA gate,
@@ -95,35 +107,40 @@ export default function LoginPage() {
         }
     }
 
-    const handleMethodChoice = (method: "password" | "otp") => {
+    const handleMethodChoice = async (method: "password" | "otp") => {
+        console.log(`🔐 [Auth Flow] Method selected: ${method} | Step: ${step}`);
+        
         if (isSignUp) {
             if (!signUpEmail || !signUpPhone || !name || !username || !organizationName || (selectedRole === 'client' && !industry)) {
                 setError("Please fill in all required fields (Email, Phone, Name, etc.) to register.");
-                return
+                return;
             }
             if (!/^\+?\d{10,}$/.test(signUpPhone.replace(/[\s\-()]/g, ""))) {
                 setError("Please enter a valid phone number with country code (e.g. +91).");
-                return
+                return;
             }
             if (!signUpEmail.includes("@")) {
                 setError("Please enter a valid email address.");
-                return
+                return;
             }
         } else {
-            if (!identifier || identifier.length < 3) {
+            if (!identifier || identifier.trim().length < 3) {
                 setError("Please enter a valid email or phone number first.");
-                return
+                return;
             }
         }
         
-        setError(null)
-        setLoginMethod(method)
+        setError(null);
+        setLoginMethod(method);
+        
         if (method === "password") {
-            setStep("password")
+            console.log("➡️ [Auth Flow] Proceeding to Password Authorization");
+            setStep("password");
         } else {
-            handleOtpLoginInitiate()
+            console.log("➡️ [Auth Flow] Proceeding to OTP Initiation");
+            await handleOtpLoginInitiate();
         }
-    }
+    };
 
     const handleOtpLoginInitiate = async () => {
         setIsLoading(true)
@@ -204,7 +221,32 @@ export default function LoginPage() {
                     normalizedPhone = `+91${normalizedPhone}`
                 }
 
-                // Enforce RBAC rules for Admin role
+                // 1. DUPLICATE IDENTITY GUARD: Check if email or phone already exists in profiles
+                console.log("🛡️ [Signup Guard]: Verifying identity uniqueness...");
+                
+                // We check multiple phone formats to be extra safe
+                const phoneFormats = [normalizedPhone];
+                const rawPhone = normalizedPhone.replace(/[\s\-()+]/g, "");
+                if (rawPhone.length === 10) phoneFormats.push(`+91${rawPhone}`, rawPhone, `91${rawPhone}`);
+                
+                const { data: existingProfiles, error: checkError } = await supabase
+                    .from('profiles')
+                    .select('id, email, phone')
+                    .or(`email.eq.${signUpEmail},phone.in.(${phoneFormats.join(",")})`);
+
+                if (checkError) {
+                    console.error("Signup Check Error:", checkError);
+                }
+
+                if (existingProfiles && existingProfiles.length > 0) {
+                    const isEmailDuplicate = existingProfiles.some(p => p.email.toLowerCase() === signUpEmail.toLowerCase());
+                    const msg = isEmailDuplicate 
+                        ? "An account with this email already exists. Please log in instead." 
+                        : "This phone number is already linked to another account. Please use a different number or log in.";
+                    throw new Error(msg);
+                }
+
+                // 2. Enforce RBAC rules for Admin role
                 if (selectedRole === 'admin') {
                     const isAuthorizedEmail = signUpEmail === 'aditya.ladge@gmail.com' || signUpEmail.endsWith('@shareindia.co.in');
                     if (!isAuthorizedEmail) {
@@ -220,7 +262,7 @@ export default function LoginPage() {
                         industry: industry,
                         name: name,
                         username: username,
-                        phone: normalizedPhone // Pass to metadata so trigger picks it up
+                        phone: normalizedPhone
                     },
                 };
 
@@ -613,7 +655,14 @@ export default function LoginPage() {
                                 </p>
                             </div>
 
-                            <form onSubmit={(e) => { e.preventDefault(); handleMethodChoice("password"); }} className="space-y-6">
+                            <form 
+                                onSubmit={(e) => { 
+                                    e.preventDefault(); 
+                                    e.stopPropagation();
+                                    handleMethodChoice("password"); 
+                                }} 
+                                className="space-y-6"
+                            >
                                 <div className="space-y-4">
                                     <AnimatePresence mode="wait">
                                         {!isSignUp ? (

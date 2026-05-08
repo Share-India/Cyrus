@@ -6,7 +6,7 @@ import { buildDynamicDossier } from "@/lib/dossier-builder";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { organizationName, websiteUrl, userId } = body;
+        const { organizationName, websiteUrl, userId, forceRefresh } = body;
 
         if (!organizationName) {
             return NextResponse.json(
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         const supabase = await createClient();
 
         // 1. Intelligent Cache + Upgrade Check
-        if (userId) {
+        if (userId && !forceRefresh) {
             const { data: profile } = await supabase
                 .from("profiles")
                 .select("organization_name, company_dossier")
@@ -35,9 +35,11 @@ export async function POST(req: Request) {
                     dossier.leadership === "Authorized Signatory" || 
                     dossier.leadership === "Management Team" ||
                     !dossier.revenueStreams || 
-                    dossier.revenueStreams.length === 0 ||
+                    dossier.revenueStreams.length < 2 ||
                     !dossier.cyberStats ||
-                    dossier.cyberStats.length < 3;
+                    dossier.cyberStats.length < 3 ||
+                    !dossier.cloudInfrastructure ||
+                    !dossier.complianceFrameworks;
 
                 if (!isGeneric) {
                     console.log(`[Dossier API] Cache Hit: Returning high-fidelity dossier for ${organizationName}`);
@@ -48,6 +50,8 @@ export async function POST(req: Request) {
             } else {
                 console.log(`[Dossier API] Cache Bypass: Searching for new organization ${organizationName}`);
             }
+        } else if (forceRefresh) {
+            console.log(`[Dossier API] Force Refresh Requested for ${organizationName}`);
         }
 
         console.log(`[Dossier API] Generating dynamic intelligence for: ${organizationName} (${websiteUrl || "No URL"})`);

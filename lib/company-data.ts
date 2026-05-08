@@ -17,9 +17,14 @@ export interface CompanyDossier {
     operationalReach?: string[];
     industriesServed?: string[];
     notableClients?: string[];
+    subsidiaries?: string[];
+    keyCompetitors?: string[];
     revenueStreams?: { label: string; description: string; percentage?: number }[];
     keyMilestones?: { year: string; event: string }[];
     digitalAssets?: string[];
+    cloudInfrastructure?: string[];
+    complianceFrameworks?: string[];
+    recentSecurityIncidents?: { year: string; title: string; impact: string }[];
     supplyChainExposure?: string;
     regulatoryEnvironment?: string;
     cyberThreatNarrative?: string;

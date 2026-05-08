@@ -333,6 +333,9 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
         const supabase = createClient()
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log("🔔 [Auth Listener]: Event:", event, "| User:", session?.user?.id || "None")
+            
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : ""
+            const isLoginPage = currentPath === '/login' || currentPath.startsWith('/auth/')
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 if (userProfile && session?.user?.id && session.user.id !== userProfile.id) {
@@ -346,7 +349,11 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
                 setUserRole(null)
                 setUserProfile(null)
                 setDomains([])
-                window.location.href = '/login'
+                
+                // Only redirect if not already at login to prevent infinite reset loops
+                if (!isLoginPage) {
+                    window.location.href = '/login'
+                }
             }
         })
 
@@ -619,93 +626,112 @@ export function UnderwritingProvider({ children }: { children: React.ReactNode }
     }, [domains, selectedIndustry, clientName, manualOverrideEnabled, currentDomainIndex, currentQuestionIndex])
 
     const submitAssessment = useCallback(async () => {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user || (userProfile && user.id !== userProfile.id)) {
-            console.error("🚫 Security Breach Prevented: Session mismatch during submitAssessment")
-            return { success: false, error: "Authentication session mismatch. Please refresh the page and log in again." }
-        }
-
-        const { data: insertedData, error } = await supabase.from('assessments').insert({
-            user_id: user.id,
-            industry_id: selectedIndustry || 'standard',
-            total_score: result.totalScore,
-            risk_tier: result.riskTier,
-            premium_loading: result.premiumLoading,
-            auto_declined: result.autoDeclined,
-            submission_data: {
-                domains: domains.map((d: Domain) => ({
-                    id: d.id,
-                    name: d.name,
-                    activeWeight: d.activeWeight,
-                    questions: d.questions.map((q: any) => ({
-                        id: q.id,
-                        text: q.text,
-                        response: q.response,
-                        isKiller: q.isKiller
-                    }))
-                })),
-                result,
-                clientName,
-                selectedIndustry,
-                model_version: MODEL_VERSION
-            },
-            model_version: MODEL_VERSION,
-            schema_version: '1.0.0'
-        }).select('id').single()
-
-        if (error) {
-            console.error("Submission error", error)
-            return { success: false, error: error.message }
-        }
-
-        // Clear draft from storage only, but keep state for success view/dashboard
-        const storageKey = user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest"
-        localStorage.removeItem(storageKey)
-
+        setIsSaving(true)
         try {
-            const supabase2 = createClient()
-            await supabase2
-                .from('profiles')
-                .update({ draft_data: null })
-                .eq('id', user.id)
-        } catch (e) {
-            console.error("Error clearing cloud draft after submission", e)
-        }
+            const supabase = createClient()
+            const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        // ==========================================
-        // n8n / AUTOMATION DISPATCHER (Fire-and-forget)
-        // ==========================================
-        const n8nWebhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
-        const n8nSecret = process.env.NEXT_PUBLIC_N8N_WEBHOOK_SECRET;
-        
-        if (n8nWebhookUrl && insertedData?.id) {
-            // We do NOT await this. If n8n is down or slow, the user still proceeds instantly.
-            fetch(n8nWebhookUrl, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "X-Cyrus-Event-Secret": n8nSecret || "unsecured_dev_mode"
+            if (authError || !user || (userProfile && user.id !== userProfile.id)) {
+                console.error("🚫 Security Breach Prevented: Session mismatch during submitAssessment", authError)
+                return { success: false, error: "Authentication session mismatch. Please refresh the page and log in again." }
+            }
+
+            const { data: insertedData, error } = await supabase.from('assessments').insert({
+                user_id: user.id,
+                industry_id: selectedIndustry || 'standard',
+                total_score: result.totalScore,
+                risk_tier: result.riskTier,
+                premium_loading: result.premiumLoading,
+                auto_declined: result.autoDeclined,
+                submission_data: {
+                    domains: domains.map((d: Domain) => ({
+                        id: d.id,
+                        name: d.name,
+                        activeWeight: d.activeWeight,
+                        questions: d.questions.map((q: any) => ({
+                            id: q.id,
+                            text: q.text,
+                            response: q.response,
+                            isKiller: q.isKiller
+                        }))
+                    })),
+                    result,
+                    clientName,
+                    selectedIndustry,
+                    model_version: MODEL_VERSION
                 },
-                body: JSON.stringify({
-                    event_type: "assessment_finalized",
-                    assessment_id: insertedData.id,
-                    user_id: user.id,
-                    client_name: clientName,
-                    industry_id: selectedIndustry || 'standard',
-                    risk_tier: result.riskTier,
-                    total_score: result.totalScore,
-                    premium_loading: result.premiumLoading,
-                    auto_declined: result.autoDeclined,
-                    failed_killers: result.failedKillers, // Passes the exact text and domain of any critical failures
-                    timestamp: new Date().toISOString()
-                })
-            }).catch(e => console.error("[n8n Dispatch Failed]:", e));
-        }
+                model_version: MODEL_VERSION,
+                schema_version: '1.0.0'
+            }).select('id').single()
 
-        return { success: true, assessmentId: insertedData?.id }
-    }, [domains, selectedIndustry, result, clientName])
+            if (error) {
+                console.error("Submission error", error)
+                return { success: false, error: error.message }
+            }
+
+            // Clear draft from storage only, but keep state for success view/dashboard
+            const storageKey = user?.id ? `cyrus_draft_v2_${user.id}` : "cyrus_draft_v2_guest"
+            localStorage.removeItem(storageKey)
+
+            try {
+                const supabase2 = createClient()
+                await supabase2
+                    .from('profiles')
+                    .update({ draft_data: null })
+                    .eq('id', user.id)
+            } catch (e) {
+                console.error("Error clearing cloud draft after submission", e)
+            }
+
+            // ==========================================
+            // n8n / AUTOMATION DISPATCHER (Fire-and-forget)
+            // ==========================================
+            const n8nWebhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
+            const n8nSecret = process.env.NEXT_PUBLIC_N8N_WEBHOOK_SECRET;
+            
+            if (n8nWebhookUrl && insertedData?.id) {
+                try {
+                    // PARANOID CHECK: Ensure URL has a protocol (http/https)
+                    const finalUrl = n8nWebhookUrl.startsWith('http') ? n8nWebhookUrl : `https://${n8nWebhookUrl}`;
+                    
+                    console.log("🚀 [n8n Dispatch]: Initializing automation request...");
+                    
+                    // We do NOT await this. If n8n is down or slow, the user still proceeds instantly.
+                    fetch(finalUrl, {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "X-Cyrus-Event-Secret": n8nSecret || "unsecured_dev_mode"
+                        },
+                        body: JSON.stringify({
+                            event_type: "assessment_finalized",
+                            assessment_id: insertedData.id,
+                            user_id: user.id,
+                            client_name: clientName,
+                            industry_id: selectedIndustry || 'standard',
+                            risk_tier: result.riskTier,
+                            total_score: result.totalScore,
+                            premium_loading: result.premiumLoading,
+                            auto_declined: result.autoDeclined,
+                            failed_killers: result.failedKillers,
+                            timestamp: new Date().toISOString()
+                        })
+                    }).then(r => {
+                        if (!r.ok) console.warn(`[n8n Dispatch]: Server returned status ${r.status}`);
+                    }).catch(e => console.error("[n8n Dispatch Failed]:", e));
+                } catch (dispatchError) {
+                    console.error("[n8n Dispatch Initialization Failed]:", dispatchError);
+                }
+            }
+
+            return { success: true, assessmentId: insertedData?.id }
+        } catch (fatalError: any) {
+            console.error("Fatal submission error:", fatalError)
+            return { success: false, error: fatalError.message || "Failed to finalize assessment due to a network or security error." }
+        } finally {
+            setIsSaving(false)
+        }
+    }, [domains, selectedIndustry, result, clientName, userProfile])
 
     const updateProfile = useCallback(async (updates: any) => {
         const supabase = createClient()
