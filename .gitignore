@@ -65,3 +65,7 @@ verify_model.ts
 
 # Local Env
 .env.local.example
+
+# Temporary Scratch Files
+scratch/
+scratch/
