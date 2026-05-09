@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { siteConfig } from '@/lib/site-config'
 
 export async function POST(req: NextRequest) {
     try {
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
         }
 
         // OTP verified — generate magic link session
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url
         const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
             type: 'magiclink',
             email: profile.email,

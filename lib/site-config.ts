@@ -12,7 +12,7 @@ export const siteConfig = {
     description: "Next-generation automated cyber insurance underwriting and risk analysis platform.",
     
     // Links
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://cyrus.pro",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://cyrus.shareindiainsurance.com",
     supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@cyrus.pro",
     
     // AI Configuration

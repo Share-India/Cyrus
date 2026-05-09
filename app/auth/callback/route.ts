@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { siteConfig } from '@/lib/site-config'
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
@@ -27,12 +28,14 @@ export async function GET(request: Request) {
                 const res = NextResponse.redirect(`${origin}${next}`)
                 setMfaCookie(res)
                 return res
-            } else if (forwardedHost) {
+            } else if (forwardedHost && !forwardedHost.includes('localhost')) {
                 const res = NextResponse.redirect(`https://${forwardedHost}${next}`)
                 setMfaCookie(res)
                 return res
             } else {
-                const res = NextResponse.redirect(`${origin}${next}`)
+                // Final safety fallback to production domain
+                const baseUrl = siteConfig.url
+                const res = NextResponse.redirect(`${baseUrl}${next}`)
                 setMfaCookie(res)
                 return res
             }

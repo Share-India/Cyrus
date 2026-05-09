@@ -172,7 +172,7 @@ export default function LoginPage() {
                     email: normalizedIdentifier,
                     options: {
                         shouldCreateUser: false, // Block unregistered emails
-                        emailRedirectTo: `${window.location.origin}/auth/callback`
+                        emailRedirectTo: `${siteConfig.url}/auth/callback`
                     }
                 })
                 if (error) {
@@ -267,7 +267,7 @@ export default function LoginPage() {
                 };
 
                 // For sign-up, we'll use email as primary but include phone in metadata
-                options.emailRedirectTo = `${window.location.origin}/auth/callback`
+                options.emailRedirectTo = `${siteConfig.url}/auth/callback`
 
                 const { data: signUpData, error } = await supabase.auth.signUp({
                     email: signUpEmail,
@@ -296,7 +296,7 @@ export default function LoginPage() {
                         email: signUpEmail,
                         options: {
                             shouldCreateUser: false,
-                            emailRedirectTo: `${window.location.origin}/auth/callback`
+                            emailRedirectTo: `${siteConfig.url}/auth/callback`
                         }
                     });
 
@@ -366,7 +366,7 @@ export default function LoginPage() {
                         email: registeredEmail,
                         options: { 
                             shouldCreateUser: false,
-                            emailRedirectTo: `${window.location.origin}/auth/callback`
+                            emailRedirectTo: `${siteConfig.url}/auth/callback`
                         }
                     })
 
@@ -504,7 +504,7 @@ export default function LoginPage() {
                     email: targetEmail,
                     options: { 
                         shouldCreateUser: false,
-                        emailRedirectTo: `${window.location.origin}/auth/callback`
+                        emailRedirectTo: `${siteConfig.url}/auth/callback`
                     }
                 })
                 if (error) throw error
@@ -535,7 +535,8 @@ export default function LoginPage() {
                 const { error } = await supabase.auth.signInWithOtp({
                     phone: normalizedIdentifier,
                     options: {
-                        shouldCreateUser: false
+                        shouldCreateUser: false,
+                        emailRedirectTo: `${siteConfig.url}/auth/callback`
                     }
                 })
                 if (error) throw error
@@ -543,7 +544,7 @@ export default function LoginPage() {
                 setStep("verification")
             } else {
                 const { error } = await supabase.auth.resetPasswordForEmail(normalizedIdentifier, {
-                    redirectTo: `${window.location.origin}/auth/callback?next=/settings`
+                    redirectTo: `${siteConfig.url}/auth/callback?next=/settings`
                 })
                 if (error) throw error
                 setSuccessMessage("Password reset link has been dispatched to your email.")
